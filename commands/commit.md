@@ -116,6 +116,10 @@ If `commit.push_after_commit` is true, push to origin.
 
 Run each command in `commit.post_commit_hooks[]` sequentially.
 
+Common post-commit hooks for Postgres tier:
+- `node $SCRIPTS_DIR/pipeline-embed.js index` — update code index embeddings
+- `node $SCRIPTS_DIR/pipeline-db.js update session <N> <tests> "<summary>"` — record session
+
 ---
 
 ### Safety rules (always enforced)

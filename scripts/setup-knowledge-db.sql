@@ -1,36 +1,50 @@
 -- Pipeline Knowledge DB Setup
--- Run this when knowledge.tier is "postgres" in pipeline.yml
--- Creates tables for sessions, tasks, decisions, gotchas, and research
+-- Run via: node scripts/pipeline-db.js setup
+-- Creates all tables for the Postgres knowledge tier
+--
+-- Requires:
+--   - PostgreSQL running on localhost:5432
+--   - pgvector extension (for semantic search — optional, degrades gracefully)
+--   - Ollama with mxbai-embed-large (for embedding — optional)
 
--- Enable pgvector if available (for semantic search)
-CREATE EXTENSION IF NOT EXISTS vector;
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- EXTENSIONS
+-- ═══════════════════════════════════════════════════════════════════════════════
 
--- Sessions table — tracks each working session
+-- pgvector for semantic search (optional — scripts degrade to FTS-only without it)
+DO $$ BEGIN
+  CREATE EXTENSION IF NOT EXISTS vector;
+EXCEPTION WHEN OTHERS THEN
+  RAISE NOTICE 'pgvector not installed — semantic search disabled. Install: https://github.com/pgvector/pgvector';
+END $$;
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CORE TABLES — session history, tasks, decisions, gotchas, research
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+-- Sessions — one row per working session
 CREATE TABLE IF NOT EXISTS sessions (
   id SERIAL PRIMARY KEY,
-  session_num INTEGER UNIQUE NOT NULL,
-  started_at TIMESTAMPTZ DEFAULT NOW(),
-  ended_at TIMESTAMPTZ,
-  test_count INTEGER DEFAULT 0,
+  num INTEGER UNIQUE NOT NULL,
+  date DATE DEFAULT CURRENT_DATE,
+  tests INTEGER DEFAULT 0,
   summary TEXT,
-  project_name TEXT
+  project TEXT
 );
 
--- Tasks table — tracks features, bugs, investigations
+-- Tasks — features, bugs, investigations
 CREATE TABLE IF NOT EXISTS tasks (
   id SERIAL PRIMARY KEY,
   title TEXT NOT NULL,
+  status TEXT DEFAULT 'pending',     -- pending, in_progress, done, deferred
   phase TEXT DEFAULT 'backlog',
-  status TEXT DEFAULT 'open',
-  priority TEXT DEFAULT 'medium',
+  priority TEXT DEFAULT 'medium',    -- low, medium, high, critical
+  github_issue INTEGER,
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW(),
-  closed_at TIMESTAMPTZ,
-  session_num INTEGER REFERENCES sessions(session_num),
-  notes TEXT
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Decisions table — finalized architectural choices
+-- Decisions — finalized architectural choices with rationale
 CREATE TABLE IF NOT EXISTS decisions (
   id SERIAL PRIMARY KEY,
   session_num INTEGER,
@@ -40,7 +54,7 @@ CREATE TABLE IF NOT EXISTS decisions (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Gotchas table — critical constraints and "never do this" rules
+-- Gotchas — critical constraints ("never do this")
 CREATE TABLE IF NOT EXISTS gotchas (
   id SERIAL PRIMARY KEY,
   issue TEXT NOT NULL,
@@ -49,7 +63,7 @@ CREATE TABLE IF NOT EXISTS gotchas (
   active BOOLEAN DEFAULT TRUE
 );
 
--- Research table — detailed research notes linked to tasks
+-- Research — detailed notes linked to tasks
 CREATE TABLE IF NOT EXISTS research (
   id SERIAL PRIMARY KEY,
   task_id INTEGER REFERENCES tasks(id),
@@ -58,36 +72,50 @@ CREATE TABLE IF NOT EXISTS research (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Embeddings table — for semantic search (requires pgvector)
-CREATE TABLE IF NOT EXISTS embeddings (
-  id SERIAL PRIMARY KEY,
-  source_type TEXT NOT NULL,  -- 'file', 'research', 'decision', 'session'
-  source_id TEXT NOT NULL,    -- file path or record ID
-  chunk_text TEXT NOT NULL,
-  embedding vector(1024),     -- mxbai-embed-large dimension
-  created_at TIMESTAMPTZ DEFAULT NOW()
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CODE INDEX — file descriptions with FTS + optional vector embeddings
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+-- Code index — one row per source file, FTS-searchable
+CREATE TABLE IF NOT EXISTS code_index (
+  path TEXT PRIMARY KEY,
+  description TEXT NOT NULL,
+  fts_vec TSVECTOR GENERATED ALWAYS AS (to_tsvector('english', description)) STORED,
+  embedding vector(1024)       -- NULL until embeddings are generated
 );
 
--- Index for fast vector similarity search
-CREATE INDEX IF NOT EXISTS embeddings_vector_idx
-  ON embeddings USING ivfflat (embedding vector_cosine_ops)
-  WITH (lists = 100);
+CREATE INDEX IF NOT EXISTS code_index_fts_idx ON code_index USING gin(fts_vec);
 
--- Index for source lookups
-CREATE INDEX IF NOT EXISTS embeddings_source_idx
-  ON embeddings (source_type, source_id);
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- FILE CACHE — hash-based cache to skip re-reading unchanged files
+-- ═══════════════════════════════════════════════════════════════════════════════
 
--- Useful views
+CREATE TABLE IF NOT EXISTS file_cache (
+  path TEXT PRIMARY KEY,
+  sha256 TEXT NOT NULL,
+  summary TEXT,
+  key_symbols TEXT[],
+  line_count INTEGER,
+  last_read TIMESTAMPTZ DEFAULT NOW(),
+  last_changed TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- VIEWS — convenient queries for session startup and status checks
+-- ═══════════════════════════════════════════════════════════════════════════════
+
 CREATE OR REPLACE VIEW open_tasks AS
-  SELECT id, title, phase, status, priority, created_at
+  SELECT id, title, phase, status, priority, github_issue, created_at
   FROM tasks
-  WHERE status = 'open'
-  ORDER BY priority DESC, created_at;
+  WHERE status NOT IN ('done', 'deferred')
+  ORDER BY
+    CASE priority WHEN 'critical' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END,
+    created_at;
 
 CREATE OR REPLACE VIEW recent_sessions AS
-  SELECT session_num, started_at, ended_at, test_count, summary
+  SELECT num, date, tests, summary, project
   FROM sessions
-  ORDER BY session_num DESC
+  ORDER BY num DESC
   LIMIT 5;
 
 CREATE OR REPLACE VIEW active_gotchas AS

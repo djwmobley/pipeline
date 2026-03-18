@@ -80,9 +80,14 @@ Present both options:
 > work on across 10+ sessions, Postgres is significantly more powerful. Which do you prefer?"
 
 If Postgres chosen and available:
-1. Read `scripts/setup-knowledge-db.sql` from the pipeline plugin directory
-2. Run the SQL to create tables
-3. Set `knowledge.tier: "postgres"` in config
+1. Locate the pipeline plugin's `scripts/` directory
+2. Install dependencies: `cd $SCRIPTS_DIR && npm install --silent`
+3. Run setup: `node $SCRIPTS_DIR/pipeline-db.js setup`
+4. Verify: `node $SCRIPTS_DIR/pipeline-db.js status`
+5. Set `knowledge.tier: "postgres"` in config with connection details
+6. If Ollama is available, suggest: "Run `ollama pull mxbai-embed-large` for semantic search"
+7. Add to config's `commit.post_commit_hooks`:
+   `"node $SCRIPTS_DIR/pipeline-embed.js index"` (keeps embeddings current after each commit)
 
 If files chosen (default):
 1. Create `docs/sessions/` directory

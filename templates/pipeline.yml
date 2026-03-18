@@ -53,8 +53,33 @@ models:
   architecture: "opus"
 
 # Knowledge tier: "files" (default) or "postgres"
+#
+# Files tier (zero setup):
+#   Session history in docs/sessions/*.md
+#   Decisions in DECISIONS.md
+#   Gotchas in docs/gotchas.md
+#   No semantic search, no structured queries
+#
+# Postgres tier (requires local Postgres):
+#   Semantic search across all past sessions (via Ollama embeddings)
+#   Structured task/decision/gotcha queries
+#   File hash cache (skip re-reading unchanged files)
+#   Code index with FTS + vector hybrid search
+#   Setup: /pipeline:knowledge setup
+#
+# Scripts (in plugin's scripts/ directory):
+#   pipeline-db.js    — sessions, tasks, decisions, gotchas, raw SQL
+#   pipeline-embed.js — code index embeddings + semantic/hybrid search
+#   pipeline-cache.js — file hash cache + FTS keyword search
+#
 knowledge:
   tier: "files"
+  # Postgres tier config (uncomment when tier: "postgres"):
+  # host: "localhost"
+  # port: 5432
+  # database: "pipeline_context"
+  # user: "postgres"
+  # embedding_model: "mxbai-embed-large"  # Ollama model for semantic search
 
 # Integrations — detected during init, skills check before using
 integrations:
