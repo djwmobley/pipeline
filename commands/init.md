@@ -41,6 +41,17 @@ ls -d src/ lib/ app/ pkg/ cmd/ internal/ 2>/dev/null
 
 ---
 
+### Step 1b — Fill in gaps
+
+**Git remote:** If `git remote get-url origin` returned nothing (no remote configured), ask:
+> "No git remote detected. What's the GitHub repo for this project? (e.g., `owner/repo`, or press Enter to skip)"
+
+If the user provides a value, use it for `project.repo`. If skipped, set `project.repo: null`.
+
+**Project name:** If no `name` field in package.json/Cargo.toml/etc., use the directory name.
+
+---
+
 ### Step 2 — Detect integrations
 
 Run these probes IN PARALLEL:
