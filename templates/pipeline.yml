@@ -1,0 +1,92 @@
+version: 1
+
+project:
+  name: "my-project"
+  repo: "owner/repo"
+  branch: "main"
+
+# Tool commands (null to disable any gate)
+commands:
+  typecheck: "npx tsc --noEmit"
+  lint: "npx eslint src/"
+  lint_error_pattern: " error "
+  test: "npx vitest run"
+  test_verbose: "npx vitest run --reporter=verbose"
+
+# Size routing
+routing:
+  source_dirs: ["src/"]
+  tiny_max_files: 1
+  tiny_max_lines: 30
+  medium_max_files: 3
+  review_gate_threshold: 3   # files changed >= this requires review
+
+# Review
+review:
+  non_negotiable: []
+  phase0_patterns:
+    - { pattern: "^\\s*await ", label: "unguarded-await" }
+    - { pattern: "console\\.log", label: "console-log" }
+    - { pattern: "![^=!>]", label: "forced-non-null" }
+  sectors: []
+  criteria: [ux, dead-code, framework-correctness, security, simplicity, solid]
+
+# Security checklist
+security:
+  - { check: "Database access?", rule: "Verify access control" }
+  - { check: "User input?", rule: "Sanitize before storage" }
+  - { check: "Network call?", rule: "TLS only, AbortController, no embedded secrets" }
+
+# Git
+commit:
+  co_author: "Claude Sonnet 4.6 <noreply@anthropic.com>"
+  never_stage: [".env", "*.key", "credentials*", "node_modules/"]
+  push_after_commit: true
+  post_commit_hooks: []
+
+# Model routing
+models:
+  explore: "haiku"
+  implement: "sonnet"
+  review: "sonnet"
+  plan: "sonnet"
+  architecture: "opus"
+
+# Knowledge tier: "files" (default) or "postgres"
+knowledge:
+  tier: "files"
+
+# Integrations — detected during init, skills check before using
+integrations:
+  sentry:
+    enabled: false
+    use_in: [debug]
+  figma:
+    enabled: false
+    use_in: [ui-review]
+  posthog:
+    enabled: false
+    use_in: [review]
+  ollama:
+    enabled: false
+    use_in: [knowledge]
+  postgres:
+    enabled: false
+    use_in: [knowledge]
+  gamma:
+    enabled: false
+    use_in: [brainstorm]
+  github:
+    enabled: false
+    use_in: [commit, finish]
+  chrome_devtools:
+    enabled: false
+    use_in: [ui-review]
+  playwright:
+    enabled: false
+    use_in: [ui-review]
+
+# Docs
+docs:
+  specs_dir: "docs/specs/"
+  plans_dir: "docs/plans/"

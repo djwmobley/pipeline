@@ -1,0 +1,137 @@
+---
+name: planning
+description: Create implementation plans from specs — bite-sized tasks, file structure, build sequence, model routing
+---
+
+# Writing Implementation Plans
+
+## Overview
+
+Write comprehensive implementation plans assuming the engineer has zero context for the codebase.
+Document everything they need: which files to touch, code, testing, how to verify.
+Give them bite-sized tasks. DRY. YAGNI. TDD. Frequent commits.
+
+## Scope Check
+
+If the spec covers multiple independent subsystems, it should have been broken into sub-project
+specs during brainstorming. If it wasn't, suggest breaking into separate plans — one per subsystem.
+
+## File Structure
+
+Before defining tasks, map out which files will be created or modified:
+- Design units with clear boundaries and well-defined interfaces
+- Prefer smaller, focused files over large ones
+- Files that change together should live together
+- In existing codebases, follow established patterns
+
+## Bite-Sized Task Granularity
+
+**Each step is one action (2-5 minutes):**
+- "Write the failing test" — step
+- "Run it to make sure it fails" — step
+- "Implement the minimal code to make the test pass" — step
+- "Run the tests and make sure they pass" — step
+- "Commit" — step
+
+## Plan Document Header
+
+Every plan MUST start with:
+
+```markdown
+# [Feature Name] Implementation Plan
+
+> **For agentic workers:** Use /pipeline:build to implement this plan task-by-task.
+> Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** [One sentence describing what this builds]
+
+**Architecture:** [2-3 sentences about approach]
+
+**Tech Stack:** [Key technologies/libraries]
+
+**Model Routing:** [Which tasks need sonnet vs haiku]
+
+---
+```
+
+## Task Structure
+
+````markdown
+### Task N: [Component Name]
+
+**Model:** [haiku/sonnet — from config `models.*`]
+
+**Files:**
+- Create: `exact/path/to/file`
+- Modify: `exact/path/to/existing:123-145`
+- Test: `tests/exact/path/to/test`
+
+- [ ] **Step 1: Write the failing test**
+
+```language
+test code here
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `TEST_COMMAND path/to/test`
+Expected: FAIL with "function not defined"
+
+- [ ] **Step 3: Write minimal implementation**
+
+```language
+implementation code here
+```
+
+- [ ] **Step 4: Run test to verify it passes**
+
+Run: `TEST_COMMAND path/to/test`
+Expected: PASS
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add [files]
+git commit -m "feat: add specific feature"
+```
+````
+
+## Build Sequence
+
+After tasks, include an ordered build sequence:
+
+```markdown
+## Build Sequence
+
+1. [Task N] — [what it produces] (no dependencies)
+2. [Task M] — [what it produces] (depends on: Task N)
+3. [Task P] — [what it produces] (depends on: Task M)
+```
+
+## Plan Review Loop
+
+After writing the complete plan:
+1. Dispatch plan-reviewer subagent (see plan-reviewer-prompt.md)
+2. If Issues Found: fix, re-dispatch until Approved
+3. If loop exceeds 3 iterations, surface to human
+
+## Execution Handoff
+
+After saving the plan:
+
+> "Plan complete and saved to `<path>`. Two execution options:
+>
+> **1. Subagent-Driven (recommended)** — Fresh subagent per task, review between tasks
+> **2. Inline Execution** — Execute tasks sequentially in this session
+>
+> Which approach?"
+
+If subagent-driven: invoke /pipeline:build
+If inline: execute tasks sequentially following the plan
+
+## Remember
+- Exact file paths always
+- Complete code in plan (not "add validation")
+- Exact commands with expected output
+- Model routing per task
+- DRY, YAGNI, TDD, frequent commits

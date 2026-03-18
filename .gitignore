@@ -1,0 +1,12 @@
+CLAUDE.local.md
+node_modules/
+.env
+.env.*
+*.key
+credentials*
+secrets*
+.DS_Store
+Thumbs.db
+*.log
+.worktrees/
+worktrees/

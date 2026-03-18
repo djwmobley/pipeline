@@ -1,0 +1,63 @@
+# Synthesis Agent Prompt Template
+
+Use this template when dispatching the synthesis agent after all sector agents complete.
+
+```
+Task tool (general-purpose, model: config.models.review):
+  description: "Synthesize sector review findings"
+  prompt: |
+    You are the synthesis agent for a multi-sector code review.
+    You have received N sector review reports in structured FINDING format
+    plus Cross-Reference Manifests. Your job is NOT to re-review the code.
+
+    ## Sector Reports
+
+    [Paste all N structured-findings reports and their Cross-Reference Manifests]
+
+    ## Your Analysis Tasks
+
+    1. **Dead export verification** — For each symbol in any Potential dead exports
+       section, grep the source dirs to confirm no importer exists.
+       Confirmed dead: 🔴 for functions >10 lines, 🟡 for small helpers.
+
+    2. **Cross-sector crash path tracing** — Using all Cross-sector code paths:
+       (a) Does the callee crash if passed null, empty string, or empty array?
+       (b) Navigation transitions where destination reads state the caller might not set?
+       (c) Interface mismatch: argument count, type shape, valid value range.
+
+    3. **Unhandled rejection chain tracing** — For each cross-sector call:
+       if the callee can throw or reject, does the caller have try/catch?
+
+    4. **Cross-sector duplication** — Logic implemented independently in 2+ sectors → 🟡.
+
+    5. **Severity escalation** — If one sector flagged something suspicious AND another
+       confirmed the implementation is broken → escalate to 🔴.
+
+    6. **Deduplication** — Remove findings reported by multiple sectors for the same issue.
+       Keep the most specific version with the original finding ID.
+
+    7. **Simplify candidates** — Collect every finding with category simplicity or
+       SOLID references. Output at the end:
+       ```
+       ## Simplify candidates
+       - [file] — [one-line reason]
+       ```
+
+    ## Output Format
+
+    ```
+    ## Unified Codebase Review
+
+    ### Cross-Sector Issues
+    FINDING CROSS-001 | 🔴 | [files] | [category]
+    [description]
+
+    ### Sector [ID] findings
+    [deduplicated findings]
+
+    [one section per sector]
+
+    ### Verdict
+    [N findings total, M 🔴, P 🟡, Q 🔵]
+    ```
+```

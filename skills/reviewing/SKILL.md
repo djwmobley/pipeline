@@ -1,0 +1,59 @@
+---
+name: reviewing
+description: Per-change quality review process — config-driven criteria, severity tiers, non-negotiable filtering
+---
+
+# Code Review Process
+
+## Overview
+
+Review changed code against configurable criteria. Find real problems only.
+Never flag intentional architectural decisions listed in `review.non_negotiable[]`.
+
+**Core principle:** Evidence-based findings with actionable fixes. No praise. No rubber-stamping.
+
+## The Process
+
+1. Load non-negotiable decisions from `review.non_negotiable[]` in pipeline.yml
+2. Run static analysis (typecheck + lint) — tool findings are automatic 🔴
+3. Get the diff — understand what changed
+4. Read each changed file in full — understand context
+5. Review against `review.criteria[]` — apply each configured criterion
+6. Report with severity tiers — 🔴/🟡/🔵 format
+
+## Severity Calibration
+
+**🔴 Must fix** — Will cause bugs, security issues, crashes, or data loss in production.
+Includes: type errors, unhandled rejections on user actions, security vulnerabilities,
+access control gaps, null dereferences on reachable paths.
+
+**🟡 Should fix** — Quality issues that degrade maintainability or user experience.
+Includes: dead code, unused imports, UX clarity issues, premature abstractions,
+SOLID violations that manifest as real problems.
+
+**🔵 Consider** — Suggestions that would improve the code but are not problems.
+Includes: alternative approaches, performance optimizations, readability improvements.
+
+## Non-Negotiable Filtering
+
+Before flagging ANY finding, check it against `review.non_negotiable[]`.
+Each entry describes an intentional pattern and why it exists.
+If a finding matches a non-negotiable, suppress it completely — do not even mention it.
+
+## Framework Detection
+
+Detect the project's framework from dependencies:
+- `react` / `react-dom` → React correctness checks
+- `vue` → Vue correctness checks
+- `@angular/core` → Angular correctness checks
+- `svelte` → Svelte correctness checks
+
+Apply framework-specific correctness checks automatically based on detection.
+
+## Key Principles
+
+- **Real problems only** — if you wouldn't block a PR for it, it's 🔵 at most
+- **Full context** — read the whole file, not just the diff
+- **Non-negotiable respect** — never flag intentional patterns
+- **Actionable fixes** — every 🔴 finding includes a specific fix description
+- **Simplify handoff** — collect simplicity/SOLID findings for /pipeline:simplify
