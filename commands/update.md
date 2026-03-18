@@ -153,52 +153,173 @@ Update only the `commands` section.
 
 **What sectors are:** When you run `/pipeline:audit`, the codebase is split into sectors — independent zones reviewed in parallel by separate agents. Each sector gets its own reviewer that focuses on a specific area (e.g., "UI Components", "API Routes", "Auth & Security"). A synthesis agent then combines findings across sectors. This parallelism is what makes a full codebase review feasible — 6 focused reviews run simultaneously instead of one overwhelmed reviewer.
 
-**First time (no sectors configured):**
+---
 
-Scan the actual directory structure to understand what exists:
+#### Step 1 — Detect framework and directory structure
+
+Run this detection script to understand what's actually in the project:
 
 ```bash
-echo "=== SOURCE STRUCTURE ==="
-for d in src lib app pkg cmd internal server; do
-  if test -d "$d"; then
-    echo "--- $d/ ---"
-    ls -d "$d"/*/ 2>/dev/null || echo "  (no subdirectories)"
-  fi
+echo "=== FRAMEWORK DETECTION ==="
+# JS/TS frameworks
+for f in next.config.js next.config.ts next.config.mjs; do test -f "$f" && echo "FRAMEWORK: nextjs"; done
+for f in nuxt.config.ts nuxt.config.js; do test -f "$f" && echo "FRAMEWORK: nuxt"; done
+for f in svelte.config.js svelte.config.ts; do test -f "$f" && echo "FRAMEWORK: sveltekit"; done
+for f in remix.config.js remix.config.ts; do test -f "$f" && echo "FRAMEWORK: remix"; done
+for f in astro.config.mjs astro.config.ts; do test -f "$f" && echo "FRAMEWORK: astro"; done
+test -f angular.json && echo "FRAMEWORK: angular"
+test -f capacitor.config.ts -o -f capacitor.config.json && echo "FRAMEWORK: capacitor"
+test -f package.json && grep -q '"expo"' package.json 2>/dev/null && echo "FRAMEWORK: expo"
+test -f package.json && grep -q '"react-native"' package.json 2>/dev/null && echo "FRAMEWORK: react-native"
+test -f package.json && grep -q '"express"' package.json 2>/dev/null && echo "FRAMEWORK: express"
+test -f package.json && grep -q '"fastify"' package.json 2>/dev/null && echo "FRAMEWORK: fastify"
+test -f package.json && grep -q '"hono"' package.json 2>/dev/null && echo "FRAMEWORK: hono"
+test -f package.json && grep -q '"koa"' package.json 2>/dev/null && echo "FRAMEWORK: koa"
+
+# Python frameworks
+test -f manage.py && echo "FRAMEWORK: django"
+test -f package.json 2>/dev/null || {
+  grep -q "fastapi" requirements.txt pyproject.toml 2>/dev/null && echo "FRAMEWORK: fastapi"
+  grep -q "flask" requirements.txt pyproject.toml 2>/dev/null && echo "FRAMEWORK: flask"
+}
+
+# Ruby
+test -f Gemfile && grep -q "rails" Gemfile 2>/dev/null && echo "FRAMEWORK: rails"
+
+# Go
+test -f go.mod && {
+  grep -q "echo" go.mod 2>/dev/null && echo "FRAMEWORK: echo"
+  grep -q "gin" go.mod 2>/dev/null && echo "FRAMEWORK: gin"
+  grep -q "fiber" go.mod 2>/dev/null && echo "FRAMEWORK: fiber"
+  test -d cmd && echo "FRAMEWORK: go-cli"
+}
+
+# Rust
+test -f Cargo.toml && {
+  grep -q "axum" Cargo.toml 2>/dev/null && echo "FRAMEWORK: axum"
+  grep -q "actix" Cargo.toml 2>/dev/null && echo "FRAMEWORK: actix"
+  grep -q "clap" Cargo.toml 2>/dev/null && echo "FRAMEWORK: clap-cli"
+}
+
+# Java/Kotlin
+test -f pom.xml && grep -q "spring" pom.xml 2>/dev/null && echo "FRAMEWORK: spring"
+test -f build.gradle && grep -q "spring" build.gradle 2>/dev/null && echo "FRAMEWORK: spring"
+test -f build.gradle.kts && grep -q "ktor" build.gradle.kts 2>/dev/null && echo "FRAMEWORK: ktor"
+
+echo "=== DIRECTORY STRUCTURE ==="
+for d in src lib app pkg cmd internal server pages routes components api models controllers handlers views services middleware stores hooks screens navigation prisma drizzle supabase ios android; do
+  test -d "$d" && echo "DIR: $d/"
 done
+# Also check one level down in src/ and app/
+for parent in src app; do
+  if test -d "$parent"; then
+    for d in "$parent"/*/; do
+      test -d "$d" && echo "DIR: $d"
+    done
+  fi
+done 2>/dev/null
+
 echo "=== DONE ==="
 ```
 
-Then present options based on what's found and the project profile (from `project.profile` in config):
+---
 
-> "Review sectors divide your codebase into zones for parallel review. Here's what I see in your project:
+#### Step 2 — Recommend sectors based on framework
+
+Use the detected framework to recommend sectors. Each framework has established conventions for how code is organized — sectors should follow these conventions, not fight them.
+
+**JavaScript/TypeScript Web Frameworks:**
+
+| Framework | Sectors |
+|-----------|---------|
+| **Next.js (App Router)** | Pages & Layouts (`app/**/page.tsx`, `app/**/layout.tsx`), API Routes (`app/api/**`), Components (`src/components/**`, `components/**`), Data & State (`src/lib/**`, `src/hooks/**`, `src/stores/**`), Config & Middleware (`middleware.ts`, `next.config.*`) |
+| **Next.js (Pages Router)** | Pages (`pages/**`, excluding `pages/api/`), API Routes (`pages/api/**`), Components (`src/components/**`, `components/**`), Data & State (`src/lib/**`, `src/hooks/**`, `src/stores/**`), Config (`next.config.*`) |
+| **Nuxt** | Pages (`pages/**`), Components (`components/**`), Composables & State (`composables/**`, `stores/**`), Server (`server/**`), Plugins & Config (`plugins/**`, `nuxt.config.*`) |
+| **SvelteKit** | Routes (`src/routes/**`), Components (`src/lib/components/**`), Library (`src/lib/**` excluding components), Server (`src/hooks.*`, `src/routes/**/+server.*`) |
+| **Remix** | Routes (`app/routes/**`), Components (`app/components/**`), Models & Data (`app/models/**`, `app/utils/**`), Server (`app/entry.server.*`, `app/root.*`) |
+| **Angular** | Feature Modules (`src/app/features/**` or `src/app/<feature>/`), Shared (`src/app/shared/**`), Core Services (`src/app/core/**`), Routing (`src/app/app-routing.*`, `src/app/*-routing.*`) |
+| **Astro** | Pages (`src/pages/**`), Components (`src/components/**`), Layouts (`src/layouts/**`), Content (`src/content/**`) |
+
+**React/Vue SPA (no meta-framework):**
+
+| Framework | Sectors |
+|-----------|---------|
+| **React + Vite/CRA** | Components (`src/components/**`), Pages & Routing (`src/pages/**`, `src/routes/**`), State & Hooks (`src/hooks/**`, `src/stores/**`, `src/context/**`), Services & API (`src/services/**`, `src/api/**`), Utilities (`src/utils/**`, `src/lib/**`) |
+| **Vue + Vite** | Components (`src/components/**`), Views & Routing (`src/views/**`, `src/router/**`), Composables & Stores (`src/composables/**`, `src/stores/**`), Services (`src/services/**`, `src/api/**`), Utilities (`src/utils/**`) |
+
+**Mobile:**
+
+| Framework | Sectors |
+|-----------|---------|
+| **React Native / Expo** | Screens & Navigation (`src/screens/**`, `src/navigation/**`, `app/(tabs)/**`), Components (`src/components/**`), State & Services (`src/hooks/**`, `src/stores/**`, `src/services/**`, `src/api/**`), Native & Platform (`ios/**`, `android/**`, `src/native/**`) |
+| **Capacitor (web + native)** | Shared UI (`src/components/**`), Pages (`src/pages/**`, `src/routes/**`), Platform Bridge (`src/native/**`, `src/platform/**`, `capacitor.config.*`), State & Services (`src/hooks/**`, `src/stores/**`, `src/services/**`), Native Projects (`ios/**`, `android/**`) |
+
+**Node.js API:**
+
+| Framework | Sectors |
+|-----------|---------|
+| **Express / Fastify / Koa / Hono** | Routes & Controllers (`src/routes/**`, `src/controllers/**`, `routes/**`), Middleware (`src/middleware/**`, `middleware/**`), Models & Data (`src/models/**`, `src/db/**`, `prisma/**`, `drizzle/**`), Services & Logic (`src/services/**`, `src/utils/**`), Config & Entry (`src/config/**`, `src/app.*`, `src/index.*`) |
+
+**Python:**
+
+| Framework | Sectors |
+|-----------|---------|
+| **Django** | Per-app: each Django app (`<app>/models.py`, `<app>/views.py`, `<app>/urls.py`, `<app>/serializers.py`, `<app>/admin.py`) is one sector. Plus a shared sector for `settings.py`, `urls.py`, templates, static. Detect apps by looking for directories containing `models.py`. |
+| **FastAPI** | Routers (`app/routers/**`, `app/api/**`), Models & Schemas (`app/models/**`, `app/schemas/**`), Services (`app/services/**`, `app/crud/**`), Config & Dependencies (`app/core/**`, `app/deps.*`, `app/config.*`) |
+| **Flask** | Blueprints (`app/blueprints/**`, `app/routes/**`, `app/views/**`), Models (`app/models/**`), Services (`app/services/**`), Config & Extensions (`app/config.*`, `app/extensions.*`) |
+
+**Go:**
+
+| Framework | Sectors |
+|-----------|---------|
+| **Go standard (cmd/ + internal/)** | Commands (`cmd/**`), Internal packages (`internal/**` — one sector per major package or group), Public API (`pkg/**`) |
+| **Echo / Gin / Fiber** | Handlers (`handlers/**`, `api/**`), Middleware (`middleware/**`), Models & DB (`models/**`, `db/**`, `repository/**`), Services (`services/**`, `pkg/**`) |
+
+**Rust:**
+
+| Framework | Sectors |
+|-----------|---------|
+| **Axum / Actix** | Handlers (`src/handlers/**`, `src/routes/**`), Models (`src/models/**`, `src/db/**`), Middleware & Extractors (`src/middleware/**`, `src/extractors/**`), Services (`src/services/**`) |
+| **Clap CLI** | Commands (`src/commands/**`, `src/cli/**`), Core Logic (`src/lib.rs`, `src/core/**`), I/O (`src/output/**`, `src/input/**`) |
+
+**Ruby:**
+
+| Framework | Sectors |
+|-----------|---------|
+| **Rails** | Models & DB (`app/models/**`, `db/**`), Controllers & Routes (`app/controllers/**`, `config/routes.rb`), Views & Assets (`app/views/**`, `app/assets/**`, `app/javascript/**`), Services & Jobs (`app/services/**`, `app/jobs/**`, `app/mailers/**`), Config & Lib (`config/**`, `lib/**`) |
+
+**Java/Kotlin:**
+
+| Framework | Sectors |
+|-----------|---------|
+| **Spring Boot** | Controllers (`**/controllers/**`, `**/rest/**`), Services (`**/services/**`, `**/service/**`), Repositories & Models (`**/repositories/**`, `**/models/**`, `**/entities/**`), Config & Security (`**/config/**`, `**/security/**`) |
+| **Ktor** | Routes (`**/routes/**`, `**/plugins/**`), Models (`**/models/**`), Services (`**/services/**`), Config (`**/config/**`, `application.conf`) |
+
+---
+
+#### Step 3 — Present recommendations
+
+> "Based on your project, I detect **[framework]**. Here's how [framework] projects typically organize code, and how I'd split that into review sectors:
 >
-> [show directory structure summary]
+> [show recommended sectors with paths that actually exist]
 >
-> I'd recommend these sectors for a [profile] project:
->
-> [show recommended sectors based on profile + actual directories]
+> Each sector gets its own review agent running in parallel during `/pipeline:audit`. The synthesis agent then looks for cross-sector issues (e.g., a route handler that bypasses the auth middleware).
 >
 > Options:
 > 1. **Use these recommendations** (you can adjust later)
-> 2. **Auto-generate from directory structure** — one sector per top-level dir
+> 2. **Auto-generate from directory structure** — one sector per top-level dir (simpler, less targeted)
 > 3. **I'll define my own** — specify names, IDs, and path globs
 > 4. **Skip for now** — audit will fall back to a flat review"
 
-**Profile-based sector templates** (adapt paths to match what actually exists):
+**Important:** Only include sectors whose paths actually exist in the project. If the framework template says "Middleware (`src/middleware/**`)" but that directory doesn't exist, drop it. If only 2 out of 5 recommended sectors match real directories, that's fine — recommend those 2 and note which ones will become relevant as the project grows.
 
-| Profile | Sectors |
-|---------|---------|
-| SPA | UI Components (`src/components/**`), Pages & Routing (`src/pages/**`, `src/routes/**`), State & Data (`src/hooks/**`, `src/stores/**`, `src/services/**`, `src/api/**`), Utilities & Config (`src/utils/**`, `src/lib/**`, `src/config/**`) |
-| Full-stack | Frontend UI (`src/components/**`, `app/components/**`), API & Server (`src/api/**`, `src/server/**`, `app/api/**`), Data & Models (`src/models/**`, `src/db/**`, `prisma/**`), Auth & Security (`src/auth/**`, `src/middleware/**`), Shared & Config (`src/utils/**`, `src/lib/**`) |
-| Mobile | Screens & Navigation (`src/screens/**`, `src/navigation/**`), Components (`src/components/**`), State & Services (`src/hooks/**`, `src/stores/**`, `src/services/**`), Native & Platform (`src/native/**`, `ios/**`, `android/**`) |
-| Mobile + Web | Shared UI (`src/components/**`), Pages & Navigation (`src/pages/**`, `src/screens/**`), Platform Specific (`src/native/**`, `ios/**`, `android/**`), State & Services (`src/hooks/**`, `src/stores/**`, `src/services/**`) |
-| API | Routes & Controllers (`src/routes/**`, `src/controllers/**`, `src/handlers/**`), Models & Data (`src/models/**`, `src/db/**`), Middleware & Auth (`src/middleware/**`, `src/auth/**`), Services & Logic (`src/services/**`, `src/utils/**`) |
-| CLI | Commands (`src/commands/**`, `src/cli/**`), Core Logic (`src/lib/**`, `src/core/**`), I/O & Config (`src/config/**`, `src/output/**`) |
-| Library | Public API (`src/index.*`, `src/exports/**`), Core Implementation (`src/core/**`, `src/lib/**`), Utilities (`src/utils/**`, `src/helpers/**`) |
+If no framework is detected, fall back to a generic directory-based split: one sector per top-level directory under `routing.source_dirs`.
 
-When recommending, only include sectors whose paths actually exist in the project. Drop sectors that would match zero files.
+---
 
-**Existing sectors configured:**
+#### Existing sectors configured
+
+If sectors already exist, show them and offer modifications:
 
 ```
 Current review sectors:
@@ -206,10 +327,11 @@ Current review sectors:
   B: Core Features — src/features/**
 
 Options:
-1. Auto-generate from current directory structure
-2. Add a sector
-3. Remove a sector
-4. Replace all with profile recommendations
+1. Auto-generate from directory structure
+2. Regenerate from framework conventions
+3. Add a sector
+4. Remove a sector
+5. Replace all
 ```
 
 For auto-generate: scan source directories, create one sector per top-level subdirectory.
