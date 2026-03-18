@@ -13,7 +13,8 @@ the idea. Once you understand what you're building, present the design and get u
 <HARD-GATE>
 Do NOT invoke any implementation skill, write any code, scaffold any project, or take any
 implementation action until you have presented a design and the user has approved it.
-This applies to EVERY project regardless of perceived simplicity.
+This applies to EVERY project regardless of perceived simplicity. No exceptions. No rationalizations.
+"It's simple enough to just build" is NEVER true — design first, always.
 </HARD-GATE>
 
 ## Checklist
@@ -53,6 +54,7 @@ Even after acceptance, decide per question: use browser for visual content (mock
 
 **Exploring approaches:**
 - Propose 2-3 different approaches with trade-offs
+- Each approach MUST include a confidence assessment: how confident are you that this approach will work? HIGH/MEDIUM/LOW with reasoning
 - Lead with your recommended option and explain why
 
 **Presenting the design:**
@@ -65,7 +67,7 @@ Even after acceptance, decide per question: use browser for visual content (mock
 
 **Security evaluation:**
 - Read `security[]` from pipeline.yml
-- For each check, answer whether this design is affected
+- For each check, answer whether this design is affected — each item MUST have a confidence level (HIGH/MEDIUM/LOW)
 - Flag any security concern in the design
 
 **Design for isolation and clarity:**

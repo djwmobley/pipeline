@@ -53,9 +53,10 @@ Complete each phase before proceeding to the next.
 ### Phase 3: Hypothesis and Testing
 
 1. **Form Single Hypothesis** — "I think X is the root cause because Y." Be specific.
+   Rate each hypothesis **HIGH / MEDIUM / LOW** confidence before testing. Test the highest-confidence hypothesis first.
 2. **Test Minimally** — smallest possible change, one variable at a time.
 3. **Verify Before Continuing** — worked → Phase 4. Didn't work → NEW hypothesis.
-   DON'T add more fixes on top.
+   DON'T add more fixes on top. After testing, update confidence. A disproven hypothesis drops to **REJECTED**.
 
 ### Phase 4: Implementation
 
@@ -80,6 +81,7 @@ Complete each phase before proceeding to the next.
 - Proposing solutions before tracing data flow
 - "One more fix attempt" (when already tried 2+)
 - Each fix reveals new problem in different place
+- Implementing a fix based on a LOW confidence hypothesis without testing it first
 
 **ALL mean: STOP. Return to Phase 1.**
 

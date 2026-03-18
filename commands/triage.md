@@ -52,7 +52,7 @@ If the user described a task but hasn't started yet, estimate from the descripti
 ```
 ## Triage
 
-**Change size:** [TINY/MEDIUM/LARGE/MILESTONE]
+**Change size:** [TINY/MEDIUM/LARGE/MILESTONE] **[HIGH/MEDIUM/LOW confidence]**
 **Source files:** N changed, M new
 **Lines:** +N / -M
 **Reason:** [why this classification]
@@ -60,5 +60,7 @@ If the user described a task but hasn't started yet, estimate from the descripti
 **Recommended workflow:**
 [step-by-step workflow for this size]
 ```
+
+If confidence in the size classification is LOW (e.g., the change touches an area with hidden dependencies, or the scope is hard to estimate), recommend the LARGER workflow as a safety measure.
 
 The user can override the classification. If they say "treat this as MEDIUM", follow that workflow instead.

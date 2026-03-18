@@ -12,6 +12,21 @@ Never flag intentional architectural decisions listed in `review.non_negotiable[
 
 **Core principle:** Evidence-based findings with actionable fixes. No praise. No rubber-stamping.
 
+<ADVERSARIAL-MANDATE>
+Every review MUST produce at least one finding OR an explicit "Clean Review Certificate" that lists:
+- What was checked (each criterion)
+- Why no issues were found (specific evidence, not "looks good")
+- What the riskiest part of the change is and why it's acceptable
+
+An empty review with no findings and no certificate is a FAILED review. Start over.
+If you catch yourself thinking "this looks fine" — that thought is a red flag. Read the code again.
+</ADVERSARIAL-MANDATE>
+
+**Confidence Levels:** Every finding MUST include a confidence level.
+- **HIGH** — You verified the issue exists in the code (traced the execution path, confirmed the type, read the call site)
+- **MEDIUM** — Strong inference from patterns, but not fully traced (e.g., likely null but didn't confirm all callers)
+- **LOW** — Possible issue based on common pitfalls, but not verified in this specific code
+
 ## The Process
 
 1. Load non-negotiable decisions from `review.non_negotiable[]` in pipeline.yml
@@ -26,13 +41,16 @@ Never flag intentional architectural decisions listed in `review.non_negotiable[
 **🔴 Must fix** — Will cause bugs, security issues, crashes, or data loss in production.
 Includes: type errors, unhandled rejections on user actions, security vulnerabilities,
 access control gaps, null dereferences on reachable paths.
+**Confidence requirement: HIGH only.** You MUST have verified the bug or vulnerability exists. If you cannot trace the execution path to confirm, downgrade to 🟡.
 
 **🟡 Should fix** — Quality issues that degrade maintainability or user experience.
 Includes: dead code, unused imports, UX clarity issues, premature abstractions,
 SOLID violations that manifest as real problems.
+**Confidence requirement: HIGH or MEDIUM.** You MUST have strong evidence. If your reasoning is "this might be a problem," downgrade to 🔵.
 
 **🔵 Consider** — Suggestions that would improve the code but are not problems.
 Includes: alternative approaches, performance optimizations, readability improvements.
+**Any confidence level accepted, but you MUST state it.** A LOW confidence 🔵 is valid; an unstated confidence is not.
 
 ## Non-Negotiable Filtering
 

@@ -28,10 +28,22 @@ Task tool (general-purpose, model: {{MODEL}}):
 
     Only flag issues that would cause real problems during implementation. Approve unless there are serious gaps.
 
+    ## Implementation Readiness Check
+
+    Every requirement in the spec MUST map to at least one task. If any requirement is not covered,
+    this is a HIGH confidence 🔴 finding. No exceptions.
+
+    Every task MUST name specific files to create or modify. A task that says "update the API" without
+    naming files FAILS the readiness check — flag as 🟡 HIGH confidence.
+
+    You MUST find at least one issue or identify the riskiest assumption in the plan. A review with
+    zero findings is a FAILED review — start over and look harder.
+
     ## Output
 
     **Status:** Approved | Issues Found
-    **Issues (if any):** [Task X, Step Y]: [issue] - [why it matters]
+    **Issues (if any):** [Task X, Step Y]: [HIGH/MEDIUM/LOW] [issue] - [why it matters]
+    **Readiness:** All requirements covered | ❌ Missing coverage for: [list]
     **Recommendations (advisory):** [suggestions]
 
 ## Plan Content

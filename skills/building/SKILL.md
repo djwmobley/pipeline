@@ -57,14 +57,14 @@ Task complexity signals:
 
 ## Handling Implementer Status
 
-**DONE:** Proceed to post-task review.
+**DONE:** Treat as MEDIUM confidence until the post-task reviewer verifies (then HIGH). Proceed to post-task review.
 
 **DONE_WITH_CONCERNS:** Read concerns. Address correctness/scope issues before review.
 Note observations and proceed.
 
-**NEEDS_CONTEXT:** Provide missing context and re-dispatch.
+**NEEDS_CONTEXT:** Always HIGH confidence — the agent knows what it doesn't know. Provide missing context and re-dispatch.
 
-**BLOCKED:** Assess:
+**BLOCKED:** Always HIGH confidence — the agent has identified a real obstacle. Assess:
 1. Context problem → provide more context, re-dispatch
 2. Needs more reasoning → re-dispatch with more capable model
 3. Task too large → break into smaller pieces
@@ -87,6 +87,8 @@ Note observations and proceed.
 - Skip scene-setting context
 - Accept "close enough" on spec compliance
 - Move to next task while review has open issues
+
+**TDD routing:** If the plan marks a task as `tdd: required`, include the TDD skill (`skills/tdd/SKILL.md`) content in the implementer's prompt. Do not include TDD content for tasks not marked `tdd: required`.
 
 **If subagent asks questions:** Answer clearly and completely before proceeding.
 

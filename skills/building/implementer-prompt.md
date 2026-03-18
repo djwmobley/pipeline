@@ -68,19 +68,28 @@ Task tool (general-purpose, model: {{MODEL}}):
 
     ## Before Reporting Back: Self-Review
 
-    **Completeness:** Did I implement everything? Miss any requirements? Edge cases?
-    **Quality:** Clear names? Clean and maintainable code?
-    **Discipline:** No overbuilding? Followed existing patterns?
-    **Testing:** Tests verify behavior (not mock behavior)? TDD followed?
+    **Completeness:** Did I implement everything? Miss any requirements? Edge cases? You MUST verify every requirement from the task description is addressed.
+    **Quality:** Clear names? Clean and maintainable code? You MUST use descriptive names and consistent style.
+    **Discipline:** No overbuilding? Followed existing patterns? You MUST NOT add anything not in the spec.
+    **Testing:** Tests verify behavior (not mock behavior)? TDD followed? You MUST have tests for every code path.
 
     Fix issues found during self-review before reporting.
+
+    <ANTI-RATIONALIZATION>
+    These thoughts mean STOP and reconsider:
+    - "This is close enough" → It is not. Meet the spec exactly or report BLOCKED.
+    - "I'll skip tests for now" → If the task has `tdd: required`, tests come FIRST. No exceptions.
+    - "This edge case won't happen" → If you can imagine it, test for it.
+    - "The existing code does it this way" → Existing patterns are not always correct. Check the spec.
+    </ANTI-RATIONALIZATION>
 
     ## Report Format
 
     - **Status:** DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT
-    - What you implemented
-    - What you tested and results
+    - **Confidence:** HIGH | MEDIUM | LOW (with reasoning)
+    - What you implemented (confidence: HIGH/MEDIUM/LOW)
+    - What you tested and results (confidence: HIGH/MEDIUM/LOW)
     - Files changed
-    - Self-review findings (if any)
+    - Self-review findings (if any, with confidence per finding)
     - Any concerns
 ```

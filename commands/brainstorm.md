@@ -20,6 +20,18 @@ If no config file exists, report: "No `.claude/pipeline.yml` found. Run `/pipeli
 
 Follow the brainstorming skill exactly. Pass the config values to each step that needs them.
 
+**Decision lock check:** Before proposing approaches, check for locked decisions:
+
+**Postgres tier:**
+```bash
+node $SCRIPTS_DIR/pipeline-db.js query "SELECT topic, decision FROM decisions WHERE status = 'locked' ORDER BY created_at DESC LIMIT 20"
+```
+
+**Files tier:** Read `DECISIONS.md` from the project root if it exists.
+
+Locked decisions are constraints, not suggestions. You MUST NOT propose alternatives to locked decisions. If a locked decision conflicts with the current task, flag it explicitly:
+> "Warning: Locked decision [topic] constrains this design: [decision]. Working within this constraint."
+
 <HARD-GATE>
 Do NOT write any code or take any implementation action until the design is approved.
 </HARD-GATE>

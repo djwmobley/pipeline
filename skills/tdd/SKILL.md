@@ -11,6 +11,25 @@ Write the test first. Watch it fail. Write minimal code to pass.
 
 **Core principle:** If you didn't watch the test fail, you don't know if it tests the right thing.
 
+## When TDD applies
+
+TDD is **required** when a plan task is marked `tdd: required`. This includes:
+- Business logic and state machines
+- Data transformations and validation
+- Algorithm implementations
+- API endpoint handlers with conditional logic
+
+TDD is **optional** (but encouraged) for:
+- UI layout and styling
+- Configuration changes
+- Scaffolding and boilerplate
+- Database migrations
+- Static content
+
+When TDD is optional, tests SHOULD still be written — but they may be written after implementation rather than before.
+
+The Iron Law below applies in full force when TDD is required. When TDD is optional, the developer chooses their approach.
+
 ## The Iron Law
 
 ```

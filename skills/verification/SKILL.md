@@ -62,4 +62,11 @@ Skip any step = lying, not verifying
 - Moving to next task
 - Delegating to agents
 
+## Confidence Levels for Verification Evidence
+
+Verification evidence MUST include a confidence level:
+- **HIGH** — "Tests pass" (for tested behavior), "Build succeeds with exit 0"
+- **MEDIUM** — "Looks correct in code review", "Manual spot-check confirms"
+- **LOW** — "Should work based on the change" — this is NOT verification. It is speculation. Do not claim completion based on LOW confidence evidence.
+
 **The Bottom Line:** Run the command. Read the output. THEN claim the result. Non-negotiable.

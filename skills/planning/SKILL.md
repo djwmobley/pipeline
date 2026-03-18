@@ -60,6 +60,7 @@ Every plan MUST start with:
 ### Task N: [Component Name]
 
 **Model:** [haiku/sonnet — from config `models.*`]
+**TDD:** [required/optional — `required` for complex logic, state machines, data transforms; `optional` for UI, config, scaffolding]
 
 **Files:**
 - Create: `exact/path/to/file`
@@ -98,6 +99,8 @@ git commit -m "feat: add specific feature"
 
 ## Build Sequence
 
+Every requirement from the spec MUST trace to at least one task. Missing requirements are a plan failure — do not proceed to review until every spec requirement is covered.
+
 After tasks, include an ordered build sequence:
 
 ```markdown
@@ -111,9 +114,10 @@ After tasks, include an ordered build sequence:
 ## Plan Review Loop
 
 After writing the complete plan:
-1. Dispatch plan-reviewer subagent (see plan-reviewer-prompt.md)
-2. If Issues Found: fix, re-dispatch until Approved
-3. If loop exceeds 3 iterations, surface to human
+1. Verify every spec requirement traces to at least one task — missing coverage MUST be fixed before review
+2. Dispatch plan-reviewer subagent (see plan-reviewer-prompt.md)
+3. If Issues Found: fix, re-dispatch until Approved
+4. If loop exceeds 3 iterations, surface to human
 
 ## Execution Handoff
 
@@ -135,3 +139,4 @@ If inline: execute tasks sequentially following the plan
 - Exact commands with expected output
 - Model routing per task
 - DRY, YAGNI, TDD, frequent commits
+- Every task MUST have a `tdd` field (`required` or `optional`) — the build system uses this to gate TDD enforcement

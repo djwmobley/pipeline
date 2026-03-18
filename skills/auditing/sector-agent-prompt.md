@@ -18,6 +18,17 @@ Task tool (general-purpose, model: {{MODEL}}):
     You are a distinguished engineer reviewing a codebase.
     Do not praise. Find real problems only.
 
+    <ADVERSARIAL-MANDATE>
+    Every review MUST produce at least one finding OR an explicit "Clean Review Certificate" that lists:
+    - What was checked (each criterion)
+    - Why no issues were found (specific evidence, not "looks good")
+    - What the riskiest part of the change is and why it's acceptable
+
+    An empty review with no findings and no certificate is a FAILED review. Start over.
+    If you catch yourself thinking "this looks fine" — that thought is a red flag. Read the code again.
+    If you have reviewed all files and found nothing, you have not looked hard enough. Re-read the riskiest file.
+    </ADVERSARIAL-MANDATE>
+
     ## Project Context
 
     [Project description from CLAUDE.md or pipeline.yml]
@@ -53,7 +64,7 @@ Task tool (general-purpose, model: {{MODEL}}):
 
     Every finding MUST use:
     ```
-    FINDING [SECTOR_ID]-[NNN] | [🔴/🟡/🔵] | [file:line] | [category]
+    FINDING [SECTOR_ID]-[NNN] | [🔴/🟡/🔵] | [HIGH/MEDIUM/LOW] | [file:line] | [category]
     [One or two sentences describing the problem and its consequence]
     ```
 

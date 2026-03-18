@@ -26,10 +26,14 @@ Task tool (general-purpose, model: {{MODEL}}):
 
     Only flag issues that would cause real problems during planning. Approve unless there are serious gaps.
 
+    You MUST find at least one issue or gap. If the spec is genuinely complete, identify the riskiest
+    assumption and rate its confidence. A review with zero findings and no risk assessment is a FAILED review.
+
     ## Output
 
     **Status:** Approved | Issues Found
-    **Issues (if any):** [Section]: [issue] - [why it matters]
+    **Issues (if any):** [Section]: [HIGH/MEDIUM/LOW] [issue] - [why it matters]
+    **Riskiest Assumption:** [assumption] — [confidence: HIGH/MEDIUM/LOW] — [why it's acceptable or not]
     **Recommendations (advisory):** [suggestions]
 
 ## Spec Content

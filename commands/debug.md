@@ -42,7 +42,9 @@ Then follow the debugging skill's 4-phase protocol. **Critical: if 3+ fix attemp
 ## Debug Summary
 
 **Error class:** [Build/Runtime/Network/Test/Environment]
-**Root cause:** [one sentence]
+**Root cause:** [one sentence] **[HIGH/MEDIUM/LOW confidence]**
 **Fix applied:** [file:line — what changed]
 **Verified:** [verification command run + output confirming the fix — e.g., "npx vitest run: 42 passing, 0 failing"]
+
+If confidence in the root cause is LOW, do NOT implement a fix. Report the uncertainty and gather more evidence.
 ```

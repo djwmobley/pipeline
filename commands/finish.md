@@ -19,6 +19,15 @@ Tests failing (N failures). Must fix before completing:
 
 Cannot proceed with merge/PR until tests pass.
 ```
+
+You MUST NOT present merge/PR options until tests pass. If tests fail, the ONLY option is: fix the failures.
+
+| Rationalization | Reality |
+|---|---|
+| "The failing test is unrelated" | ALL tests MUST pass. No exceptions. |
+| "It was already failing before my change" | Then fix it or revert your change. No merge with red tests. |
+| "I'll fix it in a follow-up" | There is no follow-up. Fix it now. |
+
 Stop. Don't proceed to Step 2.
 
 If tests pass: continue.

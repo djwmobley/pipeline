@@ -66,17 +66,19 @@ Agents follow this to minimize tokens:
 - Render/return blocks of page components
 - Skip files where Pass 1 finds no hits and imports are clean
 
+After Pass 2, rate your confidence in each finding. If you haven't read the relevant code, confidence MUST NOT be HIGH.
+
 ## Structured Output Format
 
 Every finding uses:
 ```
-FINDING [SECTOR]-[NNN] | [🔴/🟡/🔵] | [file:line] | [category]
+FINDING [SECTOR]-[NNN] | [🔴/🟡/🔵] | [HIGH/MEDIUM/LOW] | [file:line] | [category]
 [Description of problem and consequence]
 ```
 
 ## Cross-Reference Manifest
 
-Each sector agent appends:
+Each sector agent appends (mark each cross-reference with **HIGH/MEDIUM/LOW** confidence):
 - Symbols called from outside the sector
 - Symbols defined that other sectors call
 - Framework-specific keys used (i18n, localStorage, etc.)

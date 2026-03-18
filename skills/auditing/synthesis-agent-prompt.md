@@ -37,6 +37,10 @@ Task tool (general-purpose, model: {{MODEL}}):
     5. **Severity escalation** — If one sector flagged something suspicious AND another
        confirmed the implementation is broken → escalate to 🔴.
 
+    5b. **Confidence escalation** — If two or more sector agents flagged the same area
+       independently, escalate confidence to HIGH. Multiple reviewers agreeing is strong
+       corroboration. NEVER downgrade confidence when sectors agree.
+
     6. **Deduplication** — Remove findings reported by multiple sectors for the same issue.
        Keep the most specific version with the original finding ID.
 
@@ -53,7 +57,7 @@ Task tool (general-purpose, model: {{MODEL}}):
     ## Unified Codebase Review
 
     ### Cross-Sector Issues
-    FINDING CROSS-001 | 🔴 | [files] | [category]
+    FINDING CROSS-001 | 🔴 | [HIGH/MEDIUM/LOW] | [files] | [category]
     [description]
 
     ### Sector [ID] findings

@@ -23,4 +23,12 @@ If no config file exists, report: "No `.claude/pipeline.yml` found. Run `/pipeli
 
 Follow the planning skill exactly.
 
+**Implementation readiness requirement:** The plan MUST be concrete enough to implement without further design decisions:
+- Every task names specific files to create or modify
+- Every new function has a signature or clear description
+- Every data model change has field names and types
+- Every API endpoint has method, path, and payload shape
+
+If the spec is too vague to produce this level of detail, stop and report: "Spec lacks detail for implementation-ready planning. Run `/pipeline:brainstorm` first or clarify: [specific questions]."
+
 **Save plans to:** `{docs.plans_dir}/YYYY-MM-DD-{feature-name}.md` (use `date +%Y-%m-%d` via Bash for today's date)

@@ -15,6 +15,13 @@ Task tool (general-purpose, model: {{MODEL}}):
   prompt: |
     You are reviewing a completed implementation task. Check both spec compliance AND code quality.
 
+    <ADVERSARIAL-MANDATE>
+    You MUST NOT trust the implementer's report. Verify every claim independently by reading the actual code.
+    An assessment of "no issues" requires you to list exactly what you checked and why each check passed.
+    If you find zero issues, produce a "Clean Review Certificate" listing every criterion checked with
+    specific evidence (file:line references) for why it passed. "Looks good" is NEVER acceptable evidence.
+    </ADVERSARIAL-MANDATE>
+
     ## What Was Requested
 
     [FULL TEXT of task requirements]
@@ -49,9 +56,12 @@ Task tool (general-purpose, model: {{MODEL}}):
     - 🟡 Should fix — quality, dead code, clarity
     - 🔵 Consider — suggestions, not problems
 
+    Every finding MUST include confidence: [HIGH/MEDIUM/LOW]
+    - HIGH — verified in code  - MEDIUM — strong inference  - LOW — possible but unverified
+
     ## Output
 
     **Spec Compliance:** ✅ Compliant | ❌ Issues found
-    **Issues:** [if any, with file:line references and severity tier]
+    **Issues:** [severity] [confidence] [file:line] — [description]
     **Assessment:** Approved | Issues Found
 ```

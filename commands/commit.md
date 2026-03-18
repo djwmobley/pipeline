@@ -65,10 +65,18 @@ Rules:
 - If total source file count < `routing.review_gate_threshold` → skip this gate.
 - If total ≥ threshold AND arguments contain `reviewed:✓` → proceed.
 - If total ≥ threshold AND NO `reviewed:✓`:
-  - **DO NOT COMMIT. STOP IMMEDIATELY.**
-  - Report: "BLOCKED — N source files changed. /pipeline:review is required before committing.
-    Run /pipeline:review, apply all 🔴 fixes, then call /pipeline:commit reviewed:✓"
-  - Do not run any further checks. Exit.
+
+<HARD-STOP>
+DO NOT COMMIT. DO NOT proceed to any further checks. EXIT NOW.
+
+Report: "BLOCKED — N source files changed. /pipeline:review is required before committing.
+Run /pipeline:review, apply all 🔴 fixes, then call /pipeline:commit reviewed:✓"
+
+These thoughts mean you are rationalizing past the gate:
+- "The changes are simple enough" → The threshold exists for a reason. Respect it.
+- "I already reviewed mentally" → Mental review is not `/pipeline:review`. Run it.
+- "Just this once" → There is no "just this once." The gate is absolute.
+</HARD-STOP>
 
 **3b. Typecheck** (skip if `commands.typecheck` is null)
 
