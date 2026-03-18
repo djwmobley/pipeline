@@ -1,261 +1,121 @@
 # Pipeline
 
-A config-driven development pipeline plugin for Claude Code. Merges size-routed quality gates with systematic TDD, debugging, and structured code review workflows.
+A config-driven development pipeline plugin for [Claude Code](https://docs.anthropic.com/en/docs/claude-code). Routes your work through the right amount of process — from zero-ceremony single-file fixes to full subagent-driven feature builds with parallel code review.
 
-## Who It's For
+## The Idea
 
-Pipeline works for any project — greenfield or established, solo or team. It detects your project profile (web app, mobile, API, CLI, library) from your codebase and configures review criteria, security checklists, and sector templates to match.
+Most AI coding tools treat every change the same. A one-line typo fix gets the same ceremony as a greenfield feature. Pipeline fixes this with **size routing**:
 
-**Starting from scratch?** Init asks what you're building, recommends a starter stack, and routes you to `/pipeline:brainstorm` to design your first feature.
+| Size | Trigger | What Happens |
+|------|---------|--------------|
+| **TINY** | 1 file, <30 lines | read, implement, commit |
+| **MEDIUM** | 2-3 files, known pattern | implement, review, commit |
+| **LARGE** | New feature, multi-file | brainstorm, plan, build (subagents), review, commit |
+| **MILESTONE** | End of feature | full codebase audit (parallel sector agents), fix, commit |
 
-**Existing codebase?** Init infers your profile from dependencies and directory structure, confirms with you, and you're running `/pipeline:commit` in under a minute.
-
-## What It Does
-
-Pipeline routes your work through the right amount of process based on change size:
-
-| Size | Trigger | Process |
-|------|---------|---------|
-| **TINY** | 1 file, <30 lines | read → implement → `/pipeline:commit` |
-| **MEDIUM** | 2-3 files, known pattern | grep → implement → `/pipeline:review` → fix → `/pipeline:commit` |
-| **LARGE** | New feature, multi-file | `/pipeline:brainstorm` → `/pipeline:plan` → `/pipeline:build` → `/pipeline:review` → `/pipeline:commit` |
-| **MILESTONE** | End of feature | `/pipeline:audit` → fix → `/pipeline:commit reviewed:✓` |
-
-## Dependencies
-
-Pipeline has **zero mandatory dependencies** beyond Claude Code itself. Everything else is optional and has a fallback. Init detects what's available and offers to install what it can.
-
-### Required
-
-| Dependency | Why |
-|-----------|-----|
-| **Claude Code** | Pipeline is a Claude Code plugin |
-| **Git** | Commit workflow, change detection, worktrees |
-
-### Optional — auto-installed by init (with your permission)
-
-These are npm packages. Init detects whether you need them, asks before installing, and tells you the manual command if you decline.
-
-| Dependency | What it enables | Fallback without it | Install command |
-|-----------|----------------|--------------------|----|
-| **`pg`** (Node.js) | Postgres knowledge tier — semantic search, structured queries, session tracking | Files tier (markdown-based, works fine for < 10 sessions) | `pnpm install` in plugin scripts dir (plugin uses pnpm regardless of your project's package manager) |
-| **`@playwright/test`** | Automatic screenshot capture for `/pipeline:ui-review` | Chrome DevTools MCP, or provide screenshots manually | `[pkg_manager] add -D @playwright/test && npx playwright install chromium` |
-
-### Optional — system-level (install yourself)
-
-These are system packages or binaries that Pipeline can't install for you. Init detects them and explains what they add.
-
-| Dependency | What it enables | Fallback without it |
-|-----------|----------------|---------------------|
-| **PostgreSQL** | Knowledge tier with semantic search, structured task/decision/gotcha queries, file cache | Files tier — markdown session logs, no search |
-| **Ollama** + `mxbai-embed-large` | Semantic similarity search across sessions and code index | FTS keyword search (still useful, just less precise) |
-| **GitHub CLI** (`gh`) | PR creation from `/pipeline:finish`, issue management | Push branches manually, create PRs in the browser |
-| **Chrome** with `--remote-debugging-port=9222` | Screenshot capture for `/pipeline:ui-review` via Chrome DevTools MCP | Playwright (auto-installable), or provide screenshots manually |
-| **Sentry** (`SENTRY_AUTH_TOKEN` env var) | Auto-pull recent errors in `/pipeline:debug` | Reproduce errors manually — debug still works |
-
-### Package manager detection
-
-Init auto-detects your package manager from lockfiles (`pnpm-lock.yaml` → pnpm, `yarn.lock` → yarn, `bun.lockb` → bun, `package-lock.json` → npm). All generated commands and install operations use whatever it detects. Stored in `project.pkg_manager` in pipeline.yml.
+Everything is driven by a single config file (`.claude/pipeline.yml`) generated during setup. No hardcoded paths, commands, or framework assumptions.
 
 ## Installation
 
 ```bash
-# Add as a custom marketplace
-claude plugin marketplace add djwmobley/pipeline
+# Install the plugin
+claude plugin install pipeline --scope user
 
-# Install the plugin (user-wide)
-claude plugin install pipeline@pipeline --scope user
-
-# Verify
-claude plugin list
-```
-
-**During development:**
-```bash
-# Validate locally without installing
-claude plugin validate ~/dev/pipeline
-```
-
-## Quick Start
-
-```bash
-# 1. In any project directory, run init:
+# In any project directory
 /pipeline:init
-# Answer the prompts — generates .claude/pipeline.yml
-
-# 2. Make a small change, then commit with preflight gates:
-/pipeline:commit
-
-# 3. Before bigger changes, check the recommended workflow:
-/pipeline:triage
-
-# 4. All pipeline commands:
-/pipeline:commit          # Preflight gates + commit + push
-/pipeline:review          # Per-change quality review (🔴/🟡/🔵)
-/pipeline:test            # Structured test report
-/pipeline:triage          # What size is this change?
-/pipeline:brainstorm      # Design before LARGE changes
-/pipeline:audit           # Full codebase review
-/pipeline:debug           # Systematic root-cause diagnosis
 ```
+
+Init detects your project type, tools, and integrations, then generates `.claude/pipeline.yml`. Takes about a minute.
 
 ## Commands
 
-### Core Workflow
-| Command | Description |
-|---------|-------------|
-| `/pipeline:init` | Interactive project setup — generates `.claude/pipeline.yml` |
-| `/pipeline:update` | Update config — re-detect integrations, change commands, sectors, etc. |
-| `/pipeline:update integrations` | Re-probe available tools and update enabled/disabled |
-| `/pipeline:update commands` | Change test/lint/typecheck commands |
-| `/pipeline:update sectors` | Reconfigure review sectors |
-| `/pipeline:update knowledge` | Switch knowledge tier (files ↔ postgres) |
-| `/pipeline:update repo owner/repo` | Set repo directly |
-| `/pipeline:triage` | Assess change size, recommend workflow |
-| `/pipeline:commit` | Run preflight gates (typecheck, lint, test), commit, push |
-| `/pipeline:commit reviewed:✓` | Bypass review gate for reviewed changes |
-| `/pipeline:review` | Per-change quality review with 🔴/🟡/🔵 severity tiers |
-| `/pipeline:test` | Run test suite, produce structured report |
-| `/pipeline:test [pattern]` | Run matching tests only |
+### Everyday
 
-### Design & Planning (LARGE changes)
-| Command | Description |
+| Command | What It Does |
 |---------|-------------|
+| `/pipeline:commit` | Preflight gates (typecheck, lint, test) + commit + push |
+| `/pipeline:review` | Per-change code review with severity tiers (red/yellow/blue) |
+| `/pipeline:test` | Run tests, produce structured pass/fail report |
+| `/pipeline:triage` | Assess change size, recommend workflow |
+
+### Design & Build (LARGE changes)
+
+| Command | What It Does |
+|---------|-------------|
+| `/pipeline:research` | Parallel research agents for technical unknowns |
 | `/pipeline:brainstorm` | Explore requirements, propose approaches, write spec |
 | `/pipeline:plan` | Create implementation plan from spec |
-| `/pipeline:build` | Execute plan with subagent-driven development |
+| `/pipeline:build` | Execute plan — fresh subagent per task with post-task review |
 
 ### Advanced
-| Command | Description |
+
+| Command | What It Does |
 |---------|-------------|
 | `/pipeline:audit` | Full codebase review — parallel sector agents + synthesis |
-| `/pipeline:debug` | Systematic root-cause diagnosis (4 phases) |
+| `/pipeline:debug` | Systematic 4-phase root-cause diagnosis |
 | `/pipeline:simplify` | Targeted simplification of flagged files |
+| `/pipeline:release` | Changelog + version bump + tag + deploy |
 | `/pipeline:ui-review` | Screenshot capture + visual analysis |
-| `/pipeline:worktree` | Create isolated git worktree |
+| `/pipeline:worktree` | Isolated git worktree for feature work |
 | `/pipeline:finish` | Branch completion — merge, PR, keep, or discard |
 
-### Knowledge (session tracking)
+### Setup & Config
 
-Files tier (default — no setup required):
-| Command | Description |
+| Command | What It Does |
 |---------|-------------|
-| `/pipeline:knowledge status` | Recent sessions, gotchas |
-| `/pipeline:knowledge session N T "desc"` | Record session N with T tests |
-| `/pipeline:knowledge gotcha "issue" "rule"` | Add a critical constraint |
-| `/pipeline:knowledge decision "topic" "choice" "reason"` | Record an architectural decision |
+| `/pipeline:init` | Interactive project setup |
+| `/pipeline:update` | Re-detect integrations, change commands, sectors, knowledge tier |
+| `/pipeline:knowledge` | Session tracking, decisions, gotchas, semantic search |
 
-Postgres tier (requires local Postgres — chosen during init):
-| Command | Description |
-|---------|-------------|
-| `/pipeline:knowledge setup` | Create database + all tables (idempotent) |
-| `/pipeline:knowledge status` | Session context — last 3 sessions, open tasks, gotchas |
-| `/pipeline:knowledge session N T "desc"` | Record session N with T tests |
-| `/pipeline:knowledge task new "title"` | Create a task |
-| `/pipeline:knowledge task ID status` | Update task (pending/in_progress/done/deferred) |
-| `/pipeline:knowledge gotcha "issue" "rule"` | Add a critical constraint |
-| `/pipeline:knowledge decision "topic" "choice" "reason"` | Record a decision |
-| `/pipeline:knowledge search "query"` | FTS keyword search over code index |
-| `/pipeline:knowledge hybrid "query"` | FTS + vector hybrid search (best results) |
-| `/pipeline:knowledge index` | Generate embeddings for code index entries |
-| `/pipeline:knowledge add path "desc"` | Add/update a file in the code index |
-| `/pipeline:knowledge check filepath` | Check file cache (HIT/MISS/STALE) |
-| `/pipeline:knowledge query "SQL"` | Run raw SQL |
-| `/pipeline:knowledge export [file]` | Export gotchas + decisions to JSON |
-| `/pipeline:knowledge import <source>` | Preview import from file or another project DB |
-| `/pipeline:knowledge import <source> --all` | Import with duplicate skipping |
+## How It Works
 
-## Configuration
+### Config-Driven
 
-All project-specific config lives in `.claude/pipeline.yml`. Generated by `/pipeline:init`.
+Everything project-specific lives in `.claude/pipeline.yml`:
 
-### Project Profiles
+- **commands** — your typecheck, lint, and test commands (auto-detected from package.json, Cargo.toml, go.mod, pyproject.toml)
+- **routing** — source directories and size thresholds
+- **review** — non-negotiable decisions, grep patterns, sector definitions, criteria
+- **models** — which Claude model handles which job (haiku explores, sonnet implements, opus decides)
+- **knowledge** — session persistence (markdown files or Postgres with semantic search)
+- **integrations** — auto-detected tools (Postgres, Ollama, GitHub CLI, Chrome DevTools, Playwright, Sentry)
 
-During init, Pipeline asks what type of project you're building and configures review criteria, security checklists, and sector templates to match:
+### Quality Gates
 
-| Profile | Review Focus | Example Security Checks |
-|---------|-------------|------------------------|
-| **SPA** | UX, accessibility, framework correctness, performance | HTML sanitization, XSS prevention |
-| **Full-stack** | UX, API design, data integrity, accessibility | HTML sanitization, endpoint auth |
-| **Mobile** | UX, performance, battery impact, accessibility | Secure storage for tokens |
-| **Mobile + Web** | UX, responsive design, performance, accessibility | Secure storage, HTML sanitization |
-| **API** | API design, data integrity, error handling, performance | Rate limiting, input validation, auth |
-| **CLI** | UX, error handling, simplicity | Input validation |
-| **Library** | API design, backwards compatibility, documentation | Boundary type validation |
+`/pipeline:commit` runs preflight checks before every commit:
 
-For greenfield projects, init also recommends starter stacks and routes you to `/pipeline:brainstorm` for your first feature.
+1. **Review gate** — if source files changed >= threshold, require `/pipeline:review` first
+2. **Typecheck** — run your type checker
+3. **Lint** — run your linter, fail on errors
+4. **Tests** — run your test suite, fail on failures
+5. **Stage** — never stages `.env`, `*.key`, `credentials*`, `node_modules/`
+6. **Commit** — conventional commit format with co-author attribution
+7. **Push** — automatic if configured
 
-### Key Sections
+### Adversarial Review
 
-**commands** — Tool commands for quality gates (uses your detected package manager's runner — `pnpm exec`, `npx`, `yarn`, `bunx`):
-```yaml
-commands:
-  typecheck: "pnpm exec tsc --noEmit"  # null to disable
-  lint: "pnpm exec eslint src/"         # null to disable
-  lint_error_pattern: " error "
-  test: "pnpm exec vitest run"
-  test_verbose: "pnpm exec vitest run --reporter=verbose"
-```
+Reviews use an adversarial mandate — every review MUST produce findings OR an explicit "Clean Review Certificate" explaining what was checked and why no issues were found. Empty "looks good" reviews are failed reviews.
 
-**routing** — Size thresholds:
-```yaml
-routing:
-  source_dirs: ["src/"]
-  tiny_max_files: 1
-  tiny_max_lines: 30
-  medium_max_files: 3
-  review_gate_threshold: 3
-```
+Findings include confidence levels (HIGH = verified in code, MEDIUM = strong inference, LOW = possible) and severity tiers:
+- **Red** — bugs, security issues, crashes. Must be HIGH confidence.
+- **Yellow** — quality issues, dead code. HIGH or MEDIUM confidence.
+- **Blue** — suggestions. Any confidence, but must be stated.
 
-**review** — Review configuration:
-```yaml
-review:
-  non_negotiable:
-    - "Supabase client singleton — intentional"
-  phase0_patterns:
-    - { pattern: "console\\.log", label: "console-log" }
-  sectors:
-    - { name: "Auth", id: "A", paths: ["src/auth/**"] }
-  criteria: [ux, dead-code, framework-correctness, security, simplicity, solid]
-```
+### Subagent Architecture
 
-**commit** — Git workflow:
-```yaml
-commit:
-  co_author: "Claude Sonnet 4.6 <noreply@anthropic.com>"
-  never_stage: [".env", "*.key", "credentials*"]
-  push_after_commit: true
-  post_commit_hooks: []    # e.g. ["node $PIPELINE_SCRIPTS/pipeline-embed.js index"]
-```
+For LARGE changes, `/pipeline:build` dispatches a fresh subagent per task. Each agent receives only its task description, relevant file contents, and non-negotiable decisions — no accumulated context. This prevents quality degradation as work progresses.
 
-**models** — Model routing:
-```yaml
-models:
-  cheap: "haiku"           # Doc reviews, screenshot analysis, mechanical tasks
-  explore: "haiku"         # Codebase search, file scanning
-  implement: "sonnet"      # Write code
-  review: "sonnet"         # Code review
-  plan: "sonnet"           # Planning
-  architecture: "opus"     # High-stakes decisions
-```
+Post-task review runs after each implementation, catching issues before they compound. Build records a baseline commit SHA so `/pipeline:review` can diff across all tasks.
 
-**knowledge** — Session persistence:
-```yaml
-knowledge:
-  tier: "files"     # "files" or "postgres"
-```
+### Knowledge Tiers
 
-**integrations** — Tool detection:
-```yaml
-integrations:
-  sentry: { enabled: true, use_in: [debug] }
-  github: { enabled: true, use_in: [commit, finish] }
-  chrome_devtools: { enabled: true, use_in: [ui-review] }
-```
+**Files** (default, zero setup) — session history in `docs/sessions/*.md`, decisions in `DECISIONS.md`, gotchas in `docs/gotchas.md`. Works fine, no search.
 
-## Supported Languages & Frameworks
+**Postgres** (power option) — semantic search across sessions, structured task/decision/gotcha queries, file hash caching, embedding-powered code index. Each project gets its own database. Requires local PostgreSQL; Ollama adds vector search on top of keyword search.
 
-Pipeline auto-detects your project type during `/pipeline:init`:
+## Supported Projects
+
+Pipeline works with any language or framework. Init auto-detects:
 
 | Language | Detection | Default Commands |
 |----------|-----------|-----------------|
@@ -263,103 +123,77 @@ Pipeline auto-detects your project type during `/pipeline:init`:
 | Rust | `Cargo.toml` | cargo test, clippy |
 | Go | `go.mod` | go test, golangci-lint |
 | Python | `pyproject.toml` | pytest, ruff |
-| Java | `pom.xml` / `build.gradle` | mvn test, checkstyle |
 
-Framework-specific review checks are auto-applied (React, Vue, Angular, Svelte).
+Project profiles (SPA, fullstack, mobile, API, CLI, library) configure review criteria and security checklists automatically.
 
-## Knowledge Tiers
+## Dependencies
 
-### Files (default, zero setup)
-- Session history in `docs/sessions/*.md`
-- Decisions in `DECISIONS.md`
-- Gotchas in `docs/gotchas.md`
-- Commands: `status`, `session`, `gotcha`, `decision`
-- No semantic search, no structured queries
-- Good for: small projects, quick setups, < 10 sessions
+**Required:** Claude Code, Git.
 
-### Postgres (power option)
+**Optional (auto-detected by init):**
 
-Full knowledge management system with three scripts:
+| Tool | What It Adds | Fallback |
+|------|-------------|----------|
+| PostgreSQL | Knowledge tier with semantic search | Files tier (markdown) |
+| Ollama + mxbai-embed-large | Vector similarity search | Keyword search |
+| GitHub CLI (`gh`) | PR creation from `/pipeline:finish` | Push + browser |
+| Chrome DevTools / Playwright | Screenshot capture for UI review | Provide screenshots manually |
+| Sentry | Auto-pull errors in `/pipeline:debug` | Reproduce manually |
 
-| Script | Purpose |
-|--------|---------|
-| `pipeline-db.js` | Sessions, tasks, decisions, gotchas, raw SQL |
-| `pipeline-embed.js` | Code index embeddings + semantic/hybrid search |
-| `pipeline-cache.js` | File hash cache + FTS keyword search |
+## Acknowledgments & Attribution
 
-**Project isolation:** Each project gets its own database (`pipeline_<project_name>`), so context never leaks between projects. The DB name is auto-generated from the project name during init.
+Pipeline is a best-of-breed synthesis. It was built by studying three open-source projects, running a structured evaluation (proponent/opponent debate + synthesis + judge), and merging the strongest ideas from each into a new architecture.
 
-**Capabilities:**
-- **Semantic search** — find related work across all past sessions using vector similarity
-- **Hybrid search** — 30% FTS + 70% vector for best-of-both-worlds results
-- **Structured queries** — tasks with status tracking, decisions with rationale, gotchas with rules
-- **File hash cache** — skip re-reading files that haven't changed (SHA256-based)
-- **Code index** — FTS-searchable file descriptions with optional vector embeddings
-- **Session continuity** — numbered sessions with test counts and summaries
-- **Cross-project transfer** — export gotchas and decisions to JSON, import into a new project
+### [Superpowers](https://github.com/obra/superpowers) by Jesse Vincent / Prime Radiant
 
-**Requirements:**
-- PostgreSQL on localhost:5432 (or configured host/port) — **required** for Postgres tier
-- `pg` npm package in pipeline scripts dir — **required**, auto-installed by init with your permission
-- pgvector extension — **optional**, degrades to FTS-only without it
-- Ollama with mxbai-embed-large — **optional**, only needed for semantic search (keyword search still works)
+MIT License
 
-**Setup:**
-```bash
-# 1. Set knowledge tier in pipeline.yml (database auto-generated from project name)
-knowledge:
-  tier: "postgres"
-  database: "pipeline_my_project"  # auto-generated: pipeline_<project_name>
+The foundational influence. Pipeline's skill-based architecture, subagent-driven development pattern, and markdown-as-executable-instruction approach all trace back to Superpowers. Specific contributions:
 
-# 2. Create database and tables
-/pipeline:knowledge setup
+- **Adversarial review mandate** — reviews must find issues or prove code is flawless with evidence
+- **Anti-rationalization patterns** — tables of thoughts that mean "stop, you're rationalizing past a gate"
+- **Persuasion psychology** — imperative language and HARD-STOP blocks that measurably improve LLM compliance
+- **Brainstorming → planning → execution flow** — the multi-phase creative-to-implementation pipeline
+- **Subagent dispatch pattern** — fresh agent per task with post-task review
+- **Worktree isolation** — git worktrees for safe feature development
+- **Branch completion workflow** — structured options for merge, PR, keep, or discard
 
-# 3. (Optional) Install Ollama + embedding model for semantic search
-ollama pull mxbai-embed-large
+### [GSD-2](https://github.com/gsd-build/gsd-2) by gsd-build
 
-# 4. Start using it
-/pipeline:knowledge status
-/pipeline:knowledge hybrid "authentication flow"
-```
+MIT License
 
-**Session protocol (in CLAUDE.md):**
-```markdown
-## Session Protocol
+The research and confidence scoring system. GSD's approach to treating AI training data as hypothesis rather than fact directly shaped Pipeline's research command and confidence requirements. Specific contributions:
 
-**Start:**
-/pipeline:knowledge status
-/pipeline:knowledge hybrid "<what you're doing>"
+- **`/pipeline:research` command** — parallel research agents dispatched before planning, with confidence-scored findings
+- **Confidence levels on all assertions** — HIGH (verified), MEDIUM (inferred), LOW (speculative), applied throughout review, research, and build
+- **Decision locks** — constraints captured during research/planning that cannot be overridden during implementation without explicit unlocking
+- **Fresh context per task** — each subagent starts clean with only its task + files, preventing context rot (GSD calls this "context engineering")
 
-**End (after commit):**
-/pipeline:knowledge index
-/pipeline:knowledge session <N> <test_count> "<summary>"
-```
+### [BMAD Method](https://github.com/bmad-code-org/BMAD-METHOD) by BMad Code, LLC
 
-**Cross-project transfer:**
-```bash
-# Export gotchas + decisions from current project
-/pipeline:knowledge export
+MIT License
 
-# Preview what another project has (dry run)
-/pipeline:knowledge import pipeline_old_project
+The implementation readiness gate. BMAD's insistence that plans must be concrete enough to implement without further design decisions directly influenced Pipeline's planning validation. Specific contributions:
 
-# Actually import (skips duplicates)
-/pipeline:knowledge import pipeline_old_project --all
+- **Implementation readiness requirement** — plans must name specific files, function signatures, data types, and API shapes before execution begins
+- **Scale-adaptive planning** — the insight that planning depth should match project complexity (Pipeline implements this as size routing)
 
-# Or import from a JSON file
-/pipeline:knowledge import ./pipeline-export-old-project.json --all
-```
+### What Pipeline Added
 
-What transfers well: gotchas ("never do X") and decisions (architectural choices). What doesn't: sessions, code index, tasks, file cache — these are too project-specific.
+The original contributions that don't trace to the above sources:
 
-## Design Philosophy
-
-1. **Config over convention** — everything project-specific lives in `pipeline.yml`
-2. **Size routing is the differentiator** — skip ceremony for small changes
-3. **Severity tiers** — 🔴/🟡/🔵 is strictly better than single-tier review
-4. **TDD and verification are principles** — embedded in build/commit, not hard gates
-5. **Non-negotiable respect** — never flag intentional architectural decisions
+- **Size routing** — TINY/MEDIUM/LARGE/MILESTONE classification that determines how much process to apply
+- **Model routing** — automatic assignment of haiku/sonnet/opus based on task complexity
+- **Config-driven everything** — single `pipeline.yml` replaces all hardcoded assumptions
+- **Commit preflight gates** — typecheck → lint → test → review gate chain with configurable thresholds
+- **Parallel sector audit** — codebase split into sectors for parallel review with cross-sector synthesis
+- **Phase 0 grep preprocessing** — configurable pattern scanning before review agents dispatch
+- **Severity tiers with confidence requirements** — red/yellow/blue with mandatory confidence levels per tier
+- **Knowledge tiers** — files (zero setup) or Postgres (semantic search), with cross-project transfer
+- **Project profile system** — auto-detection of project type with profile-specific review criteria and security checklists
+- **Integration detection** — runtime probing for available tools with graceful fallbacks
+- **Release pipeline** — changelog generation, version bumping, tagging across package ecosystems
 
 ## License
 
-MIT
+MIT — see [LICENSE](LICENSE).
