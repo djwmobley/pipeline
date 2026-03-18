@@ -125,6 +125,9 @@ Postgres tier (requires local Postgres — chosen during init):
 | `/pipeline:knowledge add path "desc"` | Add/update a file in the code index |
 | `/pipeline:knowledge check filepath` | Check file cache (HIT/MISS/STALE) |
 | `/pipeline:knowledge query "SQL"` | Run raw SQL |
+| `/pipeline:knowledge export [file]` | Export gotchas + decisions to JSON |
+| `/pipeline:knowledge import <source>` | Preview import from file or another project DB |
+| `/pipeline:knowledge import <source> --all` | Import with duplicate skipping |
 
 ## Configuration
 
@@ -248,6 +251,8 @@ Full knowledge management system with three scripts:
 | `pipeline-embed.js` | Code index embeddings + semantic/hybrid search |
 | `pipeline-cache.js` | File hash cache + FTS keyword search |
 
+**Project isolation:** Each project gets its own database (`pipeline_<project_name>`), so context never leaks between projects. The DB name is auto-generated from the project name during init.
+
 **Capabilities:**
 - **Semantic search** — find related work across all past sessions using vector similarity
 - **Hybrid search** — 30% FTS + 70% vector for best-of-both-worlds results
@@ -255,6 +260,7 @@ Full knowledge management system with three scripts:
 - **File hash cache** — skip re-reading files that haven't changed (SHA256-based)
 - **Code index** — FTS-searchable file descriptions with optional vector embeddings
 - **Session continuity** — numbered sessions with test counts and summaries
+- **Cross-project transfer** — export gotchas and decisions to JSON, import into a new project
 
 **Requirements:**
 - PostgreSQL on localhost:5432 (or configured host/port)
@@ -263,10 +269,10 @@ Full knowledge management system with three scripts:
 
 **Setup:**
 ```bash
-# 1. Set knowledge tier in pipeline.yml
+# 1. Set knowledge tier in pipeline.yml (database auto-generated from project name)
 knowledge:
   tier: "postgres"
-  database: "pipeline_context"
+  database: "pipeline_my_project"  # auto-generated: pipeline_<project_name>
 
 # 2. Create database and tables
 /pipeline:knowledge setup
@@ -291,6 +297,23 @@ ollama pull mxbai-embed-large
 /pipeline:knowledge index
 /pipeline:knowledge session <N> <test_count> "<summary>"
 ```
+
+**Cross-project transfer:**
+```bash
+# Export gotchas + decisions from current project
+/pipeline:knowledge export
+
+# Preview what another project has (dry run)
+/pipeline:knowledge import pipeline_old_project
+
+# Actually import (skips duplicates)
+/pipeline:knowledge import pipeline_old_project --all
+
+# Or import from a JSON file
+/pipeline:knowledge import ./pipeline-export-old-project.json --all
+```
+
+What transfers well: gotchas ("never do X") and decisions (architectural choices). What doesn't: sessions, code index, tasks, file cache — these are too project-specific.
 
 ## Design Philosophy
 

@@ -3,7 +3,7 @@
  * pipeline-db.js — Knowledge DB context helper for the pipeline plugin
  *
  * Reads connection config from .claude/pipeline.yml in the project root.
- * Falls back to localhost:5432/pipeline_context if no config found.
+ * Falls back to localhost:5432/pipeline_<project_name> if no config found.
  *
  * Usage:
  *   node pipeline-db.js setup                                    # Create all tables
@@ -13,6 +13,8 @@
  *   node pipeline-db.js update task <id> <status>                # Update task status
  *   node pipeline-db.js update gotcha new "<issue>" "<rule>"     # Add a gotcha
  *   node pipeline-db.js query "<SQL>"                            # Run raw SQL
+ *   node pipeline-db.js export [file]                            # Export gotchas + decisions to JSON
+ *   node pipeline-db.js import <file_or_db> [--all]              # Import from JSON file or another project DB
  */
 
 const { Client } = require('pg');
@@ -222,6 +224,128 @@ async function cmdQuery(sql) {
   }
 }
 
+// ─── EXPORT ─────────────────────────────────────────────────────────────────
+
+async function cmdExport(args) {
+  const outFile = args[0] || `pipeline-export-${CONFIG.project}.json`;
+  const client = await connect(CONFIG);
+  try {
+    const gotchas = await client.query('SELECT issue, rule, active FROM gotchas ORDER BY id');
+    const decisions = await client.query('SELECT topic, decision, reason, created_at FROM decisions ORDER BY id');
+
+    const exportData = {
+      _meta: {
+        version: 1,
+        source_project: CONFIG.project,
+        source_database: CONFIG.database,
+        exported_at: new Date().toISOString(),
+      },
+      gotchas: gotchas.rows,
+      decisions: decisions.rows,
+    };
+
+    fs.writeFileSync(outFile, JSON.stringify(exportData, null, 2));
+    console.log(c.green(`Exported ${gotchas.rows.length} gotchas + ${decisions.rows.length} decisions → ${outFile}`));
+  } finally {
+    await client.end();
+  }
+}
+
+// ─── IMPORT ─────────────────────────────────────────────────────────────────
+
+async function cmdImport(args) {
+  const source = args[0];
+  const importAll = args.includes('--all');
+
+  if (!source) {
+    console.error('Usage: import <file.json | database_name> [--all]');
+    console.error('  file.json     — Import from a pipeline export file');
+    console.error('  database_name — Import directly from another project\'s pipeline DB');
+    process.exit(1);
+  }
+
+  let importData;
+
+  if (source.endsWith('.json') || fs.existsSync(source)) {
+    // Import from JSON file
+    const raw = fs.readFileSync(source, 'utf8');
+    importData = JSON.parse(raw);
+    if (!importData._meta || importData._meta.version !== 1) {
+      console.error('Invalid export file — missing _meta or wrong version.');
+      process.exit(1);
+    }
+    console.log(c.dim(`Importing from ${importData._meta.source_project} (exported ${importData._meta.exported_at})`));
+  } else {
+    // Import directly from another project's database
+    const sourceClient = new Client({
+      host: CONFIG.host,
+      port: CONFIG.port,
+      database: source,
+      user: CONFIG.user,
+    });
+    try {
+      await sourceClient.connect();
+      const gotchas = await sourceClient.query('SELECT issue, rule, active FROM gotchas ORDER BY id');
+      const decisions = await sourceClient.query('SELECT topic, decision, reason, created_at FROM decisions ORDER BY id');
+      importData = {
+        _meta: { source_project: source, source_database: source },
+        gotchas: gotchas.rows,
+        decisions: decisions.rows,
+      };
+      console.log(c.dim(`Read ${gotchas.rows.length} gotchas + ${decisions.rows.length} decisions from DB "${source}"`));
+    } finally {
+      await sourceClient.end();
+    }
+  }
+
+  // Preview what will be imported
+  console.log(`\n${c.bold('Available to import:')}`);
+  console.log(`  ${c.cyan('Gotchas:')} ${importData.gotchas.length}`);
+  importData.gotchas.forEach(g => console.log(`    ${c.red('!')} ${g.issue}`));
+  console.log(`  ${c.cyan('Decisions:')} ${importData.decisions.length}`);
+  importData.decisions.forEach(d => console.log(`    ${c.dim('•')} ${d.topic}: ${d.decision}`));
+
+  if (!importAll) {
+    console.log(`\n${c.yellow('Dry run — no changes made.')}`);
+    console.log(`Re-run with ${c.bold('--all')} to import everything, or use the output above to pick specific items.`);
+    console.log(`Example: node pipeline-db.js query "INSERT INTO gotchas (issue, rule) VALUES ('...', '...')"`);
+    return;
+  }
+
+  // Actually import
+  const client = await connect(CONFIG);
+  try {
+    let gotchaCount = 0;
+    for (const g of importData.gotchas) {
+      // Skip duplicates by checking issue text
+      const existing = await client.query('SELECT 1 FROM gotchas WHERE issue = $1', [g.issue]);
+      if (existing.rows.length === 0) {
+        await client.query(
+          'INSERT INTO gotchas (issue, rule, active) VALUES ($1, $2, $3)',
+          [g.issue, g.rule, g.active !== false]
+        );
+        gotchaCount++;
+      }
+    }
+
+    let decisionCount = 0;
+    for (const d of importData.decisions) {
+      const existing = await client.query('SELECT 1 FROM decisions WHERE topic = $1 AND decision = $2', [d.topic, d.decision]);
+      if (existing.rows.length === 0) {
+        await client.query(
+          'INSERT INTO decisions (topic, decision, reason) VALUES ($1, $2, $3)',
+          [d.topic, d.decision, d.reason]
+        );
+        decisionCount++;
+      }
+    }
+
+    console.log(c.green(`\nImported ${gotchaCount} gotchas + ${decisionCount} decisions (duplicates skipped).`));
+  } finally {
+    await client.end();
+  }
+}
+
 // ─── HELP ────────────────────────────────────────────────────────────────────
 
 function help() {
@@ -249,6 +373,13 @@ ${c.dim(`Database: ${CONFIG.database} @ ${CONFIG.host}:${CONFIG.port}`)}
 
   ${c.cyan('query')} "<SQL>"
       Run raw SQL and print results
+
+  ${c.cyan('export')} [file.json]
+      Export gotchas + decisions to JSON (default: pipeline-export-<project>.json)
+
+  ${c.cyan('import')} <file.json | database_name> [--all]
+      Preview import from file or another project's DB
+      Add --all to actually import (duplicates are skipped)
 `);
 }
 
@@ -268,6 +399,10 @@ const [, , cmd, ...rest] = process.argv;
       await cmdUpdate(rest);
     } else if (cmd === 'query') {
       await cmdQuery(rest.join(' '));
+    } else if (cmd === 'export') {
+      await cmdExport(rest);
+    } else if (cmd === 'import') {
+      await cmdImport(rest);
     } else {
       console.error(`Unknown command: ${cmd}`);
       help();

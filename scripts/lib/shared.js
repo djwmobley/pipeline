@@ -40,13 +40,23 @@ function findProjectRoot() {
 
 // ─── CONFIG ─────────────────────────────────────────────────────────────────
 
+/**
+ * Sanitize a project name into a valid Postgres database name.
+ * Lowercase, replace non-alphanumeric with underscore, prefix with pipeline_.
+ */
+function projectToDbName(projectName) {
+  const sanitized = projectName.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+  return `pipeline_${sanitized}`;
+}
+
 function loadConfig() {
   const root = findProjectRoot();
   const configPath = path.join(root, '.claude', 'pipeline.yml');
+  const projectName = path.basename(root);
   const defaults = {
     host: 'localhost', port: 5432,
-    database: 'pipeline_context', user: 'postgres',
-    project: path.basename(root),
+    database: projectToDbName(projectName), user: 'postgres',
+    project: projectName,
   };
 
   if (!fs.existsSync(configPath)) return { ...defaults, root, tier: 'files', embedding_model: null };
@@ -102,4 +112,4 @@ async function connect(config) {
 
 // ─── EXPORTS ────────────────────────────────────────────────────────────────
 
-module.exports = { findProjectRoot, loadConfig, connect, c, ollamaDefaults };
+module.exports = { findProjectRoot, loadConfig, connect, c, ollamaDefaults, projectToDbName };

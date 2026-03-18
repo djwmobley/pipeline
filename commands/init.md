@@ -289,12 +289,17 @@ Present both options:
 If Postgres chosen and available:
 1. Locate the pipeline plugin's `scripts/` directory
 2. Install dependencies: `cd $SCRIPTS_DIR && npm install --silent`
-3. Run setup: `node $SCRIPTS_DIR/pipeline-db.js setup`
-4. Verify: `node $SCRIPTS_DIR/pipeline-db.js status`
-5. Set `knowledge.tier: "postgres"` in config with connection details
-6. If Ollama is available, suggest: "Run `ollama pull mxbai-embed-large` for semantic search"
-7. Add to config's `commit.post_commit_hooks`:
+3. **Generate project-scoped DB name:** `pipeline_<project_name>` (lowercase, non-alphanumeric → underscore). Each project gets its own database — no context leaks between projects.
+4. Run setup: `node $SCRIPTS_DIR/pipeline-db.js setup` (creates the project-specific database and tables)
+5. Verify: `node $SCRIPTS_DIR/pipeline-db.js status`
+6. Set `knowledge.tier: "postgres"` in config with:
+   - `database: "pipeline_<sanitized_project_name>"` (the generated name)
+   - `host`, `port` from detection (use detected port if non-default)
+7. If Ollama is available, suggest: "Run `ollama pull mxbai-embed-large` for semantic search"
+8. Add to config's `commit.post_commit_hooks`:
    `"node $SCRIPTS_DIR/pipeline-embed.js index"` (keeps embeddings current after each commit)
+9. If user has an existing project they want to bring context from, mention:
+   > "If you have gotchas or decisions from another project you'd like to carry over, use `/pipeline:knowledge import <source_db_or_file>` after setup."
 
 If files chosen (default):
 1. Create directories: `mkdir -p docs/sessions docs/specs docs/plans`

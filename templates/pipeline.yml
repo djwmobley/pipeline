@@ -79,7 +79,7 @@ knowledge:
   # Postgres tier config (uncomment when tier: "postgres"):
   # host: "localhost"
   # port: 5432
-  # database: "pipeline_context"
+  # database: "pipeline_<project_name>"  # Auto-generated from project name — each project gets its own DB
   # user: "postgres"
   # embedding_model: "mxbai-embed-large"  # Ollama model for semantic search
 

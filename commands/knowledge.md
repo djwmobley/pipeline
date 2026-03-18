@@ -75,6 +75,11 @@ For commands not supported by files tier (`search`, `hybrid`, `index`, `add`, `c
 ### Setup (Postgres only)
   /pipeline:knowledge setup                         — Create database and all tables
   /pipeline:knowledge query "<SQL>"                 — Run raw SQL
+
+### Cross-project transfer (Postgres only)
+  /pipeline:knowledge export [file]                 — Export gotchas + decisions to JSON
+  /pipeline:knowledge import <file_or_db>           — Preview what would be imported
+  /pipeline:knowledge import <file_or_db> --all     — Import (duplicates skipped)
 ```
 
 **"setup"** →
@@ -166,3 +171,14 @@ cd $SCRIPTS_DIR && node pipeline-cache.js update "$FILEPATH" "$SUMMARY"
 ```bash
 cd $SCRIPTS_DIR && node pipeline-db.js query "$SQL"
 ```
+
+**"export" [file]** →
+```bash
+cd $SCRIPTS_DIR && node pipeline-db.js export $FILE
+```
+
+**"import" <source> [--all]** →
+```bash
+cd $SCRIPTS_DIR && node pipeline-db.js import "$SOURCE" $FLAG
+```
+Without `--all`, this is a dry run — shows what would be imported. With `--all`, imports gotchas and decisions, skipping duplicates.
