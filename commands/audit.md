@@ -20,7 +20,17 @@ Read `.claude/pipeline.yml` from the project root. Extract:
 - `review.non_negotiable` — intentional decisions to never flag
 - `routing.source_dirs` — source directories
 
-If `review.sectors` is empty, auto-generate sectors from top-level directories under `routing.source_dirs`.
+If `review.sectors` is empty:
+
+> "No review sectors configured yet. Sectors split the codebase into parallel review zones — each gets its own reviewer agent, then findings are synthesized across sectors. This is what makes a full codebase review practical.
+>
+> Options:
+> 1. **Quick setup** — auto-generate from your directory structure (recommended)
+> 2. **Run `/pipeline:update sectors`** — guided setup with profile-based recommendations
+> 3. **Flat review** — skip sectors, review everything in one pass (slower, less thorough)"
+
+If option 1: scan top-level directories under `routing.source_dirs`, create one sector per directory, show the proposed sectors, and confirm before proceeding. Save to `review.sectors` in config.
+If option 3: proceed with a single flat review (no parallel agents).
 
 ---
 

@@ -25,7 +25,6 @@ Check if `.claude/pipeline.yml` already exists in the project root.
 | `commands.lint` | Has a command or `null` | Missing entirely |
 | `commands.typecheck` | Has a command or `null` | Missing entirely |
 | `knowledge.tier` | Set to `"files"` or `"postgres"` | Missing |
-| `review.sectors` | Has entries or empty `[]` (user chose to skip) | Missing entirely |
 | `integrations` | Has entries with `enabled: true/false` | Missing entirely |
 
 If ALL sections are complete:
@@ -307,48 +306,7 @@ If files chosen (default):
 
 ---
 
-### Step 5 — Ask about review sectors
-
-Present options based on whether this is a greenfield or established project:
-
-**If greenfield** (no source directories or < 5 source files):
-
-> "For full codebase reviews (`/pipeline:audit`), the pipeline splits the codebase into sectors
-> reviewed in parallel. Since you're starting fresh, you have a few options:
->
-> 1. **Pre-configure from profile** — set up typical sectors for a [profile] project (you can adjust later with `/pipeline:update sectors`)
-> 2. **Auto-generate later** — skip for now, run `/pipeline:update sectors` once you have code
-> 3. **I'll define my own sectors** — specify names, IDs, and path globs now
-> 4. **Skip sector reviews** — use flat reviews instead of parallel sectors"
-
-If option 1 (pre-configure from profile), use these templates:
-
-| Profile | Sectors |
-|---------|---------|
-| SPA | `[{name: "UI Components", id: "U", paths: ["src/components/**"]}, {name: "Pages & Routing", id: "P", paths: ["src/pages/**", "src/routes/**"]}, {name: "State & Data", id: "D", paths: ["src/hooks/**", "src/stores/**", "src/services/**", "src/api/**"]}, {name: "Utilities & Config", id: "C", paths: ["src/utils/**", "src/lib/**", "src/config/**"]}]` |
-| Full-stack | `[{name: "Frontend UI", id: "F", paths: ["src/components/**", "src/pages/**", "app/components/**", "app/routes/**"]}, {name: "API & Server", id: "A", paths: ["src/api/**", "src/server/**", "app/api/**", "server/**"]}, {name: "Data & Models", id: "D", paths: ["src/models/**", "src/db/**", "prisma/**", "drizzle/**"]}, {name: "Auth & Security", id: "S", paths: ["src/auth/**", "src/middleware/**"]}, {name: "Shared & Config", id: "C", paths: ["src/utils/**", "src/lib/**", "src/config/**"]}]` |
-| Mobile | `[{name: "Screens & Navigation", id: "S", paths: ["src/screens/**", "src/navigation/**"]}, {name: "Components", id: "U", paths: ["src/components/**"]}, {name: "State & Services", id: "D", paths: ["src/hooks/**", "src/stores/**", "src/services/**", "src/api/**"]}, {name: "Native & Platform", id: "N", paths: ["src/native/**", "ios/**", "android/**"]}]` |
-| Mobile + Web | `[{name: "Shared UI", id: "U", paths: ["src/components/**"]}, {name: "Pages & Navigation", id: "P", paths: ["src/pages/**", "src/routes/**", "src/screens/**"]}, {name: "Platform Specific", id: "N", paths: ["src/native/**", "src/platform/**", "ios/**", "android/**"]}, {name: "State & Services", id: "D", paths: ["src/hooks/**", "src/stores/**", "src/services/**"]}]` |
-| API | `[{name: "Routes & Controllers", id: "R", paths: ["src/routes/**", "src/controllers/**", "src/handlers/**"]}, {name: "Models & Data", id: "D", paths: ["src/models/**", "src/db/**", "src/repositories/**"]}, {name: "Middleware & Auth", id: "A", paths: ["src/middleware/**", "src/auth/**"]}, {name: "Services & Logic", id: "S", paths: ["src/services/**", "src/utils/**"]}]` |
-| CLI | `[{name: "Commands", id: "C", paths: ["src/commands/**", "src/cli/**"]}, {name: "Core Logic", id: "L", paths: ["src/lib/**", "src/core/**"]}, {name: "I/O & Config", id: "I", paths: ["src/config/**", "src/output/**", "src/input/**"]}]` |
-| Library | `[{name: "Public API", id: "A", paths: ["src/index.*", "src/exports/**"]}, {name: "Core Implementation", id: "C", paths: ["src/core/**", "src/lib/**"]}, {name: "Utilities", id: "U", paths: ["src/utils/**", "src/helpers/**"]}]` |
-
-**If established** (source directories exist with code):
-
-> "For full codebase reviews (`/pipeline:audit`), the pipeline splits the codebase into sectors
-> reviewed in parallel. I can auto-generate sectors from your top-level directories, or you
-> can define custom sectors. Options:
->
-> 1. **Auto-generate from directory structure** — scan source dirs and create sectors
-> 2. **Pre-configure from profile** — use typical [profile] project sectors as a starting point
-> 3. **I'll define my own sectors** — specify names, IDs, and path globs
-> 4. **Skip sector reviews for now**"
-
-If auto-generate: scan source directories and create sectors based on top-level subdirectories.
-
----
-
-### Step 6 — Generate config
+### Step 5 — Generate config
 
 Using all detected values, generate `.claude/pipeline.yml`.
 
@@ -361,7 +319,7 @@ Map detected tools to config fields:
 - go.mod → `commands.test: "go test ./..."`, `commands.lint: "golangci-lint run"`
 - pyproject.toml + pytest → `commands.test: "pytest"`, `commands.lint: "ruff check ."`
 
-Include profile-based defaults from Step 2b (review criteria, security checks).
+Include profile-based defaults from Step 2b (review criteria, security checks). Set `review.sectors: []` — sectors are configured later via `/pipeline:update sectors` or on first `/pipeline:audit` run, when there's actual code to inform the conversation.
 
 Write the config file:
 ```bash
@@ -371,7 +329,7 @@ Then use the Write tool to create `.claude/pipeline.yml`.
 
 ---
 
-### Step 7 — Confirm and guide
+### Step 6 — Confirm and guide
 
 Report what was detected and configured:
 
@@ -389,9 +347,9 @@ Report what was detected and configured:
 
 **Integrations:** [list enabled]
 **Knowledge:** [files or postgres]
-**Review sectors:** [count or "not configured"]
 
 Config written to `.claude/pipeline.yml`.
+Review sectors are configured later — run `/pipeline:update sectors` when you have code to review.
 ```
 
 Then show the appropriate getting-started guide:

@@ -151,7 +151,54 @@ Update only the `commands` section.
 
 ### Route: `sectors`
 
-Show current sectors:
+**What sectors are:** When you run `/pipeline:audit`, the codebase is split into sectors — independent zones reviewed in parallel by separate agents. Each sector gets its own reviewer that focuses on a specific area (e.g., "UI Components", "API Routes", "Auth & Security"). A synthesis agent then combines findings across sectors. This parallelism is what makes a full codebase review feasible — 6 focused reviews run simultaneously instead of one overwhelmed reviewer.
+
+**First time (no sectors configured):**
+
+Scan the actual directory structure to understand what exists:
+
+```bash
+echo "=== SOURCE STRUCTURE ==="
+for d in src lib app pkg cmd internal server; do
+  if test -d "$d"; then
+    echo "--- $d/ ---"
+    ls -d "$d"/*/ 2>/dev/null || echo "  (no subdirectories)"
+  fi
+done
+echo "=== DONE ==="
+```
+
+Then present options based on what's found and the project profile (from `project.profile` in config):
+
+> "Review sectors divide your codebase into zones for parallel review. Here's what I see in your project:
+>
+> [show directory structure summary]
+>
+> I'd recommend these sectors for a [profile] project:
+>
+> [show recommended sectors based on profile + actual directories]
+>
+> Options:
+> 1. **Use these recommendations** (you can adjust later)
+> 2. **Auto-generate from directory structure** — one sector per top-level dir
+> 3. **I'll define my own** — specify names, IDs, and path globs
+> 4. **Skip for now** — audit will fall back to a flat review"
+
+**Profile-based sector templates** (adapt paths to match what actually exists):
+
+| Profile | Sectors |
+|---------|---------|
+| SPA | UI Components (`src/components/**`), Pages & Routing (`src/pages/**`, `src/routes/**`), State & Data (`src/hooks/**`, `src/stores/**`, `src/services/**`, `src/api/**`), Utilities & Config (`src/utils/**`, `src/lib/**`, `src/config/**`) |
+| Full-stack | Frontend UI (`src/components/**`, `app/components/**`), API & Server (`src/api/**`, `src/server/**`, `app/api/**`), Data & Models (`src/models/**`, `src/db/**`, `prisma/**`), Auth & Security (`src/auth/**`, `src/middleware/**`), Shared & Config (`src/utils/**`, `src/lib/**`) |
+| Mobile | Screens & Navigation (`src/screens/**`, `src/navigation/**`), Components (`src/components/**`), State & Services (`src/hooks/**`, `src/stores/**`, `src/services/**`), Native & Platform (`src/native/**`, `ios/**`, `android/**`) |
+| Mobile + Web | Shared UI (`src/components/**`), Pages & Navigation (`src/pages/**`, `src/screens/**`), Platform Specific (`src/native/**`, `ios/**`, `android/**`), State & Services (`src/hooks/**`, `src/stores/**`, `src/services/**`) |
+| API | Routes & Controllers (`src/routes/**`, `src/controllers/**`, `src/handlers/**`), Models & Data (`src/models/**`, `src/db/**`), Middleware & Auth (`src/middleware/**`, `src/auth/**`), Services & Logic (`src/services/**`, `src/utils/**`) |
+| CLI | Commands (`src/commands/**`, `src/cli/**`), Core Logic (`src/lib/**`, `src/core/**`), I/O & Config (`src/config/**`, `src/output/**`) |
+| Library | Public API (`src/index.*`, `src/exports/**`), Core Implementation (`src/core/**`, `src/lib/**`), Utilities (`src/utils/**`, `src/helpers/**`) |
+
+When recommending, only include sectors whose paths actually exist in the project. Drop sectors that would match zero files.
+
+**Existing sectors configured:**
 
 ```
 Current review sectors:
@@ -162,10 +209,10 @@ Options:
 1. Auto-generate from current directory structure
 2. Add a sector
 3. Remove a sector
-4. Replace all sectors
+4. Replace all with profile recommendations
 ```
 
-For auto-generate: scan source directories, propose new sectors, confirm.
+For auto-generate: scan source directories, create one sector per top-level subdirectory.
 For add: ask for name, id, and path globs.
 For remove: show list, ask which to remove.
 
