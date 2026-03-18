@@ -9,7 +9,7 @@
 5. `[directory]` → actual working directory path
 6. If task requires verification (most do), paste the core rule from `skills/verification/SKILL.md`: "NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION EVIDENCE — run the verification command, read full output, confirm success before reporting DONE."
 7. `[TASK_NUMBER]` → the task number from the plan (e.g., `1`, `2`, `3`)
-8. If task has `tdd: required`, paste the content of skills/tdd/SKILL.md after the task description section. If `tdd: optional` or absent, omit.
+8. If task has `tdd: required`, replace `{{TDD_SECTION}}` with the content of skills/tdd/SKILL.md. If `tdd: optional` or absent, replace `{{TDD_SECTION}}` with an empty string (remove the placeholder line entirely).
 
 ```
 Task tool (general-purpose, model: {{MODEL}}):

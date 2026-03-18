@@ -45,9 +45,14 @@ Present the questions for confirmation:
 
 ### Step 2 — Check prior research
 
-If `knowledge.tier` is `"postgres"`, run semantic search for each question:
+If `knowledge.tier` is `"postgres"`, resolve `$SCRIPTS_DIR` first:
+1. If `$PIPELINE_DIR` is set: `$PIPELINE_DIR/scripts/`
+2. Check `${HOME:-$USERPROFILE}/dev/pipeline/scripts/`
+3. Search: find `pipeline-db.js` under `${HOME:-$USERPROFILE}/.claude/`
+
+Then run semantic search for each question:
 ```
-PROJECT_ROOT=[project_root] node $SCRIPTS_DIR/pipeline-embed.js hybrid "<question>"
+PROJECT_ROOT=$(pwd) node <resolved_scripts_dir>/pipeline-embed.js hybrid "<question>"
 ```
 If relevant prior research exists, show it and ask: "Found prior research on [topic]. Still want to re-investigate, or use the existing findings?"
 
@@ -127,13 +132,13 @@ For each decision ready to lock, if knowledge.tier is postgres: `PROJECT_ROOT=[p
 
 ### Step 5 — Store results
 
-**Postgres tier:** Write the research brief to a temp file, then insert with escaped content. Single quotes in the brief MUST be doubled (`'` → `''`) before SQL insertion.
+**Postgres tier:** Write the research brief to a temp file, then insert with escaped content. Single quotes in the brief MUST be doubled (`'` → `''`) before SQL insertion. Use the same `<resolved_scripts_dir>` from Step 2.
 ```bash
-PROJECT_ROOT=[project_root] node $SCRIPTS_DIR/pipeline-db.js query "INSERT INTO research (title, body) VALUES ('[topic]', '[escaped_brief]')"
+PROJECT_ROOT=$(pwd) node <resolved_scripts_dir>/pipeline-db.js query "INSERT INTO research (title, body) VALUES ('[topic]', '[escaped_brief]')"
 ```
 Then update embeddings:
 ```bash
-PROJECT_ROOT=[project_root] node $SCRIPTS_DIR/pipeline-embed.js index
+PROJECT_ROOT=$(pwd) node <resolved_scripts_dir>/pipeline-embed.js index
 ```
 
 **Files tier:** Write to `docs/research/YYYY-MM-DD-[topic].md`

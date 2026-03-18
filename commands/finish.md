@@ -9,7 +9,7 @@ Guide completion of development work by presenting clear options and handling th
 
 ### Step 1 — Load config and verify tests
 
-Read `.claude/pipeline.yml` for `commands.test`.
+Read `.claude/pipeline.yml` for `commands.test`, `project.branch`, and `integrations.github.enabled`.
 
 Run the test suite. If tests fail:
 ```
@@ -36,15 +36,11 @@ If tests pass: continue.
 
 ### Step 2 — Determine base branch
 
-```bash
-git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null
-```
-
-Or read `project.branch` from pipeline.yml.
+Read `project.branch` from pipeline.yml (e.g., `main`). This is the base branch.
 
 Capture the current branch name and the base branch name for use in Step 4:
 - Feature branch: `git branch --show-current`
-- Base branch: use `project.branch` from pipeline.yml, or default to `main`
+- Base branch: `project.branch` from pipeline.yml (fallback: `main`)
 
 If the current branch IS the base branch (e.g., `main`), report: "You are on the base branch. /pipeline:finish is for feature branches. Use /pipeline:commit or /pipeline:release instead." Stop.
 

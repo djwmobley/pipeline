@@ -20,11 +20,18 @@ If no config file exists, report: "No `.claude/pipeline.yml` found. Run `/pipeli
 
 Follow the brainstorming skill exactly. Pass the config values to each step that needs them.
 
-**Decision lock check:** Before proposing approaches, check for locked decisions:
+**Decision lock check:** Before proposing approaches, check for locked decisions.
+
+**Resolve `$SCRIPTS_DIR`:** Locate the pipeline plugin's `scripts/` directory:
+1. If `$PIPELINE_DIR` is set: `$PIPELINE_DIR/scripts/`
+2. Check `${HOME:-$USERPROFILE}/dev/pipeline/scripts/`
+3. Search: find `pipeline-db.js` under `${HOME:-$USERPROFILE}/.claude/`
+
+Store the resolved absolute path and use it in the command below.
 
 **Postgres tier:**
 ```bash
-PROJECT_ROOT=[project_root] node $SCRIPTS_DIR/pipeline-db.js query "SELECT topic, decision FROM decisions WHERE status = 'locked' ORDER BY created_at DESC LIMIT 20"
+PROJECT_ROOT=$(pwd) node <resolved_scripts_dir>/pipeline-db.js query "SELECT topic, decision FROM decisions WHERE status = 'locked' ORDER BY created_at DESC LIMIT 20"
 ```
 
 **Files tier:** Read `DECISIONS.md` from the project root if it exists. In DECISIONS.md, lines prefixed with `[LOCKED]` are constraints. Lines without the prefix are informational context.

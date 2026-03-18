@@ -12,7 +12,7 @@ You ship verified code to users. This command runs AFTER `/pipeline:commit` when
 ### Step 0 — Load config
 
 Read `.claude/pipeline.yml` from the project root. Extract:
-- `project.name`, `project.repo`
+- `project.name`, `project.repo`, `project.branch`
 - `commands.test` — run tests one final time before release
 - `commit.push_after_commit` — whether to push tags
 
@@ -132,9 +132,9 @@ chore(release): v[version]
 git tag -a v[version] -m "Release v[version]"
 ```
 
-If `commit.push_after_commit` is true:
+If `commit.push_after_commit` is true, push to the branch configured in `project.branch`:
 ```bash
-git push origin main --follow-tags
+git push origin [project.branch from config] --follow-tags
 ```
 
 ---
@@ -148,7 +148,8 @@ git push origin main --follow-tags
 >
 > [If GitHub integration enabled: 'Create a GitHub release? (y/N)']"
 
-If yes and GitHub CLI available:
+If yes and GitHub CLI available, extract only the new version's section from CHANGELOG.md (from `## [version]` to the next `## ` heading or end of file) and pass it as release notes:
 ```bash
-gh release create v[version] --title "v[version]" --notes-file CHANGELOG.md
+# Extract just this release's changelog section (not the entire file)
+gh release create v[version] --title "v[version]" --notes "[extracted changelog section for this version only]"
 ```

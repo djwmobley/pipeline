@@ -26,6 +26,8 @@ Extract:
 - `review.non_negotiable` — intentional decisions to never flag
 - `routing.source_dirs` — source directories
 
+**source_dirs sanity check:** If `routing.source_dirs` contains `["."]`, warn: "source_dirs is set to [\".\"] which will scan ALL files including config, docs, and lockfiles. Run `/pipeline:update` to set a specific source directory before running a full audit." Then filter Phase 0 grep and sector scans to common source extensions only (.ts, .tsx, .js, .jsx, .rs, .go, .py).
+
 If `review.sectors` is empty:
 
 > "No review sectors configured yet. Sectors split the codebase into parallel review zones — each gets its own reviewer agent, then findings are synthesized across sectors. This is what makes a full codebase review practical.

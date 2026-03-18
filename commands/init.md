@@ -351,7 +351,22 @@ Using all detected values, generate `.claude/pipeline.yml`.
 
 Set `project.pkg_manager` to the detected package manager from Step 1 (pnpm, npm, yarn, or bun).
 
-Set `routing.source_dirs` from the directories detected in Step 1 (the "SOURCE DIRS" section). Include only directories that exist and contain source code (e.g., `["src/"]`, `["src/", "lib/"]`, `["cmd/", "internal/", "pkg/"]`). If only `src/` was detected, use `["src/"]`. If no source directories were detected, use `["."]` as fallback.
+Set `routing.source_dirs` from the directories detected in Step 1 (the "SOURCE DIRS" section). Include only directories that exist and contain source code (e.g., `["src/"]`, `["src/", "lib/"]`, `["cmd/", "internal/", "pkg/"]`). If only `src/` was detected, use `["src/"]`.
+
+**If no source directories were detected** (greenfield or non-standard layout), do NOT use `["."]` — it poisons triage, commit gates, and audit by counting non-source files (config, docs, lockfiles). Instead, ask:
+
+> "I didn't detect a standard source directory (src/, lib/, app/, etc.). Where will your source code live?"
+>
+> Suggestions based on profile:
+> - SPA/Full-stack: `src/`
+> - CLI (Node): `src/` or `bin/`
+> - CLI (Go): `cmd/`, `internal/`
+> - API: `src/` or `server/`
+> - Library: `src/` or `lib/`
+>
+> Or type a custom path (e.g., `packages/core/src/`)."
+
+Use the user's answer. If they haven't created the directory yet (greenfield), that's fine — set it in config and it will exist when they write code.
 
 Map detected tools to config fields. Use the detected package manager's runner where applicable (e.g., pnpm → `pnpm exec`, npm → `npx`, yarn → `yarn`, bun → `bunx`):
 - package.json + typescript → `commands.typecheck: "[runner] tsc --noEmit"`

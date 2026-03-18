@@ -47,9 +47,20 @@ Record all findings before proceeding.
 
 ### Step 3 — Get the diff
 
+**Check for `--since <SHA>` argument.** If the user passed a baseline SHA (e.g., from `/pipeline:build` output), use commit-range mode:
+
+```bash
+git diff <SHA>..HEAD --stat
+git diff <SHA>..HEAD
+```
+
+This is the normal path after `/pipeline:build` — build commits per task, so `git diff HEAD` would show nothing. The baseline SHA captures all changes across all build tasks.
+
+**If no `--since` argument:**
+
 If `git log --oneline -1` fails (no prior commits), this is the initial commit. Use `git diff --cached` for staged files and `git ls-files --others --exclude-standard` for untracked. Note: "Initial commit — reviewing all new files."
 
-**Normal case (commits exist):**
+**Normal case (no baseline SHA, commits exist):**
 
 ```bash
 git diff --cached --stat    # staged changes
@@ -60,11 +71,21 @@ git status
 git log --oneline -1        # last commit for context
 ```
 
+If both staged and unstaged diffs are empty but there are recent commits, suggest: "No uncommitted changes found. If reviewing after `/pipeline:build`, re-run with `--since <SHA>` using the baseline SHA from build output."
+
 ---
 
 ### Step 4 — Lint changed files only
 
-From the diff, extract source file paths. Run lint against those specific files.
+From the diff, extract source file paths (files matching `routing.source_dirs` patterns). Run lint against those specific files by passing them as arguments to the lint command:
+
+```bash
+# Example: npx eslint src/foo.ts src/bar.tsx
+[commands.lint base command] [space-separated file paths from diff]
+```
+
+If the lint command doesn't support file arguments (rare), run the full lint command and filter output to only lines referencing changed files.
+
 Use warnings as **reading hints** — not automatic findings.
 
 ---
@@ -95,16 +116,16 @@ Use severity tiers as defined in the reviewing skill. Use exactly this output te
 ---
 
 ### 🔴 Must fix
-**[File:line]** — [one-line description]
+**[File:line]** — [one-line description] `[confidence: HIGH]`
 > [Explanation of why it's a problem and what to do instead]
 > Fix: [one-line precise description of the transformation]
 
 ### 🟡 Should fix
-**[File:line]** — [one-line description]
+**[File:line]** — [one-line description] `[confidence: HIGH/MEDIUM]`
 > [Explanation]
 
 ### 🔵 Consider
-**[File:line]** — [one-line description]
+**[File:line]** — [one-line description] `[confidence: HIGH/MEDIUM/LOW]`
 > [Explanation]
 
 ### ❓ Questions

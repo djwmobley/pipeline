@@ -20,6 +20,8 @@ Read `.claude/pipeline.yml` from the project root. Extract:
 
 If no config file exists, report: "No `.claude/pipeline.yml` found. Run `/pipeline:init` first." and stop.
 
+**source_dirs sanity check:** If `routing.source_dirs` contains `["."]`, warn: "source_dirs is set to [\".\"] which counts ALL files as source, inflating the review gate count. Run `/pipeline:update` to set a specific source directory." Then filter by common source extensions (.ts, .tsx, .js, .jsx, .rs, .go, .py) instead of directory paths for the review gate check.
+
 ---
 
 ### Step 1 — Gather state (run IN PARALLEL)

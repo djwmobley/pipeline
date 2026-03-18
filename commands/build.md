@@ -24,6 +24,23 @@ If no config file exists, report: "No `.claude/pipeline.yml` found. Run `/pipeli
 
 Follow the building skill exactly. Use the value of `models.cheap` from pipeline.yml (e.g., `haiku`) for mechanical tasks and document reviews. Use the value of `models.implement` (e.g., `sonnet`) for integration tasks. When dispatching subagents, substitute these literal model strings into the prompt templates — do not pass config key names.
 
+**Baseline tracking:** Before dispatching the first task, record the current commit SHA:
+
+```bash
+git rev-parse HEAD 2>/dev/null || echo "NO_COMMITS"
+```
+
+Store this as `BASELINE_SHA`. After all tasks complete, include it in the completion message so `/pipeline:review` can diff against it.
+
+**Completion message:** When all tasks are done, report:
+
+```
+Build complete. [N] tasks executed.
+
+Review with: /pipeline:review --since <BASELINE_SHA>
+Then commit with: /pipeline:commit reviewed:✓
+```
+
 **Fresh context rule:** When dispatching sub-agents for LARGE tasks, each agent receives ONLY:
 1. The specific task description from the plan (paste the text — do not reference a file)
 2. Relevant file contents (paste — do not ask the sub-agent to read files)

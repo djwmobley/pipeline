@@ -14,6 +14,8 @@ Read `.claude/pipeline.yml` from the project root. Extract:
 
 If no config file exists, use defaults: source_dirs=["src/"], tiny_max_files=1, tiny_max_lines=30, medium_max_files=3.
 
+**source_dirs sanity check:** If `routing.source_dirs` contains `["."]`, warn: "source_dirs is set to [\".\"] which counts ALL files (config, docs, lockfiles) as source. Run `/pipeline:update` to set a specific source directory. Proceeding with extension-based filtering (.ts, .tsx, .js, .jsx, .rs, .go, .py)." Then filter by those extensions instead of directory paths.
+
 ---
 
 ### Step 1 — Count changes
