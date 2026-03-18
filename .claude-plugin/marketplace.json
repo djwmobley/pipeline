@@ -1,7 +1,5 @@
 {
-  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "pipeline",
-  "description": "Config-driven development pipeline: size routing, quality gates, structured reviews, TDD, and systematic debugging for any project",
   "owner": {
     "name": "DJ Mobley",
     "email": "djwmobley@gmail.com"
