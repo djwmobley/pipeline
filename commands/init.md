@@ -20,6 +20,7 @@ Check if `.claude/pipeline.yml` already exists in the project root.
 | `project.name` | Has a real name | Missing or `"my-project"` |
 | `project.repo` | Has `owner/repo` or explicitly `null` | Missing |
 | `project.branch` | Has a branch name | Missing |
+| `project.profile` | Set to a valid profile | Missing or `null` |
 | `commands.test` | Has a command or `null` | Missing entirely |
 | `commands.lint` | Has a command or `null` | Missing entirely |
 | `commands.typecheck` | Has a command or `null` | Missing entirely |
@@ -72,7 +73,12 @@ cat package.json 2>/dev/null | grep -E '"typescript"'
 
 # Source directories
 ls -d src/ lib/ app/ pkg/ cmd/ internal/ 2>/dev/null
+
+# Count source files to detect greenfield vs established
+find src/ lib/ app/ -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" -o -name "*.rs" -o -name "*.go" -o -name "*.py" 2>/dev/null | wc -l
 ```
+
+**Greenfield detection:** If no source directories exist OR total source files < 5, this is a **greenfield project**. Flag it — this affects profile recommendations (Step 2) and sector setup (Step 5).
 
 ---
 
@@ -87,7 +93,74 @@ If the user provides a value, use it for `project.repo`. If skipped, set `projec
 
 ---
 
-### Step 2 — Detect integrations
+### Step 2 — Project profile
+
+Ask the user what kind of project this is:
+
+> "What type of project is this?
+>
+> 1. **SPA** — Single-page web app (React, Vue, Angular, Svelte)
+> 2. **Full-stack** — Frontend + backend in one repo (Next.js, Nuxt, SvelteKit, Rails)
+> 3. **Mobile** — Native mobile app (React Native, Flutter, Swift, Kotlin)
+> 4. **Mobile + Web** — Shared codebase with web fallback (Capacitor, Expo Web)
+> 5. **API** — Backend service or REST/GraphQL API
+> 6. **CLI** — Command-line tool
+> 7. **Library** — Reusable package/module published for others"
+
+Set `project.profile` to the chosen value: `spa`, `fullstack`, `mobile`, `mobile-web`, `api`, `cli`, `library`.
+
+**If this is a greenfield project** (detected in Step 1), follow up with stack recommendations:
+
+For each profile, suggest a proven starter stack. Present these as recommendations, not requirements — the user knows their constraints best:
+
+| Profile | Recommended Stack | Why |
+|---------|------------------|-----|
+| **SPA** | Vite + React/Vue + TypeScript + Tailwind + Vitest | Fast dev server, strong typing, utility CSS, fast tests |
+| **Full-stack** | Next.js or SvelteKit + TypeScript + Prisma/Drizzle | SSR/SSG, API routes, type-safe DB |
+| **Mobile** | React Native + Expo + TypeScript | Cross-platform, managed workflow, OTA updates |
+| **Mobile + Web** | React + Capacitor + TypeScript + Tailwind | One codebase, native APIs via plugins |
+| **API** | Express/Fastify + TypeScript + Vitest (Node) or Axum + Rust or Echo + Go | Depends on performance needs and team expertise |
+| **CLI** | Node + Commander/Yargs or Rust + Clap or Go + Cobra | Depends on distribution needs |
+| **Library** | TypeScript + Vitest + tsup (bundler) | Tree-shakeable, well-tested, easy to publish |
+
+> "Since you're starting fresh, here's what works well for [profile] projects:
+>
+> **[Stack recommendation]**
+>
+> This gives you [key benefits]. Want me to scaffold with this stack, or do you have a different setup in mind?"
+
+If the user already has code (established project), skip the stack recommendation — their choices are already made.
+
+---
+
+### Step 2b — Profile-based defaults
+
+Based on the chosen profile, pre-configure review criteria and security checks. These are applied automatically — no user interaction needed for this step.
+
+**Review criteria by profile:**
+
+| Profile | Criteria |
+|---------|----------|
+| SPA | `[ux, accessibility, dead-code, framework-correctness, security, simplicity, solid, performance]` |
+| Full-stack | `[ux, accessibility, dead-code, framework-correctness, security, simplicity, solid, api-design, data-integrity]` |
+| Mobile | `[ux, accessibility, dead-code, framework-correctness, security, simplicity, solid, performance, battery-impact]` |
+| Mobile + Web | `[ux, accessibility, dead-code, framework-correctness, security, simplicity, solid, performance, responsive-design]` |
+| API | `[dead-code, security, simplicity, solid, api-design, data-integrity, error-handling, performance]` |
+| CLI | `[dead-code, security, simplicity, solid, error-handling, ux]` |
+| Library | `[dead-code, security, simplicity, solid, api-design, backwards-compatibility, documentation]` |
+
+**Security checklist additions by profile:**
+
+| Profile | Extra checks |
+|---------|-------------|
+| SPA, Full-stack, Mobile + Web | `{ check: "Renders user content?", rule: "Sanitize HTML — never render raw user input without a sanitizer like DOMPurify" }` |
+| Mobile, Mobile + Web | `{ check: "Stores data on device?", rule: "Use secure storage for tokens — never use plain storage for secrets" }` |
+| API | `{ check: "Exposes endpoint?", rule: "Rate limit, authenticate, validate input schema" }` |
+| Library | `{ check: "Accepts external input?", rule: "Validate types at boundary — never trust caller input" }` |
+
+---
+
+### Step 3 — Detect integrations
 
 Run these probes IN PARALLEL:
 
@@ -114,7 +187,7 @@ For missing integrations, show the install/setup command.
 
 ---
 
-### Step 3 — Knowledge tier decision
+### Step 4 — Knowledge tier decision
 
 Present both options:
 
@@ -139,23 +212,48 @@ If files chosen (default):
 
 ---
 
-### Step 4 — Ask about review sectors
+### Step 5 — Ask about review sectors
 
-If the project has a `src/` directory (or equivalent), ask:
+Present options based on whether this is a greenfield or established project:
 
-> "For full codebase reviews (/pipeline:audit), the pipeline splits the codebase into sectors
+**If greenfield** (no source directories or < 5 source files):
+
+> "For full codebase reviews (`/pipeline:audit`), the pipeline splits the codebase into sectors
+> reviewed in parallel. Since you're starting fresh, you have a few options:
+>
+> 1. **Pre-configure from profile** — set up typical sectors for a [profile] project (you can adjust later with `/pipeline:update sectors`)
+> 2. **Auto-generate later** — skip for now, run `/pipeline:update sectors` once you have code
+> 3. **I'll define my own sectors** — specify names, IDs, and path globs now
+> 4. **Skip sector reviews** — use flat reviews instead of parallel sectors"
+
+If option 1 (pre-configure from profile), use these templates:
+
+| Profile | Sectors |
+|---------|---------|
+| SPA | `[{name: "UI Components", id: "U", paths: ["src/components/**"]}, {name: "Pages & Routing", id: "P", paths: ["src/pages/**", "src/routes/**"]}, {name: "State & Data", id: "D", paths: ["src/hooks/**", "src/stores/**", "src/services/**", "src/api/**"]}, {name: "Utilities & Config", id: "C", paths: ["src/utils/**", "src/lib/**", "src/config/**"]}]` |
+| Full-stack | `[{name: "Frontend UI", id: "F", paths: ["src/components/**", "src/pages/**", "app/components/**", "app/routes/**"]}, {name: "API & Server", id: "A", paths: ["src/api/**", "src/server/**", "app/api/**", "server/**"]}, {name: "Data & Models", id: "D", paths: ["src/models/**", "src/db/**", "prisma/**", "drizzle/**"]}, {name: "Auth & Security", id: "S", paths: ["src/auth/**", "src/middleware/**"]}, {name: "Shared & Config", id: "C", paths: ["src/utils/**", "src/lib/**", "src/config/**"]}]` |
+| Mobile | `[{name: "Screens & Navigation", id: "S", paths: ["src/screens/**", "src/navigation/**"]}, {name: "Components", id: "U", paths: ["src/components/**"]}, {name: "State & Services", id: "D", paths: ["src/hooks/**", "src/stores/**", "src/services/**", "src/api/**"]}, {name: "Native & Platform", id: "N", paths: ["src/native/**", "ios/**", "android/**"]}]` |
+| Mobile + Web | `[{name: "Shared UI", id: "U", paths: ["src/components/**"]}, {name: "Pages & Navigation", id: "P", paths: ["src/pages/**", "src/routes/**", "src/screens/**"]}, {name: "Platform Specific", id: "N", paths: ["src/native/**", "src/platform/**", "ios/**", "android/**"]}, {name: "State & Services", id: "D", paths: ["src/hooks/**", "src/stores/**", "src/services/**"]}]` |
+| API | `[{name: "Routes & Controllers", id: "R", paths: ["src/routes/**", "src/controllers/**", "src/handlers/**"]}, {name: "Models & Data", id: "D", paths: ["src/models/**", "src/db/**", "src/repositories/**"]}, {name: "Middleware & Auth", id: "A", paths: ["src/middleware/**", "src/auth/**"]}, {name: "Services & Logic", id: "S", paths: ["src/services/**", "src/utils/**"]}]` |
+| CLI | `[{name: "Commands", id: "C", paths: ["src/commands/**", "src/cli/**"]}, {name: "Core Logic", id: "L", paths: ["src/lib/**", "src/core/**"]}, {name: "I/O & Config", id: "I", paths: ["src/config/**", "src/output/**", "src/input/**"]}]` |
+| Library | `[{name: "Public API", id: "A", paths: ["src/index.*", "src/exports/**"]}, {name: "Core Implementation", id: "C", paths: ["src/core/**", "src/lib/**"]}, {name: "Utilities", id: "U", paths: ["src/utils/**", "src/helpers/**"]}]` |
+
+**If established** (source directories exist with code):
+
+> "For full codebase reviews (`/pipeline:audit`), the pipeline splits the codebase into sectors
 > reviewed in parallel. I can auto-generate sectors from your top-level directories, or you
 > can define custom sectors. Options:
 >
-> 1. Auto-generate from directory structure
-> 2. I'll define my own sectors later
-> 3. Skip sector reviews for now"
+> 1. **Auto-generate from directory structure** — scan source dirs and create sectors
+> 2. **Pre-configure from profile** — use typical [profile] project sectors as a starting point
+> 3. **I'll define my own sectors** — specify names, IDs, and path globs
+> 4. **Skip sector reviews for now**"
 
 If auto-generate: scan source directories and create sectors based on top-level subdirectories.
 
 ---
 
-### Step 5 — Generate config
+### Step 6 — Generate config
 
 Using all detected values, generate `.claude/pipeline.yml`.
 
@@ -168,6 +266,8 @@ Map detected tools to config fields:
 - go.mod → `commands.test: "go test ./..."`, `commands.lint: "golangci-lint run"`
 - pyproject.toml + pytest → `commands.test: "pytest"`, `commands.lint: "ruff check ."`
 
+Include profile-based defaults from Step 2b (review criteria, security checks).
+
 Write the config file:
 ```bash
 mkdir -p .claude docs/specs docs/plans
@@ -176,14 +276,14 @@ Then use the Write tool to create `.claude/pipeline.yml`.
 
 ---
 
-### Step 6 — Confirm and guide
+### Step 7 — Confirm and guide
 
 Report what was detected and configured:
 
 ```
 ## Pipeline configured
 
-**Project:** [name] ([type])
+**Project:** [name] ([profile])
 **Repo:** [owner/repo]
 **Branch:** [main branch]
 
@@ -199,7 +299,28 @@ Report what was detected and configured:
 Config written to `.claude/pipeline.yml`.
 ```
 
-Then show the getting-started guide:
+Then show the appropriate getting-started guide:
+
+**If greenfield project:**
+
+```
+## Getting started
+
+Your project is set up for planning-first development:
+
+1. `/pipeline:brainstorm` — explore your first feature's requirements and design
+2. `/pipeline:plan` — create an implementation plan from the spec
+3. `/pipeline:build` — execute the plan with built-in quality checks
+
+Once you have code:
+- `/pipeline:commit` — runs preflight gates and commits
+- `/pipeline:update sectors` — auto-generate review sectors from your directory structure
+- `/pipeline:triage` — check the recommended workflow for any change
+
+**Adjust anything later:** `/pipeline:update`
+```
+
+**If established project:**
 
 ```
 ## Getting started
@@ -209,6 +330,8 @@ Then show the getting-started guide:
 
 **Before a bigger change:**
 1. `/pipeline:triage` — tells you the right workflow for the change size
+
+**Adjust anything later:** `/pipeline:update`
 
 **All commands:** `/pipeline:` then tab-complete to see options
 ```

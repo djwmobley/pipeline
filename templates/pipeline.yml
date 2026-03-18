@@ -4,6 +4,7 @@ project:
   name: "my-project"
   repo: "owner/repo"
   branch: "main"
+  profile: null  # Set by init: spa, fullstack, mobile, mobile-web, api, cli, library
 
 # Tool commands (null to disable any gate)
 commands:
