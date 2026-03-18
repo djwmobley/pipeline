@@ -297,7 +297,7 @@ echo "=== DONE ==="
 | **Playwright** | Optional | Screenshot capture for `/pipeline:ui-review` | Chrome DevTools MCP, or provide screenshots manually | Ask: "Playwright enables automatic screenshot capture for UI reviews. Want me to install it? (I'll run `[pkg_manager] add -D @playwright/test && npx playwright install chromium`)" If declined: "No problem — install it yourself later with `[pkg_manager] add -D @playwright/test && npx playwright install chromium`, or use Chrome DevTools MCP instead." |
 | **GitHub CLI** | Optional | PR creation in `/pipeline:finish`, issue management | Push branches manually, create PRs in browser | Show: "GitHub CLI (`gh`) enables PR creation from `/pipeline:finish`. Install: https://cli.github.com — or push branches and create PRs manually in the browser." |
 | **Postgres** | Optional | Knowledge tier with semantic search, structured queries | Files tier (markdown-based, zero setup) | Show install link. Note: "Without Postgres, you'll use the files tier — markdown-based session tracking that works but lacks search." |
-| **Ollama** | Optional | Semantic/hybrid search in Postgres tier | FTS keyword search only (still useful) | Show: "Ollama adds semantic search to the Postgres knowledge tier. Install: https://ollama.com — then `ollama pull mxbai-embed-large`. Without it, keyword search still works." |
+| **Ollama** | Optional | Semantic/hybrid search in Postgres tier | FTS keyword search only (still useful) | Show: "Ollama runs embedding models locally (no API keys, no cloud). Install: https://ollama.com — then pull an embedding model (e.g., `ollama pull mxbai-embed-large` or `ollama pull nomic-embed-text`). Without it, keyword search still works." |
 | **Chrome DevTools** | Optional | Screenshot capture for `/pipeline:ui-review` | Playwright, or provide screenshots manually | Show: "Launch Chrome with `--remote-debugging-port=9222` for automatic screenshots. Or use Playwright instead." |
 | **Sentry** | Optional | Auto-pull recent errors in `/pipeline:debug` | Reproduce errors manually | Show: "Set `SENTRY_AUTH_TOKEN` env var. Without it, `/pipeline:debug` still works — you just provide the error manually." |
 
@@ -329,7 +329,7 @@ If yes:
 6. Set `knowledge.tier: "postgres"` in config with:
    - `database: "pipeline_<sanitized_project_name>"` (the generated name)
    - `host`, `port` from detection (use detected port if non-default)
-7. If Ollama is available, suggest: "Run `ollama pull mxbai-embed-large` for semantic search. Without it, keyword search still works — Ollama just adds semantic similarity."
+7. If Ollama is available, ask which embedding model to use: "Ollama is running. Which embedding model should Pipeline use for semantic search? Popular choices: `mxbai-embed-large` (1024-dim, good quality), `nomic-embed-text` (768-dim, smaller/faster). Or type any model name from https://ollama.com/search?c=embedding." Set `knowledge.embedding_model` to their choice. If the model isn't pulled yet, run `ollama pull <model>`.
 8. Add to config's `commit.post_commit_hooks`:
    `"node $SCRIPTS_DIR/pipeline-embed.js index"` (keeps embeddings current after each commit)
 9. If user has an existing project they want to bring context from, mention:

@@ -102,7 +102,7 @@ If you already have a config, init detects what's complete and resumes from wher
 | Tool | What It Adds | Without It |
 |------|-------------|------------|
 | PostgreSQL | Semantic search across sessions, structured task tracking | Markdown files (works fine, no search) |
-| [Ollama](https://ollama.com) | Vector similarity search (runs `mxbai-embed-large` locally — no API keys, no cloud) | Keyword search only |
+| [Ollama](https://ollama.com) | Vector similarity search (runs an embedding model locally — no API keys, no cloud) | Keyword search only |
 | GitHub CLI | PR creation from the terminal | Push and use the browser |
 | Chrome / Playwright | Automatic screenshots for UI review | Provide screenshots yourself |
 | Sentry | Auto-pull recent errors during debug | Describe the error yourself |
