@@ -46,6 +46,8 @@ Capture the current branch name and the base branch name for use in Step 4:
 - Feature branch: `git branch --show-current`
 - Base branch: use `project.branch` from pipeline.yml, or default to `main`
 
+If the current branch IS the base branch (e.g., `main`), report: "You are on the base branch. /pipeline:finish is for feature branches. Use /pipeline:commit or /pipeline:release instead." Stop.
+
 ---
 
 ### Step 3 — Present options
@@ -76,6 +78,8 @@ git branch -d [feature-branch]
 Then cleanup worktree (Step 5).
 
 **Option 2: Push and create PR**
+
+Only offer the Push+PR option if `integrations.github.enabled` is true in pipeline.yml. If false, offer: "Push branch and create PR manually in browser."
 
 Read `git log [base-branch]..HEAD --oneline` to populate the summary bullets and derive the PR title.
 

@@ -47,6 +47,7 @@ commit:
   post_commit_hooks: []
 
 # Model routing
+# Model names used by Task tool dispatch: haiku, sonnet, opus. These control which model handles sub-agent tasks.
 models:
   cheap: "haiku"           # Doc reviews, screenshot analysis, mechanical tasks
   explore: "haiku"         # Codebase search, file scanning
@@ -111,6 +112,7 @@ integrations:
   chrome_devtools:
     enabled: false
     use_in: [ui-review]
+    dev_url: null  # e.g., http://localhost:5173 — set during init or manually
   playwright:
     enabled: false
     use_in: [ui-review]

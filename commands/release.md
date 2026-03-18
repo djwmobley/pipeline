@@ -29,9 +29,19 @@ git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0"
 
 Also check `package.json` version field if it exists.
 
-Analyze commits since last tag:
+Analyze commits since last tag. First check if any tags exist:
 ```bash
-git log $(git describe --tags --abbrev=0 2>/dev/null || echo "")..HEAD --oneline
+git describe --tags --abbrev=0 2>/dev/null
+```
+
+If no tags exist, show all commits on the current branch:
+```bash
+git log --oneline
+```
+
+If a previous tag exists, show commits since that tag:
+```bash
+git log <previous_tag>..HEAD --oneline
 ```
 
 Recommend a version bump based on conventional commits:
@@ -69,10 +79,20 @@ If dirty: **STOP.** "Uncommitted changes detected. Run `/pipeline:commit` first.
 
 ### Step 3 — Generate changelog
 
-Generate a changelog entry from commits since last tag:
+Generate a changelog entry from commits since last tag. First check if any tags exist:
 
 ```bash
-git log $(git describe --tags --abbrev=0 2>/dev/null || echo "")..HEAD --pretty=format:"- %s (%h)" --no-merges
+git describe --tags --abbrev=0 2>/dev/null
+```
+
+If no tags exist, use all commits on the current branch:
+```bash
+git log --pretty=format:"- %s (%h)" --no-merges
+```
+
+If a previous tag exists, use commits since that tag:
+```bash
+git log <previous_tag>..HEAD --pretty=format:"- %s (%h)" --no-merges
 ```
 
 Group by type:

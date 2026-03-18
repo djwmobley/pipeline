@@ -324,8 +324,8 @@ If yes:
 1. Locate the pipeline plugin's `scripts/` directory using the same resolution as `/pipeline:knowledge` Step 0: check `$PIPELINE_DIR/scripts/`, then `${HOME:-$USERPROFILE}/dev/pipeline/scripts/`, then search `${HOME:-$USERPROFILE}/.claude/` for `pipeline-db.js`. Store the resolved absolute path — use this literal path (not a variable) in all subsequent Bash calls.
 2. Install dependencies: `cd <scripts_path> && pnpm install`
 3. **Generate project-scoped DB name:** `pipeline_<project_name>` — lowercase the project name, replace non-alphanumeric characters with underscores, collapse consecutive underscores, strip leading/trailing underscores, prefix with `pipeline_`. Each project gets its own database — no context leaks between projects.
-4. Run setup: `node $SCRIPTS_DIR/pipeline-db.js setup` (creates the project-specific database and tables)
-5. Verify: `node $SCRIPTS_DIR/pipeline-db.js status`
+4. Run setup: `PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-db.js setup` (creates the project-specific database and tables)
+5. Verify: `PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-db.js status`
 6. Set `knowledge.tier: "postgres"` in config with:
    - `database: "pipeline_<sanitized_project_name>"` (the generated name)
    - `host`, `port` from detection (use detected port if non-default)
@@ -340,7 +340,7 @@ If declined: "No problem. Run these yourself when you're ready:
 2. `/pipeline:knowledge setup`"
 
 If files chosen (default):
-1. Create directories: `mkdir -p docs/sessions docs/specs docs/plans`
+1. Create directories: `mkdir -p docs/sessions docs/specs docs/plans docs/research`
 2. Set `knowledge.tier: "files"` in config
 
 ---

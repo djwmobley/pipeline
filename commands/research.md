@@ -20,7 +20,7 @@ You are the research orchestrator. Your job is to investigate technical unknowns
 ### Step 0 — Load config
 
 Read `.claude/pipeline.yml` from the project root. Extract:
-- `models.explore` — model for research agents (default: haiku)
+- `models.research` — model for research agents (default: haiku)
 - `knowledge.tier` — if Postgres, use semantic search for prior research
 - `routing.source_dirs` — where to look for existing patterns
 
@@ -47,7 +47,7 @@ Present the questions for confirmation:
 
 If `knowledge.tier` is `"postgres"`, run semantic search for each question:
 ```
-node $SCRIPTS_DIR/pipeline-embed.js hybrid "<question>"
+PROJECT_ROOT=[project_root] node $SCRIPTS_DIR/pipeline-embed.js hybrid "<question>"
 ```
 If relevant prior research exists, show it and ask: "Found prior research on [topic]. Still want to re-investigate, or use the existing findings?"
 
@@ -55,10 +55,10 @@ If relevant prior research exists, show it and ask: "Found prior research on [to
 
 ### Step 3 — Dispatch parallel research agents
 
-For each approved question, dispatch a Task agent (model: value of `models.explore` from config):
+For each approved question, dispatch a Task agent (model: value of `models.research` from config):
 
 ```
-Task tool (general-purpose, model: [models.explore value]):
+Task tool (general-purpose, model: [models.research value]):
 ```
 
 Each research agent receives this prompt:
@@ -114,6 +114,8 @@ After all agents return, synthesize into a unified research brief:
 ### Decisions Ready to Lock
 - [Decision with HIGH confidence that can be locked before planning]
 
+For each decision ready to lock, if knowledge.tier is postgres: `PROJECT_ROOT=[project_root] node [scripts_dir]/pipeline-db.js query "UPDATE decisions SET status='locked' WHERE topic='[topic]'"`. For files tier: append `[LOCKED]` prefix to the decision in DECISIONS.md.
+
 ### Open Questions
 - [Anything still uncertain that brainstorm/arch should address]
 
@@ -125,13 +127,13 @@ After all agents return, synthesize into a unified research brief:
 
 ### Step 5 — Store results
 
-**Postgres tier:** Store the research brief:
+**Postgres tier:** Write the research brief to a temp file, then insert with escaped content. Single quotes in the brief MUST be doubled (`'` → `''`) before SQL insertion.
 ```bash
-node $SCRIPTS_DIR/pipeline-db.js query "INSERT INTO research (title, body) VALUES ('[topic]', '[brief]')"
+PROJECT_ROOT=[project_root] node $SCRIPTS_DIR/pipeline-db.js query "INSERT INTO research (title, body) VALUES ('[topic]', '[escaped_brief]')"
 ```
 Then update embeddings:
 ```bash
-node $SCRIPTS_DIR/pipeline-embed.js index
+PROJECT_ROOT=[project_root] node $SCRIPTS_DIR/pipeline-embed.js index
 ```
 
 **Files tier:** Write to `docs/research/YYYY-MM-DD-[topic].md`

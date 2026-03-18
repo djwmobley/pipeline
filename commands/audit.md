@@ -102,3 +102,5 @@ Review each section above and tell me which issues to address first."
 LOW confidence findings from sector agents that are not corroborated by another sector or by Phase 0 grep hits SHOULD be downgraded or noted as uncertain in the synthesis.
 
 If synthesis produced a Simplify candidates block, display it after the verdict.
+
+After fixing all 🔴 findings: `/pipeline:commit reviewed:✓`

@@ -12,7 +12,6 @@ It merges size-routed quality gates with systematic TDD, debugging, and review w
 commands/*.md               — User-invocable slash commands (/pipeline:*)
 skills/*/SKILL.md           — Skill definitions (loaded by commands)
 skills/*/*.md               — Supporting prompt templates for subagents
-agents/code-reviewer.md     — Agent definition for code review
 templates/pipeline.yml      — Default config template
 scripts/                    — Setup scripts (e.g., Postgres knowledge DB)
 ```

@@ -7,6 +7,9 @@
 3. `[FULL TEXT of task from plan]` → paste the complete task description
 4. `[Scene-setting: where this fits, dependencies, architectural context]` → paste relevant context
 5. `[directory]` → actual working directory path
+6. If task requires verification (most do), paste the core rule from `skills/verification/SKILL.md`: "NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION EVIDENCE — run the verification command, read full output, confirm success before reporting DONE."
+7. `[TASK_NUMBER]` → the task number from the plan (e.g., `1`, `2`, `3`)
+8. If task has `tdd: required`, paste the content of skills/tdd/SKILL.md after the task description section. If `tdd: optional` or absent, omit.
 
 ```
 Task tool (general-purpose, model: {{MODEL}}):
@@ -17,6 +20,8 @@ Task tool (general-purpose, model: {{MODEL}}):
     ## Task Description
 
     [FULL TEXT of task from plan — paste it here, don't make subagent read file]
+
+    {{TDD_SECTION}}
 
     ## Context
 
@@ -29,13 +34,13 @@ Task tool (general-purpose, model: {{MODEL}}):
     - The approach or implementation strategy
     - Dependencies or assumptions
 
-    **Ask them now.** Raise concerns before starting work.
+    If requirements, approach, or dependencies are unclear, report status NEEDS_CONTEXT with your specific questions. Do not proceed with assumptions.
 
     ## Your Job
 
     Once you're clear on requirements:
     1. Implement exactly what the task specifies
-    2. Write tests (following TDD: write test first, watch it fail, implement, watch it pass)
+    2. If this task has `tdd: required`: Write tests following TDD (test first, watch fail, implement, watch pass). If `tdd: optional` or unspecified: Write tests for your implementation. Test-first is encouraged but not required.
     3. Verify implementation works
     4. Commit your work
     5. Self-review (see below)

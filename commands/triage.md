@@ -18,7 +18,21 @@ If no config file exists, use defaults: source_dirs=["src/"], tiny_max_files=1, 
 
 ### Step 1 — Count changes
 
-Construct a grep regex from `routing.source_dirs` (e.g., if `["src/", "lib/"]` then regex is `^(src/|lib/)`). Run:
+**Zero-commit detection:** First check if any commits exist:
+
+```bash
+git rev-parse HEAD 2>/dev/null
+```
+
+If this fails (exit code non-zero), the repo has no commits yet. In that case, skip all `git diff HEAD` commands and instead count untracked files as the entire change set:
+
+```bash
+git ls-files --others --exclude-standard <each_source_dir>
+```
+
+Use the count of those files as "files changed" and estimate lines by summing `wc -l` on each. Skip to Step 2.
+
+**Normal case (commits exist):** Construct a grep regex from `routing.source_dirs` (e.g., if `["src/", "lib/"]` then regex is `^(src/|lib/)`). Run:
 
 git diff --name-only HEAD | grep -E "<constructed_regex>" || true
 

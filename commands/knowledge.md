@@ -19,6 +19,8 @@ To find it, check these locations in order:
 
 Set `SCRIPTS_DIR` to the directory containing the scripts. Store the resolved path as a literal string. Use this literal path (not a shell variable) in every subsequent Bash call, since shell state does not persist between tool invocations.
 
+**Use this pattern for ALL script invocations:** `PROJECT_ROOT=[project_root] node [scripts_dir]/pipeline-db.js [args]` — this ensures scripts find the correct project, and avoids `cd` which would change the cwd to the pipeline plugin's git repo (causing scripts to read the wrong `pipeline.yml` and target the wrong database).
+
 Ensure dependencies are installed. The `pg` package is required for Postgres tier commands. The plugin's scripts use pnpm (they have a `pnpm-lock.yaml`) — always use `pnpm install` here, regardless of the project's own package manager:
 ```bash
 cd $SCRIPTS_DIR && [ -d node_modules ] || pnpm install --silent
@@ -88,103 +90,103 @@ For commands not supported by files tier (`search`, `hybrid`, `index`, `add`, `c
 
 **"setup"** →
 ```bash
-cd $SCRIPTS_DIR && node pipeline-db.js setup
+PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-db.js setup
 ```
 
 **"status"** →
 - Files tier:
 ```bash
-cd $SCRIPTS_DIR && node pipeline-files.js status
+PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-files.js status
 ```
 - Postgres tier:
 ```bash
-cd $SCRIPTS_DIR && node pipeline-db.js status
+PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-db.js status
 ```
 
 **"session" <N> <tests> "<summary>"** →
 - Files tier:
 ```bash
-cd $SCRIPTS_DIR && node pipeline-files.js session $N $TESTS "$SUMMARY"
+PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-files.js session $N $TESTS "$SUMMARY"
 ```
 - Postgres tier:
 ```bash
-cd $SCRIPTS_DIR && node pipeline-db.js update session $N $TESTS "$SUMMARY"
+PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-db.js update session $N $TESTS "$SUMMARY"
 ```
 
 **"task new" "<title>" [phase]** →
 ```bash
-cd $SCRIPTS_DIR && node pipeline-db.js update task new "$TITLE" $PHASE
+PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-db.js update task new "$TITLE" $PHASE
 ```
 
 **"task" <id> <status>** →
 ```bash
-cd $SCRIPTS_DIR && node pipeline-db.js update task $ID $STATUS
+PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-db.js update task $ID $STATUS
 ```
 
 **"gotcha" "<issue>" "<rule>"** →
 - Files tier:
 ```bash
-cd $SCRIPTS_DIR && node pipeline-files.js gotcha "$ISSUE" "$RULE"
+PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-files.js gotcha "$ISSUE" "$RULE"
 ```
 - Postgres tier:
 ```bash
-cd $SCRIPTS_DIR && node pipeline-db.js update gotcha new "$ISSUE" "$RULE"
+PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-db.js update gotcha new "$ISSUE" "$RULE"
 ```
 
 **"decision" "<topic>" "<decision>" "<reason>"** →
 - Files tier:
 ```bash
-cd $SCRIPTS_DIR && node pipeline-files.js decision "$TOPIC" "$DECISION" "$REASON"
+PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-files.js decision "$TOPIC" "$DECISION" "$REASON"
 ```
 - Postgres tier:
 ```bash
-cd $SCRIPTS_DIR && node pipeline-db.js update decision "$TOPIC" "$DECISION" "$REASON"
+PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-db.js update decision "$TOPIC" "$DECISION" "$REASON"
 ```
 
 **Note:** Do NOT use raw SQL for decisions — single quotes in values will break the query. Use the `update decision` subcommand which handles parameterization.
 
 **"search" "<query>"** →
 ```bash
-cd $SCRIPTS_DIR && node pipeline-cache.js search "$QUERY"
+PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-cache.js search "$QUERY"
 ```
 
 **"hybrid" "<query>"** →
 ```bash
-cd $SCRIPTS_DIR && node pipeline-embed.js hybrid "$QUERY"
+PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-embed.js hybrid "$QUERY"
 ```
 
 **"index" [--all]** →
 ```bash
-cd $SCRIPTS_DIR && node pipeline-embed.js index $FLAG
+PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-embed.js index $FLAG
 ```
 
 **"add" <path> "<description>"** →
 ```bash
-cd $SCRIPTS_DIR && node pipeline-embed.js add "$PATH" "$DESC"
+PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-embed.js add "$PATH" "$DESC"
 ```
 
 **"check" <filepath>** →
 ```bash
-cd $SCRIPTS_DIR && node pipeline-cache.js check "$FILEPATH"
+PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-cache.js check "$FILEPATH"
 ```
 
 **"cache" <filepath> "<summary>"** →
 ```bash
-cd $SCRIPTS_DIR && node pipeline-cache.js update "$FILEPATH" "$SUMMARY"
+PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-cache.js update "$FILEPATH" "$SUMMARY"
 ```
 
 **"query" "<SQL>"** →
 ```bash
-cd $SCRIPTS_DIR && node pipeline-db.js query "$SQL"
+PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-db.js query "$SQL"
 ```
 
 **"export" [file]** →
 ```bash
-cd $SCRIPTS_DIR && node pipeline-db.js export $FILE
+PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-db.js export $FILE
 ```
 
 **"import" <source> [--all]** →
 ```bash
-cd $SCRIPTS_DIR && node pipeline-db.js import "$SOURCE" $FLAG
+PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-db.js import "$SOURCE" $FLAG
 ```
 Without `--all`, this is a dry run — shows what would be imported. With `--all`, imports gotchas and decisions, skipping duplicates.

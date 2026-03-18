@@ -29,7 +29,18 @@ const ollamaDefaults = {
 
 // ─── PROJECT ROOT ───────────────────────────────────────────────────────────
 
+/**
+ * Find the project root directory.
+ *
+ * Resolution order:
+ * 1. process.env.PROJECT_ROOT — if set, used as-is (avoids the bug where
+ *    scripts invoked via `cd <scripts_dir> && node pipeline-db.js` find
+ *    the pipeline plugin's .git instead of the user project's .git).
+ * 2. Walk up from cwd looking for a .git directory.
+ * 3. Fall back to cwd.
+ */
 function findProjectRoot() {
+  if (process.env.PROJECT_ROOT) return process.env.PROJECT_ROOT;
   let dir = process.cwd();
   while (dir !== path.dirname(dir)) {
     if (fs.existsSync(path.join(dir, '.git'))) return dir;

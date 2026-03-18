@@ -24,6 +24,23 @@ If no config file exists, report: "No `.claude/pipeline.yml` found. Run `/pipeli
 
 ### Step 1 — Gather state (run IN PARALLEL)
 
+**Zero-commit detection:** First check if any commits exist:
+
+```bash
+git rev-parse HEAD 2>/dev/null
+```
+
+If this fails (exit code non-zero), the repo has no commits. Replace the `git diff HEAD` commands below with:
+
+```bash
+git status
+git diff --cached --stat       # staged changes (no HEAD to diff against)
+git diff --cached              # staged diff
+git ls-files --others --exclude-standard   # untracked files
+```
+
+**Normal case (commits exist):**
+
 ```bash
 git status
 git diff --stat HEAD
@@ -51,7 +68,11 @@ git diff HEAD
 
 **3a. Review gate — HARD STOP for changes above threshold**
 
-Count source files in the diff. Construct a grep regex from `routing.source_dirs` (e.g., if `["src/", "lib/"]` then regex is `^(src/|lib/)`). Run:
+Count source files in the diff. Construct a grep regex from `routing.source_dirs` (e.g., if `["src/", "lib/"]` then regex is `^(src/|lib/)`).
+
+**Zero-commit case (no HEAD):** If `git rev-parse HEAD 2>/dev/null` fails, use `git diff --cached --name-only` for staged files and `git ls-files --others --exclude-standard <each_source_dir>` for untracked files. For the initial commit (no HEAD exists), all untracked + staged source files count toward the review gate threshold.
+
+**Normal case (commits exist):** Run:
 
 git diff --name-only HEAD | grep -E "<constructed_regex>" | wc -l
 
@@ -127,6 +148,8 @@ Run each command in `commit.post_commit_hooks[]` sequentially.
 1. If `$PIPELINE_DIR` is set: `$PIPELINE_DIR/scripts/`
 2. Check `${HOME:-$USERPROFILE}/dev/pipeline/scripts/`
 3. Search: find `pipeline-db.js` under `${HOME:-$USERPROFILE}/.claude/`
+
+**When running hook commands that invoke pipeline scripts, prefix with `PROJECT_ROOT=[project_root]`** to ensure they target the correct project. Example: `PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-embed.js index`
 
 ---
 

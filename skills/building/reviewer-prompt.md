@@ -4,10 +4,12 @@ Dispatch this reviewer after each implementer completes a task. It checks BOTH s
 
 **Substitution checklist (orchestrator must complete before dispatching):**
 
-1. `{{MODEL}}` → value of `models.cheap` from pipeline.yml (e.g., `haiku`)
+1. `{{MODEL}}` → value of `models.cheap` (haiku) for mechanical task reviews, or `models.review` (sonnet) for integration task reviews, from pipeline.yml
 2. `[FULL TEXT of task requirements]` → paste the actual task requirements
 3. `[From implementer's report]` → paste the implementer's completion report
 4. `[from pipeline.yml — never flag these]` → replace with the actual list from `review.non_negotiable` in pipeline.yml
+5. `[TASK_NUMBER]` → the task number from the plan (e.g., `1`, `2`, `3`)
+6. `[TASK_NAME]` → the task name from the plan
 
 ```
 Task tool (general-purpose, model: {{MODEL}}):

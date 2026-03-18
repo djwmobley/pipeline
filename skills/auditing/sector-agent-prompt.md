@@ -10,6 +10,7 @@ Use this template when dispatching a sector review agent.
 5. `[Filtered grep results relevant to this sector's files]` → paste Phase 0 grep hits
 6. `[List of files from sector definition paths]` → paste actual file assignments
 7. `[SECTOR_ID]` → the sector identifier (e.g., `A`, `B`, `C`)
+8. `[SECTOR_NAME]` → the human-readable sector name (e.g., `Components`, `Hooks`, `Utils`)
 
 ```
 Task tool (general-purpose, model: {{MODEL}}):
