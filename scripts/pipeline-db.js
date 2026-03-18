@@ -18,81 +18,11 @@
 const { Client } = require('pg');
 const fs = require('fs');
 const path = require('path');
+const { loadConfig, connect, c } = require('./lib/shared');
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────────
 
-function findProjectRoot() {
-  let dir = process.cwd();
-  while (dir !== path.dirname(dir)) {
-    if (fs.existsSync(path.join(dir, '.git'))) return dir;
-    dir = path.dirname(dir);
-  }
-  return process.cwd();
-}
-
-function loadConfig() {
-  const root = findProjectRoot();
-  const configPath = path.join(root, '.claude', 'pipeline.yml');
-
-  const defaults = {
-    host: 'localhost',
-    port: 5432,
-    database: 'pipeline_context',
-    user: 'postgres',
-    project: path.basename(root),
-  };
-
-  if (!fs.existsSync(configPath)) return defaults;
-
-  // Simple YAML parser for the knowledge section — no dependency needed
-  const content = fs.readFileSync(configPath, 'utf8');
-
-  const get = (key) => {
-    const match = content.match(new RegExp(`^\\s*${key}:\\s*"?([^"\\n]+)"?`, 'm'));
-    return match ? match[1].trim() : null;
-  };
-
-  const projectName = get('name') || defaults.project;
-
-  // Check knowledge tier
-  const tier = get('tier');
-  if (tier && tier !== 'postgres') {
-    console.error('Knowledge tier is "files", not "postgres". Set knowledge.tier: "postgres" in pipeline.yml.');
-    process.exit(1);
-  }
-
-  return {
-    host: get('host') || defaults.host,
-    port: parseInt(get('port') || defaults.port),
-    database: get('database') || defaults.database,
-    user: get('user') || defaults.user,
-    project: projectName,
-  };
-}
-
 const CONFIG = loadConfig();
-
-async function connect() {
-  const client = new Client({
-    host: CONFIG.host,
-    port: CONFIG.port,
-    database: CONFIG.database,
-    user: CONFIG.user,
-  });
-  await client.connect();
-  return client;
-}
-
-// ─── ANSI ────────────────────────────────────────────────────────────────────
-
-const c = {
-  bold:   (s) => `\x1b[1m${s}\x1b[0m`,
-  green:  (s) => `\x1b[32m${s}\x1b[0m`,
-  yellow: (s) => `\x1b[33m${s}\x1b[0m`,
-  red:    (s) => `\x1b[31m${s}\x1b[0m`,
-  cyan:   (s) => `\x1b[36m${s}\x1b[0m`,
-  dim:    (s) => `\x1b[2m${s}\x1b[0m`,
-};
 
 function statusIcon(status) {
   return {
@@ -131,7 +61,7 @@ async function cmdSetup() {
   }
 
   // Now run the setup SQL
-  const client = await connect();
+  const client = await connect(CONFIG);
   try {
     const sqlPath = path.join(__dirname, 'setup-knowledge-db.sql');
     const sql = fs.readFileSync(sqlPath, 'utf8');
@@ -152,7 +82,7 @@ async function cmdSetup() {
 // ─── STATUS ──────────────────────────────────────────────────────────────────
 
 async function cmdStatus() {
-  const client = await connect();
+  const client = await connect(CONFIG);
   try {
     const sessions = await client.query('SELECT num, date, summary, tests FROM sessions ORDER BY num DESC LIMIT 3');
     const tasks = await client.query("SELECT id, title, status, github_issue, phase FROM tasks WHERE status NOT IN ('done', 'deferred') ORDER BY id");
@@ -206,7 +136,7 @@ async function cmdStatus() {
 // ─── UPDATE ──────────────────────────────────────────────────────────────────
 
 async function cmdUpdate(args) {
-  const client = await connect();
+  const client = await connect(CONFIG);
   try {
     const [entity, ...rest] = args;
 
@@ -279,7 +209,7 @@ async function cmdUpdate(args) {
 // ─── RAW QUERY ───────────────────────────────────────────────────────────────
 
 async function cmdQuery(sql) {
-  const client = await connect();
+  const client = await connect(CONFIG);
   try {
     const r = await client.query(sql);
     if (r.rows && r.rows.length > 0) {

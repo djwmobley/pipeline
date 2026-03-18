@@ -15,68 +15,14 @@
  *   node pipeline-cache.js invalidate <filepath>        # Force re-read next time
  */
 
-const { Client } = require('pg');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const { loadConfig, connect, c } = require('./lib/shared');
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────────
 
-function findProjectRoot() {
-  let dir = process.cwd();
-  while (dir !== path.dirname(dir)) {
-    if (fs.existsSync(path.join(dir, '.git'))) return dir;
-    dir = path.dirname(dir);
-  }
-  return process.cwd();
-}
-
-function loadConfig() {
-  const root = findProjectRoot();
-  const configPath = path.join(root, '.claude', 'pipeline.yml');
-  const defaults = {
-    host: 'localhost', port: 5432,
-    database: 'pipeline_context', user: 'postgres',
-  };
-
-  if (!fs.existsSync(configPath)) return { ...defaults, root };
-
-  const content = fs.readFileSync(configPath, 'utf8');
-  const get = (key) => {
-    const match = content.match(new RegExp(`^\\s*${key}:\\s*"?([^"\\n]+)"?`, 'm'));
-    return match ? match[1].trim() : null;
-  };
-
-  return {
-    host: get('host') || defaults.host,
-    port: parseInt(get('port') || defaults.port),
-    database: get('database') || defaults.database,
-    user: get('user') || defaults.user,
-    root,
-  };
-}
-
 const CONFIG = loadConfig();
-
-async function connect() {
-  const client = new Client({
-    host: CONFIG.host, port: CONFIG.port,
-    database: CONFIG.database, user: CONFIG.user,
-  });
-  await client.connect();
-  return client;
-}
-
-// ─── ANSI ────────────────────────────────────────────────────────────────────
-
-const c = {
-  bold:   (s) => `\x1b[1m${s}\x1b[0m`,
-  green:  (s) => `\x1b[32m${s}\x1b[0m`,
-  yellow: (s) => `\x1b[33m${s}\x1b[0m`,
-  red:    (s) => `\x1b[31m${s}\x1b[0m`,
-  cyan:   (s) => `\x1b[36m${s}\x1b[0m`,
-  dim:    (s) => `\x1b[2m${s}\x1b[0m`,
-};
 
 function hashFile(filepath) {
   const abs = path.resolve(CONFIG.root, filepath);
@@ -89,7 +35,7 @@ function hashFile(filepath) {
 // ─── CHECK ───────────────────────────────────────────────────────────────────
 
 async function cmdCheck(filepath) {
-  const client = await connect();
+  const client = await connect(CONFIG);
   try {
     let sha256;
     try {
@@ -123,7 +69,7 @@ async function cmdCheck(filepath) {
 // ─── UPDATE ──────────────────────────────────────────────────────────────────
 
 async function cmdUpdate(filepath, summary, symbolsArg) {
-  const client = await connect();
+  const client = await connect(CONFIG);
   try {
     let sha256, lines;
     try {
@@ -152,7 +98,7 @@ async function cmdUpdate(filepath, summary, symbolsArg) {
 // ─── SEARCH ──────────────────────────────────────────────────────────────────
 
 async function cmdSearch(terms) {
-  const client = await connect();
+  const client = await connect(CONFIG);
   try {
     const r = await client.query(
       `SELECT path,
@@ -184,7 +130,7 @@ async function cmdSearch(terms) {
 // ─── LIST ────────────────────────────────────────────────────────────────────
 
 async function cmdList() {
-  const client = await connect();
+  const client = await connect(CONFIG);
   try {
     const r = await client.query(
       `SELECT path, line_count, LEFT(sha256, 8) as hash, last_read, last_changed
@@ -208,7 +154,7 @@ async function cmdList() {
 // ─── INVALIDATE ──────────────────────────────────────────────────────────────
 
 async function cmdInvalidate(filepath) {
-  const client = await connect();
+  const client = await connect(CONFIG);
   try {
     const r = await client.query('DELETE FROM file_cache WHERE path = $1 RETURNING path', [filepath]);
     console.log(r.rowCount > 0 ? c.green(`Invalidated: ${filepath}`) : c.yellow(`Not in cache: ${filepath}`));

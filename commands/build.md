@@ -1,49 +1,23 @@
 ---
 allowed-tools: Bash(*), Read(*), Write(*), Edit(*), Glob(*), Grep(*), Task(*)
-description: Subagent-driven plan execution — fresh agent per task with two-stage review
+description: Subagent-driven plan execution — fresh agent per task with post-task review
 ---
 
 ## Pipeline Build
 
-Execute an implementation plan by dispatching fresh subagent per task, with two-stage review
-after each: spec compliance first, then code quality.
-
-**Announce:** "Using pipeline build to execute the implementation plan."
-
 Read the skill file at `skills/building/SKILL.md` from the pipeline plugin directory.
 
----
-
-### Step 0 — Load config
+### Load config
 
 Read `.claude/pipeline.yml` from the project root. Extract:
 - `models` — model routing for task assignment
+- `models.cheap` — for document reviews and mechanical tasks
 - `commands.test` — test command for verification
-- `review.non_negotiable` — intentional decisions for quality reviewer
+- `review.non_negotiable` — intentional decisions for reviewer
 - `docs.plans_dir` — where to find plans
 
----
+If no config file exists, report: "No `.claude/pipeline.yml` found. Run `/pipeline:init` first." and stop.
 
-### Execute the building skill
+Follow the building skill exactly. Use `models.cheap` (haiku) for mechanical tasks and document reviews, `models.implement` (sonnet) for integration tasks.
 
-Follow `skills/building/SKILL.md` exactly. The skill defines:
-
-1. **Load plan** — Read the plan file (from args or most recent in `docs.plans_dir`)
-2. **Extract all tasks** with full text and context upfront
-3. **For each task:**
-   a. Dispatch implementer subagent with model from plan's task routing
-   b. Handle status: DONE → review, NEEDS_CONTEXT → provide context, BLOCKED → escalate
-   c. Dispatch spec compliance reviewer
-   d. If issues → implementer fixes → re-review
-   e. Dispatch code quality reviewer (pipeline:code-reviewer agent)
-   f. If issues → implementer fixes → re-review
-   g. Mark task complete
-4. **After all tasks:** dispatch final code reviewer for entire implementation
-5. **Transition:** invoke /pipeline:finish
-
-**Fallback:** If subagents unavailable, execute tasks sequentially in main context.
-
-**Model selection per task:**
-- Mechanical tasks (1-2 files, clear spec) → haiku
-- Integration tasks (multi-file, pattern matching) → sonnet
-- Architecture/design tasks → sonnet or opus per config
+**Fallback:** If subagents are unavailable, execute tasks sequentially in main context.

@@ -1,13 +1,7 @@
-# Plan Document Reviewer Prompt Template
-
-Use this template when dispatching a plan document reviewer subagent.
-
-**Purpose:** Verify the plan is complete, matches the spec, and has proper task decomposition.
-
-**Dispatch after:** The complete plan is written.
+# Plan Reviewer
 
 ```
-Task tool (general-purpose):
+Task tool (general-purpose, model: config.models.cheap):
   description: "Review plan document"
   prompt: |
     You are a plan document reviewer. Verify this plan is complete and ready for implementation.
@@ -19,33 +13,18 @@ Task tool (general-purpose):
 
     | Category | What to Look For |
     |----------|------------------|
-    | Completeness | TODOs, placeholders, incomplete tasks, missing steps |
+    | Completeness | TODOs, placeholders, incomplete tasks |
     | Spec Alignment | Plan covers spec requirements, no major scope creep |
-    | Task Decomposition | Tasks have clear boundaries, steps are actionable |
-    | Buildability | Could an engineer follow this plan without getting stuck? |
-    | Build Sequence | Dependencies correctly ordered, no circular deps |
-    | Model Routing | Tasks assigned appropriate model complexity |
+    | Task Decomposition | Clear boundaries, actionable steps |
+    | Buildability | Could an engineer follow this without getting stuck? |
+    | Build Sequence | Dependencies correctly ordered |
+    | Model Routing | Tasks assigned appropriate complexity |
 
-    ## Calibration
+    Only flag issues that would cause real problems during implementation. Approve unless there are serious gaps.
 
-    **Only flag issues that would cause real problems during implementation.**
-    An implementer building the wrong thing or getting stuck is an issue.
-    Minor wording, stylistic preferences, and "nice to have" suggestions are not.
-
-    Approve unless there are serious gaps — missing requirements from the spec,
-    contradictory steps, placeholder content, or tasks so vague they can't be acted on.
-
-    ## Output Format
-
-    ## Plan Review
+    ## Output
 
     **Status:** Approved | Issues Found
-
-    **Issues (if any):**
-    - [Task X, Step Y]: [specific issue] - [why it matters for implementation]
-
-    **Recommendations (advisory, do not block approval):**
-    - [suggestions for improvement]
+    **Issues (if any):** [Task X, Step Y]: [issue] - [why it matters]
+    **Recommendations (advisory):** [suggestions]
 ```
-
-**Reviewer returns:** Status, Issues (if any), Recommendations

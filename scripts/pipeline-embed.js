@@ -21,80 +21,23 @@
  */
 
 const http = require('http');
-const { Client } = require('pg');
-const fs = require('fs');
-const path = require('path');
+const { loadConfig, connect, c, ollamaDefaults } = require('./lib/shared');
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────────
 
-function findProjectRoot() {
-  let dir = process.cwd();
-  while (dir !== path.dirname(dir)) {
-    if (fs.existsSync(path.join(dir, '.git'))) return dir;
-    dir = path.dirname(dir);
-  }
-  return process.cwd();
-}
-
-function loadConfig() {
-  const root = findProjectRoot();
-  const configPath = path.join(root, '.claude', 'pipeline.yml');
-  const defaults = {
-    host: 'localhost', port: 5432,
-    database: 'pipeline_context', user: 'postgres',
-    ollama_host: 'localhost', ollama_port: 11434,
-    embed_model: 'mxbai-embed-large',
-  };
-
-  if (!fs.existsSync(configPath)) return defaults;
-
-  const content = fs.readFileSync(configPath, 'utf8');
-  const get = (key) => {
-    const match = content.match(new RegExp(`^\\s*${key}:\\s*"?([^"\\n]+)"?`, 'm'));
-    return match ? match[1].trim() : null;
-  };
-
-  return {
-    host: get('host') || defaults.host,
-    port: parseInt(get('port') || defaults.port),
-    database: get('database') || defaults.database,
-    user: get('user') || defaults.user,
-    ollama_host: defaults.ollama_host,
-    ollama_port: defaults.ollama_port,
-    embed_model: get('embedding_model') || defaults.embed_model,
-  };
-}
-
 const CONFIG = loadConfig();
-
-async function connect() {
-  const client = new Client({
-    host: CONFIG.host, port: CONFIG.port,
-    database: CONFIG.database, user: CONFIG.user,
-  });
-  await client.connect();
-  return client;
-}
-
-// ─── ANSI ────────────────────────────────────────────────────────────────────
-
-const c = {
-  bold:   (s) => `\x1b[1m${s}\x1b[0m`,
-  green:  (s) => `\x1b[32m${s}\x1b[0m`,
-  yellow: (s) => `\x1b[33m${s}\x1b[0m`,
-  red:    (s) => `\x1b[31m${s}\x1b[0m`,
-  cyan:   (s) => `\x1b[36m${s}\x1b[0m`,
-  dim:    (s) => `\x1b[2m${s}\x1b[0m`,
-};
+const OLLAMA_HOST = ollamaDefaults.host;
+const OLLAMA_PORT = ollamaDefaults.port;
+const EMBED_MODEL = CONFIG.embedding_model || ollamaDefaults.model;
 
 // ─── OLLAMA EMBED API ────────────────────────────────────────────────────────
 
 function ollamaEmbed(texts) {
   return new Promise((resolve, reject) => {
-    const body = JSON.stringify({ model: CONFIG.embed_model, input: texts });
+    const body = JSON.stringify({ model: EMBED_MODEL, input: texts });
     const opts = {
-      hostname: CONFIG.ollama_host,
-      port: CONFIG.ollama_port,
+      hostname: OLLAMA_HOST,
+      port: OLLAMA_PORT,
       path: '/api/embed',
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
@@ -111,7 +54,7 @@ function ollamaEmbed(texts) {
       });
     });
     req.on('error', (e) => {
-      reject(new Error(`Cannot reach Ollama at ${CONFIG.ollama_host}:${CONFIG.ollama_port} — is it running? (${e.message})`));
+      reject(new Error(`Cannot reach Ollama at ${OLLAMA_HOST}:${OLLAMA_PORT} — is it running? (${e.message})`));
     });
     req.write(body);
     req.end();
@@ -121,7 +64,7 @@ function ollamaEmbed(texts) {
 // ─── INDEX ───────────────────────────────────────────────────────────────────
 
 async function cmdIndex(forceAll) {
-  const client = await connect();
+  const client = await connect(CONFIG);
   try {
     const query = forceAll
       ? 'SELECT path, description FROM code_index ORDER BY path'
@@ -133,7 +76,7 @@ async function cmdIndex(forceAll) {
       return;
     }
 
-    console.log(`${c.bold('Embedding')} ${rows.length} code_index entries via ${CONFIG.embed_model}...`);
+    console.log(`${c.bold('Embedding')} ${rows.length} code_index entries via ${EMBED_MODEL}...`);
 
     const BATCH = 32;
     let done = 0;
@@ -160,7 +103,7 @@ async function cmdIndex(forceAll) {
 // ─── ADD TO INDEX ────────────────────────────────────────────────────────────
 
 async function cmdAdd(filepath, description) {
-  const client = await connect();
+  const client = await connect(CONFIG);
   try {
     await client.query(
       `INSERT INTO code_index (path, description)
@@ -182,7 +125,7 @@ async function cmdSearch(query) {
 
   const [qEmbedding] = await ollamaEmbed([query]);
 
-  const client = await connect();
+  const client = await connect(CONFIG);
   try {
     const { rows: check } = await client.query(
       'SELECT COUNT(*) FROM code_index WHERE embedding IS NOT NULL'
@@ -219,7 +162,7 @@ async function cmdSearch(query) {
 // ─── HYBRID SEARCH (FTS + vector) ───────────────────────────────────────────
 
 async function cmdHybrid(query) {
-  const client = await connect();
+  const client = await connect(CONFIG);
   try {
     const { rows: check } = await client.query(
       'SELECT COUNT(*) FROM code_index WHERE embedding IS NOT NULL'
@@ -276,7 +219,7 @@ async function cmdHybrid(query) {
 function help() {
   console.log(`
 ${c.bold('pipeline-embed.js')} — Code index + semantic search
-${c.dim(`Database: ${CONFIG.database} | Ollama: ${CONFIG.ollama_host}:${CONFIG.ollama_port} | Model: ${CONFIG.embed_model}`)}
+${c.dim(`Database: ${CONFIG.database} | Ollama: ${OLLAMA_HOST}:${OLLAMA_PORT} | Model: ${EMBED_MODEL}`)}
 
   ${c.cyan('index')}
       Embed all unembedded code_index entries
@@ -293,8 +236,8 @@ ${c.dim(`Database: ${CONFIG.database} | Ollama: ${CONFIG.ollama_host}:${CONFIG.o
   ${c.cyan('hybrid')} "<query>"
       FTS + vector hybrid search (best results)
 
-Requires: Ollama running at ${CONFIG.ollama_host}:${CONFIG.ollama_port}
-  ollama pull ${CONFIG.embed_model}
+Requires: Ollama running at ${OLLAMA_HOST}:${OLLAMA_PORT}
+  ollama pull ${EMBED_MODEL}
 `);
 }
 

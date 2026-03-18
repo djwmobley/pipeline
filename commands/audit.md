@@ -7,8 +7,6 @@ description: Full codebase review — Phase 0 grep + parallel sector agents + sy
 
 Full codebase review with parallel sector agents. This is READ-ONLY — no code is modified.
 
-**Announce:** "Running full codebase audit with parallel sector agents."
-
 Read the skill file at `skills/auditing/SKILL.md` from the pipeline plugin directory.
 
 ---

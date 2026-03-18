@@ -8,8 +8,6 @@ description: Targeted code simplification — reviews specific files for SOLID v
 Simplify specific files flagged by `/pipeline:review` or `/pipeline:audit`.
 Does NOT do a full re-review — applies targeted simplification only.
 
-**Announce:** "Simplifying flagged files."
-
 ---
 
 ### Step 0 — Load config

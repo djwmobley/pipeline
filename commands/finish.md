@@ -7,10 +7,6 @@ description: Branch completion workflow — verify tests, present options, execu
 
 Guide completion of development work by presenting clear options and handling the chosen workflow.
 
-**Announce:** "Using pipeline finish to complete this work."
-
----
-
 ### Step 1 — Load config and verify tests
 
 Read `.claude/pipeline.yml` for `commands.test`.
@@ -105,10 +101,10 @@ Then cleanup worktree (Step 5).
 
 ### Step 5 — Cleanup worktree
 
-For Options 1, 2, 4: check if in worktree and remove it.
+For Options 1, 2, 4: if in a worktree (git-dir path contains 'worktrees'), clean up after merge/discard.
 ```bash
-git worktree list | grep $(git branch --show-current)
-git worktree remove [path]
+# Check if we're in a worktree (not the main working tree)
+git rev-parse --git-dir | grep -q "worktrees" && echo "IN_WORKTREE"
 ```
 For Option 3: keep worktree.
 

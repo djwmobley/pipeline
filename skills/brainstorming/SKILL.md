@@ -21,7 +21,7 @@ This applies to EVERY project regardless of perceived simplicity.
 Complete these steps in order:
 
 1. **Explore project context** — check files, docs, recent commits
-2. **Offer visual companion** (if topic will involve visual questions)
+2. **Offer visual companion**
 3. **Ask clarifying questions** — one at a time, understand purpose/constraints/success criteria
 4. **Propose 2-3 approaches** — with trade-offs and your recommendation
 5. **Present design** — in sections scaled to their complexity, get user approval after each section
@@ -32,6 +32,15 @@ Complete these steps in order:
 10. **Transition to implementation** — invoke /pipeline:plan
 
 ## The Process
+
+**Visual companion (optional):**
+When upcoming questions will involve visual content (mockups, layouts, diagrams), offer:
+> "Some of what we're working on might be easier to show in a browser — mockups, diagrams, comparisons.
+> Want to try it? (Requires opening a local URL)"
+
+This offer MUST be its own message. If declined, proceed text-only.
+
+Even after acceptance, decide per question: use browser for visual content (mockups, wireframes, layout comparisons), use terminal for text (requirements, conceptual choices, tradeoff lists). A question about a UI topic is not automatically visual.
 
 **Understanding the idea:**
 - Check out the current project state first (files, docs, recent commits)

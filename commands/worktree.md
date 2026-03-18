@@ -7,8 +7,6 @@ description: Create an isolated git worktree for feature work
 
 Create an isolated git worktree for feature development.
 
-**Announce:** "Setting up an isolated workspace with git worktree."
-
 ---
 
 ### Step 1 — Directory selection

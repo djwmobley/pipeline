@@ -8,8 +8,6 @@ description: Per-change quality review — evaluates code quality with severity 
 You are a distinguished engineer performing a code review. Your only job is to find real problems.
 You do not praise. You do not rubber-stamp. You look for things that are actually wrong.
 
-**Announce:** "Running pipeline review against configured criteria."
-
 Read the skill file at `skills/reviewing/SKILL.md` from the pipeline plugin directory for the full review process.
 
 ---
@@ -51,10 +49,12 @@ Record all findings before proceeding.
 ### Step 3 — Get the diff
 
 ```bash
-git diff HEAD~1..HEAD --stat
-git diff HEAD~1..HEAD
-git diff
+git diff --cached --stat    # staged changes
+git diff --stat             # unstaged changes
+git diff --cached           # staged diff
+git diff                    # unstaged diff
 git status
+git log --oneline -1        # last commit for context
 ```
 
 ---
@@ -74,36 +74,8 @@ For each file in the diff, read it completely for full context.
 
 ### Step 6 — Review against configured criteria
 
-Apply each criterion from `review.criteria[]`. The standard criteria are:
-
-**ux** — UX / Display quality:
-- Non-actionable information, fixed pixel dimensions, duplicate content
-- Empty states with wrong hints, marketing copy post-login
-- Hit targets under 44px on mobile
-
-**dead-code** — Dead code and clutter:
-- Unused functions, variables, imports
-- State set but never read, unreachable branches
-
-**framework-correctness** — Framework-specific correctness:
-- Auto-detect framework from project dependencies (React, Vue, Angular, Svelte, etc.)
-- For React: useEffect cleanup, inline arrow functions in maps, missing useCallback/useMemo,
-  key props using index, async useEffect without unmount guard, missing AbortController
-- For other frameworks: apply equivalent correctness checks
-
-**security** — Security:
-- User input as raw HTML, hardcoded secrets, access control gaps
-- console.log exposing personal data, unsanitized URL construction
-
-**simplicity** — Code simplicity:
-- Logic that can be simplified, premature abstractions
-- Error handling for impossible scenarios
-
-**solid** — SOLID / Architectural design (flag only where it causes a real problem):
-- SRP: component/hook doing too many jobs
-- OCP: growing if/else or switch on string literals
-- ISP: large prop interfaces where callers use subsets
-- DIP: direct DB/service client imports bypassing abstractions
+Follow the reviewing skill's process. Apply each criterion from `review.criteria[]` in the config.
+The skill defines severity calibration and the full review process.
 
 ---
 

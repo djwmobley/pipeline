@@ -9,13 +9,13 @@ Interact with the knowledge DB. Routes to the correct script based on the subcom
 
 ### Step 0 — Locate scripts
 
-The pipeline scripts live in the plugin directory. Detect it:
-```bash
-# Check common locations
-ls "$(dirname "$(which claude 2>/dev/null)")/../plugins/pipeline/scripts/pipeline-db.js" 2>/dev/null \
-  || ls "$HOME/.claude/plugins/cache/*/pipeline/*/scripts/pipeline-db.js" 2>/dev/null \
-  || ls "$HOME/dev/pipeline/scripts/pipeline-db.js" 2>/dev/null
-```
+The pipeline plugin's scripts directory contains pipeline-db.js, pipeline-embed.js, and pipeline-cache.js.
+
+To find it, check these locations in order:
+1. If the environment has `PIPELINE_DIR` set, use `$PIPELINE_DIR/scripts/`
+2. Check `$HOME/dev/pipeline/scripts/` (common dev location)
+3. Search the Claude Code plugin cache: `find "$HOME/.claude" -name "pipeline-db.js" -path "*/pipeline/*/scripts/*" 2>/dev/null | head -1`
+4. If none found, ask: "Where is the pipeline plugin installed? I need the path to the scripts/ directory."
 
 Set `SCRIPTS_DIR` to the directory containing the scripts.
 

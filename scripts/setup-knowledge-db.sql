@@ -80,11 +80,17 @@ CREATE TABLE IF NOT EXISTS research (
 CREATE TABLE IF NOT EXISTS code_index (
   path TEXT PRIMARY KEY,
   description TEXT NOT NULL,
-  fts_vec TSVECTOR GENERATED ALWAYS AS (to_tsvector('english', description)) STORED,
-  embedding vector(1024)       -- NULL until embeddings are generated
+  fts_vec TSVECTOR GENERATED ALWAYS AS (to_tsvector('english', description)) STORED
 );
 
 CREATE INDEX IF NOT EXISTS code_index_fts_idx ON code_index USING gin(fts_vec);
+
+-- Add vector column if pgvector is available (idempotent)
+DO $$ BEGIN
+  ALTER TABLE code_index ADD COLUMN IF NOT EXISTS embedding vector(1024);
+EXCEPTION WHEN OTHERS THEN
+  RAISE NOTICE 'Skipping vector column — pgvector not installed. FTS search still works.';
+END $$;
 
 -- ═══════════════════════════════════════════════════════════════════════════════
 -- FILE CACHE — hash-based cache to skip re-reading unchanged files

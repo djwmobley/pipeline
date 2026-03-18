@@ -46,11 +46,12 @@ commit:
 
 # Model routing
 models:
-  explore: "haiku"
-  implement: "sonnet"
-  review: "sonnet"
-  plan: "sonnet"
-  architecture: "opus"
+  cheap: "haiku"           # Doc reviews, screenshot analysis, mechanical tasks
+  explore: "haiku"         # Codebase search, file scanning
+  implement: "sonnet"      # Write code, integration tasks
+  review: "sonnet"         # Code review, sector agents
+  plan: "sonnet"           # Planning
+  architecture: "opus"     # High-stakes architectural decisions
 
 # Knowledge tier: "files" (default) or "postgres"
 #

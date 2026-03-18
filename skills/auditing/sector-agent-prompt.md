@@ -19,7 +19,9 @@ Task tool (general-purpose, model: config.models.review):
 
     ## Review Criteria
 
-    [From review.criteria in pipeline.yml — expanded to full descriptions]
+    Review for: [list criteria names from config, e.g.: ux, dead-code, framework-correctness, security, simplicity, solid]
+
+    Focus on findings that would block a PR (🔴) or degrade quality (🟡). For framework-specific checks, detect the framework from project dependencies.
 
     ## Phase 0 Hits for Your Sector
 

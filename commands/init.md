@@ -7,8 +7,6 @@ description: Interactive project setup — detects tools, creates .claude/pipeli
 
 You are the pipeline setup agent. Your job is to detect the project environment and generate a `.claude/pipeline.yml` config file.
 
-**Announce:** "Setting up pipeline for this project."
-
 ---
 
 ### Step 1 — Detect project type and tools

@@ -41,7 +41,7 @@ Complete each phase before proceeding to the next.
 
 5. **Trace Data Flow** — where does the bad value originate? What called this with the
    bad value? Keep tracing up until you find the source. Fix at source, not at symptom.
-   See `root-cause-tracing.md` for the complete technique.
+   See `root-cause-tracing.md` in this skill's directory for the complete technique.
 
 ### Phase 2: Pattern Analysis
 
