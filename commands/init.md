@@ -88,7 +88,7 @@ If Postgres chosen and available:
    `"node $SCRIPTS_DIR/pipeline-embed.js index"` (keeps embeddings current after each commit)
 
 If files chosen (default):
-1. Create `docs/sessions/` directory
+1. Create directories: `mkdir -p docs/sessions docs/specs docs/plans`
 2. Set `knowledge.tier: "files"` in config
 
 ---
@@ -124,13 +124,13 @@ Map detected tools to config fields:
 
 Write the config file:
 ```bash
-mkdir -p .claude
+mkdir -p .claude docs/specs docs/plans
 ```
 Then use the Write tool to create `.claude/pipeline.yml`.
 
 ---
 
-### Step 6 — Confirm
+### Step 6 — Confirm and guide
 
 Report what was detected and configured:
 
@@ -151,4 +151,18 @@ Report what was detected and configured:
 **Review sectors:** [count or "not configured"]
 
 Config written to `.claude/pipeline.yml`.
+```
+
+Then show the getting-started guide:
+
+```
+## Getting started
+
+**Make a small change, then:**
+1. `/pipeline:commit` — runs preflight gates (typecheck, lint, test) and commits
+
+**Before a bigger change:**
+1. `/pipeline:triage` — tells you the right workflow for the change size
+
+**All commands:** `/pipeline:` then tab-complete to see options
 ```

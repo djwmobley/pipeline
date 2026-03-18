@@ -16,31 +16,43 @@ Pipeline routes your work through the right amount of process based on change si
 ## Installation
 
 ```bash
-# Clone the repo
-git clone https://github.com/djwmobley/pipeline.git ~/dev/pipeline
-
-# Register as a custom marketplace
+# Add as a custom marketplace
 claude plugin marketplace add djwmobley/pipeline
 
-# Install globally
-claude plugin install pipeline --scope user
+# Install the plugin (user-wide)
+claude plugin install pipeline@pipeline --scope user
 
-# Or validate locally during development
+# Verify
+claude plugin list
+```
+
+**During development:**
+```bash
+# Validate locally without installing
 claude plugin validate ~/dev/pipeline
 ```
 
 ## Quick Start
 
 ```bash
-# In any project directory:
+# 1. In any project directory, run init:
 /pipeline:init
 # Answer the prompts — generates .claude/pipeline.yml
 
-# Then use the pipeline:
-/pipeline:triage          # What size is this change?
+# 2. Make a small change, then commit with preflight gates:
+/pipeline:commit
+
+# 3. Before bigger changes, check the recommended workflow:
+/pipeline:triage
+
+# 4. All pipeline commands:
 /pipeline:commit          # Preflight gates + commit + push
-/pipeline:review          # Per-change quality review
+/pipeline:review          # Per-change quality review (🔴/🟡/🔵)
 /pipeline:test            # Structured test report
+/pipeline:triage          # What size is this change?
+/pipeline:brainstorm      # Design before LARGE changes
+/pipeline:audit           # Full codebase review
+/pipeline:debug           # Systematic root-cause diagnosis
 ```
 
 ## Commands
@@ -73,7 +85,17 @@ claude plugin validate ~/dev/pipeline
 | `/pipeline:worktree` | Create isolated git worktree |
 | `/pipeline:finish` | Branch completion — merge, PR, keep, or discard |
 
-### Knowledge DB (Postgres tier)
+### Knowledge (session tracking)
+
+Files tier (default — no setup required):
+| Command | Description |
+|---------|-------------|
+| `/pipeline:knowledge status` | Recent sessions, gotchas |
+| `/pipeline:knowledge session N T "desc"` | Record session N with T tests |
+| `/pipeline:knowledge gotcha "issue" "rule"` | Add a critical constraint |
+| `/pipeline:knowledge decision "topic" "choice" "reason"` | Record an architectural decision |
+
+Postgres tier (requires local Postgres — chosen during init):
 | Command | Description |
 |---------|-------------|
 | `/pipeline:knowledge setup` | Create database + all tables (idempotent) |
@@ -82,6 +104,7 @@ claude plugin validate ~/dev/pipeline
 | `/pipeline:knowledge task new "title"` | Create a task |
 | `/pipeline:knowledge task ID status` | Update task (pending/in_progress/done/deferred) |
 | `/pipeline:knowledge gotcha "issue" "rule"` | Add a critical constraint |
+| `/pipeline:knowledge decision "topic" "choice" "reason"` | Record a decision |
 | `/pipeline:knowledge search "query"` | FTS keyword search over code index |
 | `/pipeline:knowledge hybrid "query"` | FTS + vector hybrid search (best results) |
 | `/pipeline:knowledge index` | Generate embeddings for code index entries |
@@ -133,17 +156,18 @@ commit:
   co_author: "Claude Sonnet 4.6 <noreply@anthropic.com>"
   never_stage: [".env", "*.key", "credentials*"]
   push_after_commit: true
-  post_commit_hooks: ["node scripts/embed-index.js index"]
+  post_commit_hooks: []    # e.g. ["node $PIPELINE_SCRIPTS/pipeline-embed.js index"]
 ```
 
 **models** — Model routing:
 ```yaml
 models:
-  explore: "haiku"      # Codebase search, file scanning
-  implement: "sonnet"   # Write code
-  review: "sonnet"      # Code review
-  plan: "sonnet"        # Planning
-  architecture: "opus"  # High-stakes decisions
+  cheap: "haiku"           # Doc reviews, screenshot analysis, mechanical tasks
+  explore: "haiku"         # Codebase search, file scanning
+  implement: "sonnet"      # Write code
+  review: "sonnet"         # Code review
+  plan: "sonnet"           # Planning
+  architecture: "opus"     # High-stakes decisions
 ```
 
 **knowledge** — Session persistence:
@@ -180,6 +204,7 @@ Framework-specific review checks are auto-applied (React, Vue, Angular, Svelte).
 - Session history in `docs/sessions/*.md`
 - Decisions in `DECISIONS.md`
 - Gotchas in `docs/gotchas.md`
+- Commands: `status`, `session`, `gotcha`, `decision`
 - No semantic search, no structured queries
 - Good for: small projects, quick setups, < 10 sessions
 
