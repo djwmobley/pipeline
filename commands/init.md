@@ -95,7 +95,28 @@ If the user provides a value, use it for `project.repo`. If skipped, set `projec
 
 ### Step 2 — Project profile
 
-Ask the user what kind of project this is:
+**If established project** (detected in Step 1), infer the profile from what was detected:
+
+| Signal | Inferred Profile |
+|--------|-----------------|
+| `next.config.*`, `nuxt.config.*`, `svelte.config.*`, `remix.config.*`, Rails `config/routes.rb` | `fullstack` |
+| `react-native` or `expo` in package.json + `capacitor.config.*` or `expo-web` | `mobile-web` |
+| `react-native` or `expo` in package.json (no web) | `mobile` |
+| `android/` or `ios/` dirs + Swift/Kotlin source | `mobile` |
+| `vite.config.*` or `webpack.config.*` + React/Vue/Angular/Svelte in deps (no SSR framework) | `spa` |
+| `bin` field in package.json, or `src/cli.*`, or Cobra/Clap in deps | `cli` |
+| `main`/`exports` in package.json + no `src/pages`/`src/routes`/`src/app` dirs | `library` |
+| Express/Fastify/Koa/Hono in deps + no frontend framework | `api` |
+| Cargo.toml with `[[bin]]` and no frontend | `cli` or `api` (check for web framework like Axum/Actix) |
+| go.mod with `cmd/` directory | `cli` |
+| go.mod with web framework (Echo, Gin, Fiber) | `api` |
+
+Present the inference for confirmation:
+
+> "Based on your project structure, this looks like a **[inferred profile]** project ([evidence]).
+> Sound right? (Y/n, or pick a different profile: spa, fullstack, mobile, mobile-web, api, cli, library)"
+
+**If greenfield project** (no code to infer from), ask directly:
 
 > "What type of project is this?
 >
@@ -109,7 +130,7 @@ Ask the user what kind of project this is:
 
 Set `project.profile` to the chosen value: `spa`, `fullstack`, `mobile`, `mobile-web`, `api`, `cli`, `library`.
 
-**If this is a greenfield project** (detected in Step 1), follow up with stack recommendations:
+**If greenfield**, follow up with stack recommendations:
 
 For each profile, suggest a proven starter stack. Present these as recommendations, not requirements — the user knows their constraints best:
 

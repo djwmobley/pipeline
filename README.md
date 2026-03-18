@@ -4,11 +4,11 @@ A config-driven development pipeline plugin for Claude Code. Merges size-routed 
 
 ## Who It's For
 
-Pipeline works for any project — greenfield or established, solo or team. During setup, it asks about your project profile (web app, mobile, API, CLI, library) and configures review criteria, security checklists, and sector templates to match.
+Pipeline works for any project — greenfield or established, solo or team. It detects your project profile (web app, mobile, API, CLI, library) from your codebase and configures review criteria, security checklists, and sector templates to match.
 
-**Starting from scratch?** Init walks you through stack recommendations based on your project type, then routes you to `/pipeline:brainstorm` to design your first feature.
+**Starting from scratch?** Init asks what you're building, recommends a starter stack, and routes you to `/pipeline:brainstorm` to design your first feature.
 
-**Existing codebase?** Init auto-detects your tools, configures quality gates, and you're running `/pipeline:commit` in under a minute.
+**Existing codebase?** Init infers your profile from dependencies and directory structure, confirms with you, and you're running `/pipeline:commit` in under a minute.
 
 ## What It Does
 
