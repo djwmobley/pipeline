@@ -61,6 +61,12 @@ claude plugin validate ~/dev/pipeline
 | Command | Description |
 |---------|-------------|
 | `/pipeline:init` | Interactive project setup — generates `.claude/pipeline.yml` |
+| `/pipeline:update` | Update config — re-detect integrations, change commands, sectors, etc. |
+| `/pipeline:update integrations` | Re-probe available tools and update enabled/disabled |
+| `/pipeline:update commands` | Change test/lint/typecheck commands |
+| `/pipeline:update sectors` | Reconfigure review sectors |
+| `/pipeline:update knowledge` | Switch knowledge tier (files ↔ postgres) |
+| `/pipeline:update repo owner/repo` | Set repo directly |
 | `/pipeline:triage` | Assess change size, recommend workflow |
 | `/pipeline:commit` | Run preflight gates (typecheck, lint, test), commit, push |
 | `/pipeline:commit reviewed:✓` | Bypass review gate for reviewed changes |
