@@ -47,35 +47,44 @@ Then **skip to the first incomplete section's corresponding step** — don't re-
 
 ### Step 1 — Detect project type and tools
 
-Run these probes IN PARALLEL:
+Run this single detection script (all commands are wrapped to always exit 0, avoiding parallel-cancel issues on Windows):
 
 ```bash
-# Project type
-ls package.json Cargo.toml go.mod pyproject.toml setup.py pom.xml build.gradle requirements.txt 2>/dev/null
+echo "=== PROJECT FILES ==="
+for f in package.json Cargo.toml go.mod pyproject.toml setup.py pom.xml build.gradle requirements.txt; do
+  test -f "$f" && echo "FOUND: $f"
+done
 
-# Git remote
-git remote get-url origin 2>/dev/null
+echo "=== GIT ==="
+echo "remote: $(git remote get-url origin 2>/dev/null || echo 'none')"
+echo "branch: $(git branch --show-current 2>/dev/null || echo 'unknown')"
 
-# Current branch
-git branch --show-current
+echo "=== DEPS ==="
+if test -f package.json; then
+  echo "--- package.json deps ---"
+  grep -E '"(vitest|jest|mocha|ava|eslint|biome|oxlint|typescript|react-native|expo|next|nuxt|svelte|remix|react|vue|angular|express|fastify|koa|hono|capacitor)"' package.json 2>/dev/null || echo "no key deps found"
+  echo "--- package.json bin ---"
+  grep -E '"bin"' package.json 2>/dev/null || echo "no bin field"
+  echo "--- package.json main/exports ---"
+  grep -E '"(main|exports)"' package.json 2>/dev/null || echo "no main/exports"
+fi
+test -f Cargo.toml && grep -E '^\[\[bin\]\]|axum|actix|clap|rocket' Cargo.toml 2>/dev/null || true
+test -f go.mod && cat go.mod 2>/dev/null || true
 
-# Test runner detection
-cat package.json 2>/dev/null | grep -E '"(vitest|jest|mocha|ava)"'
-ls Cargo.toml 2>/dev/null && echo "cargo test"
-ls go.mod 2>/dev/null && echo "go test ./..."
-ls pyproject.toml 2>/dev/null && grep -E "pytest|unittest" pyproject.toml 2>/dev/null
+echo "=== SOURCE DIRS ==="
+for d in src lib app pkg cmd internal ios android server prisma drizzle; do
+  test -d "$d" && echo "DIR: $d/"
+done
 
-# Linter detection
-cat package.json 2>/dev/null | grep -E '"(eslint|biome|oxlint)"'
+echo "=== CONFIG FILES ==="
+for f in next.config.js next.config.ts next.config.mjs nuxt.config.ts nuxt.config.js svelte.config.js remix.config.js capacitor.config.ts capacitor.config.json vite.config.ts vite.config.js webpack.config.js; do
+  test -f "$f" && echo "CONFIG: $f"
+done
 
-# Type checker detection
-cat package.json 2>/dev/null | grep -E '"typescript"'
+echo "=== SOURCE FILE COUNT ==="
+find src/ lib/ app/ -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" -o -name "*.rs" -o -name "*.go" -o -name "*.py" 2>/dev/null | wc -l || echo "0"
 
-# Source directories
-ls -d src/ lib/ app/ pkg/ cmd/ internal/ 2>/dev/null
-
-# Count source files to detect greenfield vs established
-find src/ lib/ app/ -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" -o -name "*.rs" -o -name "*.go" -o -name "*.py" 2>/dev/null | wc -l
+echo "=== DONE ==="
 ```
 
 **Greenfield detection:** If no source directories exist OR total source files < 5, this is a **greenfield project**. Flag it — this affects profile recommendations (Step 2) and sector setup (Step 5).
@@ -183,24 +192,26 @@ Based on the chosen profile, pre-configure review criteria and security checks. 
 
 ### Step 3 — Detect integrations
 
-Run these probes IN PARALLEL:
+Run this single integration probe script:
 
 ```bash
-# Environment variables
+echo "=== ENV VARS ==="
 echo "SENTRY_AUTH_TOKEN=${SENTRY_AUTH_TOKEN:+SET}"
 echo "FIGMA_ACCESS_TOKEN=${FIGMA_ACCESS_TOKEN:+SET}"
 echo "POSTHOG_API_KEY=${POSTHOG_API_KEY:+SET}"
 echo "GAMMA_API_KEY=${GAMMA_API_KEY:+SET}"
 echo "GITHUB_TOKEN=${GITHUB_TOKEN:+SET}"
 
-# Port probes
-curl -s --connect-timeout 2 http://localhost:5432 2>&1 | head -1 || echo "postgres:no"
-curl -s --connect-timeout 2 http://localhost:11434/api/tags 2>&1 | head -1 || echo "ollama:no"
-curl -s --connect-timeout 2 http://localhost:9222/json/version 2>&1 | head -1 || echo "chrome:no"
+echo "=== PORT PROBES ==="
+curl -s --connect-timeout 2 http://localhost:5432 2>&1 | head -1 || echo "postgres: no"
+curl -s --connect-timeout 2 http://localhost:11434/api/tags 2>&1 | head -1 || echo "ollama: no"
+curl -s --connect-timeout 2 http://localhost:9222/json/version 2>&1 | head -1 || echo "chrome: no"
 
-# CLI tools
-npx playwright --version 2>/dev/null || echo "playwright:no"
-gh --version 2>/dev/null || echo "gh:no"
+echo "=== CLI TOOLS ==="
+npx playwright --version 2>/dev/null || echo "playwright: no"
+gh --version 2>/dev/null || echo "gh: no"
+
+echo "=== DONE ==="
 ```
 
 For each detected integration, explain what it adds to the pipeline.

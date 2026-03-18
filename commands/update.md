@@ -54,24 +54,26 @@ Then follow the chosen route below.
 
 ### Route: `integrations`
 
-Re-run all integration probes from init Step 2:
+Re-run all integration probes (single script to avoid parallel-cancel issues):
 
 ```bash
-# Environment variables
+echo "=== ENV VARS ==="
 echo "SENTRY_AUTH_TOKEN=${SENTRY_AUTH_TOKEN:+SET}"
 echo "FIGMA_ACCESS_TOKEN=${FIGMA_ACCESS_TOKEN:+SET}"
 echo "POSTHOG_API_KEY=${POSTHOG_API_KEY:+SET}"
 echo "GAMMA_API_KEY=${GAMMA_API_KEY:+SET}"
 echo "GITHUB_TOKEN=${GITHUB_TOKEN:+SET}"
 
-# Port probes
-curl -s --connect-timeout 2 http://localhost:5432 2>&1 | head -1 || echo "postgres:no"
-curl -s --connect-timeout 2 http://localhost:11434/api/tags 2>&1 | head -1 || echo "ollama:no"
-curl -s --connect-timeout 2 http://localhost:9222/json/version 2>&1 | head -1 || echo "chrome:no"
+echo "=== PORT PROBES ==="
+curl -s --connect-timeout 2 http://localhost:5432 2>&1 | head -1 || echo "postgres: no"
+curl -s --connect-timeout 2 http://localhost:11434/api/tags 2>&1 | head -1 || echo "ollama: no"
+curl -s --connect-timeout 2 http://localhost:9222/json/version 2>&1 | head -1 || echo "chrome: no"
 
-# CLI tools
-npx playwright --version 2>/dev/null || echo "playwright:no"
-gh --version 2>/dev/null || echo "gh:no"
+echo "=== CLI TOOLS ==="
+npx playwright --version 2>/dev/null || echo "playwright: no"
+gh --version 2>/dev/null || echo "gh: no"
+
+echo "=== DONE ==="
 ```
 
 Compare results against current config. Show a diff:
