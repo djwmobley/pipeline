@@ -9,6 +9,41 @@ You are the pipeline setup agent. Your job is to detect the project environment 
 
 ---
 
+### Step 0 — Check for existing config (resume detection)
+
+Check if `.claude/pipeline.yml` already exists in the project root.
+
+**If it exists:** Read it and assess completeness. Check each section for missing or placeholder values:
+
+| Section | Complete if | Incomplete if |
+|---------|-----------|--------------|
+| `project.name` | Has a real name | Missing or `"my-project"` |
+| `project.repo` | Has `owner/repo` or explicitly `null` | Missing |
+| `project.branch` | Has a branch name | Missing |
+| `commands.test` | Has a command or `null` | Missing entirely |
+| `commands.lint` | Has a command or `null` | Missing entirely |
+| `commands.typecheck` | Has a command or `null` | Missing entirely |
+| `knowledge.tier` | Set to `"files"` or `"postgres"` | Missing |
+| `review.sectors` | Has entries or empty `[]` (user chose to skip) | Missing entirely |
+| `integrations` | Has entries with `enabled: true/false` | Missing entirely |
+
+If ALL sections are complete:
+> "Pipeline is already configured for this project. Config looks complete.
+> Run `/pipeline:commit` to use it, or delete `.claude/pipeline.yml` and re-run `/pipeline:init` to start fresh."
+Stop.
+
+If SOME sections are incomplete, report what's done and what's missing:
+> "Found existing `.claude/pipeline.yml` — resuming setup.
+>
+> Already configured: [list complete sections]
+> Still needed: [list incomplete sections]"
+
+Then **skip to the first incomplete section's corresponding step** — don't re-ask questions the user already answered.
+
+**If it does not exist:** Proceed to Step 1 (fresh setup).
+
+---
+
 ### Step 1 — Detect project type and tools
 
 Run these probes IN PARALLEL:
