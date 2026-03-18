@@ -84,7 +84,7 @@ knowledge:
   # port: 5432
   # database: "pipeline_<project_name>"  # Auto-generated from project name — each project gets its own DB
   # user: "postgres"
-  # embedding_model: "mxbai-embed-large"  # Ollama model for semantic search
+  # embedding_model: "mxbai-embed-large"  # Local Ollama model (~670MB, 1024-dim vectors) — install: ollama pull mxbai-embed-large
 
 # Integrations — detected during init, skills check before using
 integrations:

@@ -165,8 +165,8 @@ Which Claude model handles which job. Model names: `haiku`, `sonnet`, `opus`.
 **Files tier** (default) — zero setup. Creates `docs/sessions/*.md`, `DECISIONS.md`, `docs/gotchas.md`. No search capability. Good for small projects or quick setups.
 
 **Postgres tier** — requires local PostgreSQL. Each project gets its own database (`pipeline_<project_name>`). Gives you:
-- Semantic search across all past sessions (with Ollama)
-- Keyword search across code index (without Ollama)
+- Semantic search across all past sessions (requires [Ollama](https://ollama.com) running locally with `mxbai-embed-large` — a 670MB embedding model that runs on your machine, no cloud)
+- Keyword search across code index (works without Ollama)
 - Structured task tracking with status (pending/in_progress/done/deferred)
 - Decision and gotcha management with structured queries
 - File hash caching (skip re-reading unchanged files)
@@ -180,7 +180,7 @@ knowledge:
   port: 5432
   database: "pipeline_my_app"
   user: "postgres"
-  embedding_model: "mxbai-embed-large"
+  embedding_model: "mxbai-embed-large"  # Local Ollama model (~670MB, 1024-dim vectors)
 ```
 
 **Knowledge subcommands (both tiers):**
@@ -213,7 +213,7 @@ Each integration has `enabled` (true/false) and `use_in` (which commands use it)
 | Integration | How It's Detected | What It Enables |
 |-------------|------------------|----------------|
 | `postgres` | `pg_isready` or port 5432 | Knowledge tier |
-| `ollama` | `localhost:11434` responds | Semantic search in knowledge |
+| `ollama` | `localhost:11434` responds | Semantic search via local embeddings ([Ollama](https://ollama.com) runs the `mxbai-embed-large` model on your machine — no API keys, no cloud calls) |
 | `github` | `GITHUB_TOKEN` env var | PR creation in `/pipeline:finish` |
 | `sentry` | `SENTRY_AUTH_TOKEN` env var | Error import in `/pipeline:debug` |
 | `chrome_devtools` | `localhost:9222` responds | Screenshots for `/pipeline:ui-review` |
