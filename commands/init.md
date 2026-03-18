@@ -202,9 +202,54 @@ echo "POSTHOG_API_KEY=${POSTHOG_API_KEY:+SET}"
 echo "GAMMA_API_KEY=${GAMMA_API_KEY:+SET}"
 echo "GITHUB_TOKEN=${GITHUB_TOKEN:+SET}"
 
-echo "=== PORT PROBES ==="
-# Postgres uses binary protocol, not HTTP — pg_isready preferred, TCP fallback
-pg_isready -h localhost -p 5432 2>/dev/null && echo "postgres: running" || { (echo > /dev/tcp/localhost/5432) 2>/dev/null && echo "postgres: port open" || echo "postgres: no"; }
+echo "=== POSTGRES DETECTION ==="
+# Step 1: Find pg_isready — check PATH, then common install locations
+PG_READY=""
+if command -v pg_isready >/dev/null 2>&1; then
+  PG_READY="pg_isready"
+  echo "pg_isready: on PATH"
+else
+  # Common install paths (Windows, Linux, macOS)
+  for d in \
+    "/c/Program Files/PostgreSQL"/*/bin \
+    "/c/Program Files (x86)/PostgreSQL"/*/bin \
+    "/usr/lib/postgresql"/*/bin \
+    "/opt/homebrew/bin" \
+    "/usr/local/bin"; do
+    if test -f "$d/pg_isready" || test -f "$d/pg_isready.exe"; then
+      PG_READY="$d/pg_isready"
+      echo "pg_isready: found at $d (not on PATH)"
+      break
+    fi
+  done
+  test -z "$PG_READY" && echo "pg_isready: not found"
+fi
+
+# Step 2: Check if Postgres install exists even without pg_isready
+echo "pg_install: searching..."
+for d in \
+  "/c/Program Files/PostgreSQL"/* \
+  "/c/Program Files (x86)/PostgreSQL"/* \
+  "/usr/lib/postgresql"/* \
+  "/opt/homebrew/opt/postgresql"*; do
+  if test -d "$d" 2>/dev/null; then
+    echo "pg_install: $d"
+  fi
+done
+
+# Step 3: Try default port 5432
+if test -n "$PG_READY"; then
+  "$PG_READY" -h localhost -p 5432 2>/dev/null && echo "postgres_5432: accepting connections" || echo "postgres_5432: not responding"
+else
+  (echo > /dev/tcp/localhost/5432) 2>/dev/null && echo "postgres_5432: port open" || echo "postgres_5432: closed"
+fi
+
+# Step 4: Quick scan of common alternate ports
+for port in 5433 5434 54320; do
+  (echo > /dev/tcp/localhost/$port) 2>/dev/null && echo "postgres_alt_port: $port open" || true
+done
+
+echo "=== OTHER SERVICES ==="
 curl -s --connect-timeout 2 http://localhost:11434/api/tags 2>&1 | head -1 || echo "ollama: no"
 curl -s --connect-timeout 2 http://localhost:9222/json/version 2>&1 | head -1 || echo "chrome: no"
 
@@ -215,7 +260,19 @@ gh --version 2>/dev/null || echo "gh: no"
 echo "=== DONE ==="
 ```
 
-For each detected integration, explain what it adds to the pipeline.
+**Interpret Postgres results:**
+
+| pg_isready | Install found | Port 5432 | Alt port open | Interpretation |
+|-----------|--------------|-----------|---------------|----------------|
+| on PATH | — | accepting | — | **Running on default port.** Set `postgres.enabled: true`, `port: 5432` |
+| found (not on PATH) | yes | accepting | — | **Running but not on PATH.** Note the path, set enabled, suggest adding to PATH |
+| on PATH | — | not responding | no | **Installed but not running.** Ask: "Postgres is installed but not running. Start it, or skip for now?" |
+| on PATH | — | not responding | yes (e.g. 5433) | **Running on non-default port.** Ask: "Postgres doesn't respond on 5432 but port [N] is open. Is that your Postgres port?" If confirmed, use that port |
+| not found | yes | closed | no | **Installed but not on PATH and not running.** Show install path, ask if they want to configure it |
+| not found | yes | open or alt open | — | **Port open, no pg_isready.** Ask: "Something is listening on port [N] — is that Postgres? What port?" |
+| not found | no | closed | no | **Not installed.** Show install instructions |
+
+For all other integrations: explain what each detected tool adds to the pipeline.
 For missing integrations, show the install/setup command.
 
 ---

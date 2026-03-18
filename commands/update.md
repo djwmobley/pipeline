@@ -64,8 +64,43 @@ echo "POSTHOG_API_KEY=${POSTHOG_API_KEY:+SET}"
 echo "GAMMA_API_KEY=${GAMMA_API_KEY:+SET}"
 echo "GITHUB_TOKEN=${GITHUB_TOKEN:+SET}"
 
-echo "=== PORT PROBES ==="
-pg_isready -h localhost -p 5432 2>/dev/null && echo "postgres: running" || { (echo > /dev/tcp/localhost/5432) 2>/dev/null && echo "postgres: port open" || echo "postgres: no"; }
+echo "=== POSTGRES DETECTION ==="
+PG_READY=""
+if command -v pg_isready >/dev/null 2>&1; then
+  PG_READY="pg_isready"
+  echo "pg_isready: on PATH"
+else
+  for d in \
+    "/c/Program Files/PostgreSQL"/*/bin \
+    "/c/Program Files (x86)/PostgreSQL"/*/bin \
+    "/usr/lib/postgresql"/*/bin \
+    "/opt/homebrew/bin" \
+    "/usr/local/bin"; do
+    if test -f "$d/pg_isready" || test -f "$d/pg_isready.exe"; then
+      PG_READY="$d/pg_isready"
+      echo "pg_isready: found at $d (not on PATH)"
+      break
+    fi
+  done
+  test -z "$PG_READY" && echo "pg_isready: not found"
+fi
+for d in \
+  "/c/Program Files/PostgreSQL"/* \
+  "/c/Program Files (x86)/PostgreSQL"/* \
+  "/usr/lib/postgresql"/* \
+  "/opt/homebrew/opt/postgresql"*; do
+  test -d "$d" 2>/dev/null && echo "pg_install: $d"
+done
+if test -n "$PG_READY"; then
+  "$PG_READY" -h localhost -p 5432 2>/dev/null && echo "postgres_5432: accepting connections" || echo "postgres_5432: not responding"
+else
+  (echo > /dev/tcp/localhost/5432) 2>/dev/null && echo "postgres_5432: port open" || echo "postgres_5432: closed"
+fi
+for port in 5433 5434 54320; do
+  (echo > /dev/tcp/localhost/$port) 2>/dev/null && echo "postgres_alt_port: $port open" || true
+done
+
+echo "=== OTHER SERVICES ==="
 curl -s --connect-timeout 2 http://localhost:11434/api/tags 2>&1 | head -1 || echo "ollama: no"
 curl -s --connect-timeout 2 http://localhost:9222/json/version 2>&1 | head -1 || echo "chrome: no"
 
