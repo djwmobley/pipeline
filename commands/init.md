@@ -203,7 +203,8 @@ echo "GAMMA_API_KEY=${GAMMA_API_KEY:+SET}"
 echo "GITHUB_TOKEN=${GITHUB_TOKEN:+SET}"
 
 echo "=== PORT PROBES ==="
-curl -s --connect-timeout 2 http://localhost:5432 2>&1 | head -1 || echo "postgres: no"
+# Postgres uses binary protocol, not HTTP — pg_isready preferred, TCP fallback
+pg_isready -h localhost -p 5432 2>/dev/null && echo "postgres: running" || { (echo > /dev/tcp/localhost/5432) 2>/dev/null && echo "postgres: port open" || echo "postgres: no"; }
 curl -s --connect-timeout 2 http://localhost:11434/api/tags 2>&1 | head -1 || echo "ollama: no"
 curl -s --connect-timeout 2 http://localhost:9222/json/version 2>&1 | head -1 || echo "chrome: no"
 
