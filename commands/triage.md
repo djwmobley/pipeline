@@ -18,16 +18,19 @@ If no config file exists, use defaults: source_dirs=["src/"], tiny_max_files=1, 
 
 ### Step 1 — Count changes
 
-```bash
-# Files changed in source dirs
-git diff --name-only HEAD | grep -E "^(SOURCE_DIR_PATTERN)"
+Construct a grep regex from `routing.source_dirs` (e.g., if `["src/", "lib/"]` then regex is `^(src/|lib/)`). Run:
 
-# Lines changed
+git diff --name-only HEAD | grep -E "<constructed_regex>" || true
+
+Count lines changed:
+
 git diff --stat HEAD | tail -1
 
-# Untracked source files
-git ls-files --others --exclude-standard SOURCE_DIRS
-```
+Count untracked source files:
+
+git ls-files --others --exclude-standard <each_source_dir>
+
+Replace `<constructed_regex>` and `<each_source_dir>` with the actual values from `routing.source_dirs` in pipeline.yml.
 
 If the user described a task but hasn't started yet, estimate from the description instead of git diff.
 

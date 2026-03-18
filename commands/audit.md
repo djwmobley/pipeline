@@ -7,13 +7,19 @@ description: Full codebase review — Phase 0 grep + parallel sector agents + sy
 
 Full codebase review with parallel sector agents. This is READ-ONLY — no code is modified.
 
-Read the skill file at `skills/auditing/SKILL.md` from the pipeline plugin directory.
+Locate and read the auditing skill file:
+1. If `$PIPELINE_DIR` is set: read `$PIPELINE_DIR/skills/auditing/SKILL.md`
+2. Otherwise: use Glob `**/pipeline/skills/auditing/SKILL.md` to find it
 
 ---
 
 ### Step 0 — Load config
 
-Read `.claude/pipeline.yml` from the project root. Extract:
+Read `.claude/pipeline.yml` from the project root.
+
+If no config file exists, report: "No `.claude/pipeline.yml` found. Run `/pipeline:init` first." and stop.
+
+Extract:
 - `review.phase0_patterns` — grep patterns for Phase 0
 - `review.sectors` — sector definitions (name, id, paths)
 - `review.criteria` — review criteria for all sectors
@@ -29,7 +35,7 @@ If `review.sectors` is empty:
 > 2. **Run `/pipeline:update sectors`** — guided setup with profile-based recommendations
 > 3. **Flat review** — skip sectors, review everything in one pass (slower, less thorough)"
 
-If option 1: scan top-level directories under `routing.source_dirs`, create one sector per directory, show the proposed sectors, and confirm before proceeding. Save to `review.sectors` in config.
+If option 1: scan top-level directories under `routing.source_dirs`, create one sector per directory, show the proposed sectors, and confirm before proceeding. Save to `review.sectors` in pipeline.yml so future audits reuse them. (This is the ONE exception to the read-only rule — config setup only, no source code changes.)
 If option 3: proceed with a single flat review (no parallel agents).
 
 ---
@@ -52,16 +58,12 @@ These decisions are intentional and must NOT be flagged by sector agents.
 
 ### Step 3 — Launch N sector agents IN PARALLEL
 
-Send a single message with N Task tool calls (one per sector from `review.sectors`).
+Read the sector agent prompt template from the same directory as the SKILL.md loaded earlier (`sector-agent-prompt.md`). For each sector, construct a Task tool call by:
 
-Each agent receives:
-1. Preamble with project context and non-negotiable decisions
-2. Review criteria from config
-3. Phase 0 grep hits relevant to that sector's files
-4. Two-pass read protocol
-5. Structured output format (FINDING [SECTOR]-[NNN] | severity | file:line | category)
-6. Cross-Reference Manifest template
-7. Specific file assignments from sector definition
+1. Completing the **substitution checklist** at the top of the template — replace `{{MODEL}}` with the value of `models.review` from pipeline.yml, and fill all `[PLACEHOLDER]` values with actual data
+2. Including: preamble with project context, non-negotiable decisions, review criteria, Phase 0 grep hits for that sector's files, two-pass read protocol, structured output format, Cross-Reference Manifest template, and specific file assignments
+
+Send a single message with N Task tool calls (one per sector from `review.sectors`).
 
 ---
 
@@ -73,7 +75,9 @@ Wait for all sector agents to complete.
 
 ### Step 5 — Launch synthesis agent
 
-Pass all sector reports to a synthesis agent that performs:
+Read the synthesis agent prompt template (`synthesis-agent-prompt.md` from the same directory as the SKILL.md). Complete its substitution checklist, paste all sector reports into the prompt, and dispatch.
+
+The synthesis agent performs:
 1. Cross-sector crash path tracing
 2. Dead export verification
 3. Cross-sector duplication detection
@@ -88,7 +92,7 @@ Pass all sector reports to a synthesis agent that performs:
 Output the full unified report. **Stop here. Do not fix anything.**
 
 This command is read-only by design:
-- No files are written or edited
+- No source files are written or edited (exception: first-run sector config setup in Step 0)
 - No git operations
 - No automated fixes
 

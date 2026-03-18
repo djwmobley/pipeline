@@ -5,6 +5,7 @@ project:
   repo: "owner/repo"
   branch: "main"
   profile: null  # Set by init: spa, fullstack, mobile, mobile-web, api, cli, library
+  pkg_manager: "npm"  # Detected from lockfile: pnpm, npm, yarn, bun
 
 # Tool commands (null to disable any gate)
 commands:
@@ -28,7 +29,7 @@ review:
   phase0_patterns:
     - { pattern: "^\\s*await ", label: "unguarded-await" }
     - { pattern: "console\\.log", label: "console-log" }
-    - { pattern: "![^=!>]", label: "forced-non-null" }
+    - { pattern: "\\w+!\\.[^=]", label: "forced-non-null" }
   sectors: []
   criteria: [ux, dead-code, framework-correctness, security, simplicity, solid]
 
@@ -40,7 +41,7 @@ security:
 
 # Git
 commit:
-  co_author: "Claude Sonnet 4.6 <noreply@anthropic.com>"
+  co_author: "Claude <noreply@anthropic.com>"  # Generic — works regardless of which model is active
   never_stage: [".env", "*.key", "credentials*", "node_modules/"]
   push_after_commit: true
   post_commit_hooks: []

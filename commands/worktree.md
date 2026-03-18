@@ -14,9 +14,8 @@ Create an isolated git worktree for feature development.
 Follow this priority order:
 
 ```bash
-# Check existing directories
-ls -d .worktrees 2>/dev/null
-ls -d worktrees 2>/dev/null
+test -d .worktrees && echo "FOUND: .worktrees"
+test -d worktrees && echo "FOUND: worktrees"
 ```
 
 If found: use that directory. If both exist, `.worktrees` wins.
@@ -50,24 +49,29 @@ If NOT ignored: add to .gitignore and commit before proceeding.
 
 ### Step 3 — Create worktree
 
+If the user did not provide a branch name, ask: "What should the branch be named?"
+
+Substitute `$LOCATION` and `$BRANCH_NAME` with the literal values determined in Steps 1-3. Run as a single Bash call:
 ```bash
 project=$(basename "$(git rev-parse --show-toplevel)")
 git worktree add "$LOCATION/$BRANCH_NAME" -b "$BRANCH_NAME"
-cd "$LOCATION/$BRANCH_NAME"
 ```
+
+All subsequent commands in this worktree must include the full path or be combined into a single Bash call with `cd` at the start.
 
 ---
 
 ### Step 4 — Run project setup
 
-Auto-detect and run:
+Read `project.pkg_manager` from `.claude/pipeline.yml` (defaults to `npm`). Auto-detect and run:
 ```bash
-[ -f package.json ] && npm install
+[ -f package.json ] && [pkg_manager] install
 [ -f Cargo.toml ] && cargo build
 [ -f requirements.txt ] && pip install -r requirements.txt
-[ -f pyproject.toml ] && poetry install || pip install -e .
+[ -f pyproject.toml ] && (poetry install || pip install -e .)
 [ -f go.mod ] && go mod download
 ```
+Replace `[pkg_manager]` with the actual value (`pnpm`, `npm`, `yarn`, or `bun`).
 
 ---
 

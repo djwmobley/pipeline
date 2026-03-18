@@ -74,7 +74,7 @@ test code here
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `TEST_COMMAND path/to/test`
+Run: `[commands.test from pipeline.yml] path/to/test`
 Expected: FAIL with "function not defined"
 
 - [ ] **Step 3: Write minimal implementation**
@@ -85,7 +85,7 @@ implementation code here
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `TEST_COMMAND path/to/test`
+Run: `[commands.test from pipeline.yml] path/to/test`
 Expected: PASS
 
 - [ ] **Step 5: Commit**

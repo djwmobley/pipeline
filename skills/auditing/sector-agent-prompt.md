@@ -1,9 +1,18 @@
 # Sector Agent Prompt Template
 
 Use this template when dispatching a sector review agent.
+**Substitution checklist (orchestrator must complete before dispatching):**
+
+1. `{{MODEL}}` → value of `models.review` from pipeline.yml (e.g., `sonnet`)
+2. `[Project description from CLAUDE.md or pipeline.yml]` → paste actual project context
+3. `[From review.non_negotiable in pipeline.yml]` → paste actual non-negotiable decisions
+4. `[list criteria names from config]` → paste actual review criteria
+5. `[Filtered grep results relevant to this sector's files]` → paste Phase 0 grep hits
+6. `[List of files from sector definition paths]` → paste actual file assignments
+7. `[SECTOR_ID]` → the sector identifier (e.g., `A`, `B`, `C`)
 
 ```
-Task tool (general-purpose, model: config.models.review):
+Task tool (general-purpose, model: {{MODEL}}):
   description: "Audit Sector [ID]: [Name]"
   prompt: |
     You are a distinguished engineer reviewing a codebase.

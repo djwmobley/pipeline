@@ -5,7 +5,9 @@ description: Design before LARGE changes — explore context, clarify requiremen
 
 ## Pipeline Brainstorm
 
-Read the skill file at `skills/brainstorming/SKILL.md` from the pipeline plugin directory.
+Locate and read the brainstorming skill file:
+1. If `$PIPELINE_DIR` is set: read `$PIPELINE_DIR/skills/brainstorming/SKILL.md`
+2. Otherwise: use Glob `**/pipeline/skills/brainstorming/SKILL.md` to find it
 
 ### Load config
 

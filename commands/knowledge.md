@@ -1,5 +1,5 @@
 ---
-allowed-tools: Bash(node*), Bash(cd*), Bash(npm*), Read(*)
+allowed-tools: Bash(node*), Bash(cd*), Bash(npm*), Bash(find*), Read(*), Glob(*)
 description: Knowledge DB operations — setup, status, search, session recording, task management
 ---
 
@@ -13,16 +13,20 @@ The pipeline plugin's scripts directory contains pipeline-db.js, pipeline-embed.
 
 To find it, check these locations in order:
 1. If the environment has `PIPELINE_DIR` set, use `$PIPELINE_DIR/scripts/`
-2. Check `$HOME/dev/pipeline/scripts/` (common dev location)
-3. Search the Claude Code plugin cache: `find "$HOME/.claude" -name "pipeline-db.js" -path "*/pipeline/*/scripts/*" 2>/dev/null | head -1`
+2. Check `${HOME:-$USERPROFILE}/dev/pipeline/scripts/` (common dev location — `$USERPROFILE` is the Windows fallback for `$HOME`)
+3. Search the Claude Code plugin cache: `find "${HOME:-$USERPROFILE}/.claude" -name "pipeline-db.js" -path "*/pipeline/*/scripts/*" 2>/dev/null | head -1`
 4. If none found, ask: "Where is the pipeline plugin installed? I need the path to the scripts/ directory."
 
-Set `SCRIPTS_DIR` to the directory containing the scripts.
+Set `SCRIPTS_DIR` to the directory containing the scripts. Store the resolved path as a literal string. Use this literal path (not a shell variable) in every subsequent Bash call, since shell state does not persist between tool invocations.
 
-Ensure dependencies are installed:
+Ensure dependencies are installed. The `pg` package is required for Postgres tier commands. The plugin's scripts use pnpm (they have a `pnpm-lock.yaml`) — always use `pnpm install` here, regardless of the project's own package manager:
 ```bash
-cd $SCRIPTS_DIR && [ -d node_modules ] || npm install --silent
+cd $SCRIPTS_DIR && [ -d node_modules ] || pnpm install --silent
 ```
+
+If `node_modules` is missing and install fails, ask the user:
+> "The pipeline scripts need their dependencies installed. Want me to run `pnpm install` in `[scripts_dir]`?"
+If declined, show the command so they can do it themselves.
 
 ---
 
@@ -134,8 +138,10 @@ cd $SCRIPTS_DIR && node pipeline-files.js decision "$TOPIC" "$DECISION" "$REASON
 ```
 - Postgres tier:
 ```bash
-cd $SCRIPTS_DIR && node pipeline-db.js query "INSERT INTO decisions (topic, decision, reason) VALUES ('$TOPIC', '$DECISION', '$REASON')"
+cd $SCRIPTS_DIR && node pipeline-db.js update decision "$TOPIC" "$DECISION" "$REASON"
 ```
+
+**Note:** Do NOT use raw SQL for decisions — single quotes in values will break the query. Use the `update decision` subcommand which handles parameterization.
 
 **"search" "<query>"** →
 ```bash

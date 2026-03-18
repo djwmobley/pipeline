@@ -1,9 +1,13 @@
 # Synthesis Agent Prompt Template
 
 Use this template when dispatching the synthesis agent after all sector agents complete.
+**Substitution checklist (orchestrator must complete before dispatching):**
+
+1. `{{MODEL}}` → value of `models.review` from pipeline.yml (e.g., `sonnet`)
+2. `[Paste all N structured-findings reports and their Cross-Reference Manifests]` → paste all sector agent outputs
 
 ```
-Task tool (general-purpose, model: config.models.review):
+Task tool (general-purpose, model: {{MODEL}}):
   description: "Synthesize sector review findings"
   prompt: |
     You are the synthesis agent for a multi-sector code review.

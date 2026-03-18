@@ -51,16 +51,15 @@ git diff HEAD
 
 **3a. Review gate — HARD STOP for changes above threshold**
 
-Count source files in the diff across all `routing.source_dirs`:
+Count source files in the diff. Construct a grep regex from `routing.source_dirs` (e.g., if `["src/", "lib/"]` then regex is `^(src/|lib/)`). Run:
 
-```bash
-git diff --name-only HEAD | grep -E "^(SOURCE_DIR_PATTERN)" | wc -l
-```
+git diff --name-only HEAD | grep -E "<constructed_regex>" | wc -l
 
 Also count untracked source files:
-```bash
-git ls-files --others --exclude-standard SOURCE_DIR | wc -l
-```
+
+git ls-files --others --exclude-standard <each_source_dir> | wc -l
+
+Replace `<constructed_regex>` and `<each_source_dir>` with the actual values from `routing.source_dirs` in pipeline.yml.
 
 Rules:
 - If total source file count < `routing.review_gate_threshold` → skip this gate.
@@ -99,7 +98,7 @@ type(scope): summary
 - change 1
 - change 2
 
-Co-Authored-By: CONFIG_CO_AUTHOR
+Co-Authored-By: [value from commit.co_author in pipeline.yml]
 ```
 
 Types: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `perf`, `style`
@@ -116,9 +115,10 @@ If `commit.push_after_commit` is true, push to origin.
 
 Run each command in `commit.post_commit_hooks[]` sequentially.
 
-Common post-commit hooks for Postgres tier:
-- `node $SCRIPTS_DIR/pipeline-embed.js index` — update code index embeddings
-- `node $SCRIPTS_DIR/pipeline-db.js update session <N> <tests> "<summary>"` — record session
+**Note:** Hook commands may reference `$SCRIPTS_DIR` or `$PIPELINE_DIR`. To resolve these, locate the pipeline plugin's scripts directory using the same method as `/pipeline:knowledge` Step 0:
+1. If `$PIPELINE_DIR` is set: `$PIPELINE_DIR/scripts/`
+2. Check `${HOME:-$USERPROFILE}/dev/pipeline/scripts/`
+3. Search: find `pipeline-db.js` under `${HOME:-$USERPROFILE}/.claude/`
 
 ---
 

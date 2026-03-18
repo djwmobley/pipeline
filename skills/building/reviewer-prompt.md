@@ -2,8 +2,15 @@
 
 Dispatch this reviewer after each implementer completes a task. It checks BOTH spec compliance and code quality in a single pass.
 
+**Substitution checklist (orchestrator must complete before dispatching):**
+
+1. `{{MODEL}}` → value of `models.cheap` from pipeline.yml (e.g., `haiku`)
+2. `[FULL TEXT of task requirements]` → paste the actual task requirements
+3. `[From implementer's report]` → paste the implementer's completion report
+4. `[from pipeline.yml — never flag these]` → replace with the actual list from `review.non_negotiable` in pipeline.yml
+
 ```
-Task tool (general-purpose, model: config.models.cheap):
+Task tool (general-purpose, model: {{MODEL}}):
   description: "Review Task N: [task name]"
   prompt: |
     You are reviewing a completed implementation task. Check both spec compliance AND code quality.

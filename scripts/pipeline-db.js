@@ -12,6 +12,7 @@
  *   node pipeline-db.js update task new "<title>" [phase] [issue] # Create a task
  *   node pipeline-db.js update task <id> <status>                # Update task status
  *   node pipeline-db.js update gotcha new "<issue>" "<rule>"     # Add a gotcha
+ *   node pipeline-db.js update decision "<topic>" "<decision>" "<reason>"  # Record a decision
  *   node pipeline-db.js query "<SQL>"                            # Run raw SQL
  *   node pipeline-db.js export [file]                            # Export gotchas + decisions to JSON
  *   node pipeline-db.js import <file_or_db> [--all]              # Import from JSON file or another project DB
@@ -199,8 +200,17 @@ async function cmdUpdate(args) {
       await client.query('INSERT INTO gotchas (issue, rule) VALUES ($1, $2)', [issue, rule]);
       console.log(c.green(`Gotcha "${issue}" saved.`));
 
+    } else if (entity === 'decision') {
+      const [topic, decision, reason] = rest;
+      if (!topic || !decision || !reason) {
+        console.error('Usage: update decision "<topic>" "<decision>" "<reason>"');
+        process.exit(1);
+      }
+      await client.query('INSERT INTO decisions (topic, decision, reason) VALUES ($1, $2, $3)', [topic, decision, reason]);
+      console.log(c.green(`Decision "${topic}" saved.`));
+
     } else {
-      console.error(`Unknown entity "${entity}". Use: session | task | gotcha`);
+      console.error(`Unknown entity "${entity}". Use: session | task | gotcha | decision`);
       process.exit(1);
     }
   } finally {
@@ -370,6 +380,9 @@ ${c.dim(`Database: ${CONFIG.database} @ ${CONFIG.host}:${CONFIG.port}`)}
 
   ${c.cyan('update gotcha new')} "<issue>" "<rule>"
       Add a critical gotcha
+
+  ${c.cyan('update decision')} "<topic>" "<decision>" "<reason>"
+      Record an architectural decision
 
   ${c.cyan('query')} "<SQL>"
       Run raw SQL and print results

@@ -17,29 +17,29 @@ Execute plan by dispatching fresh subagent per task, with review after each.
 
 ## The Process
 
-```dot
-digraph process {
-    rankdir=TB;
-    "Read plan, extract all tasks" [shape=box];
-    "Dispatch implementer subagent" [shape=box];
-    "Handle status" [shape=diamond];
-    "Post-task review" [shape=box];
-    "Review OK?" [shape=diamond];
-    "Mark task complete" [shape=box];
-    "More tasks?" [shape=diamond];
-    "Invoke /pipeline:finish" [shape=doublecircle];
-
-    "Read plan, extract all tasks" -> "Dispatch implementer subagent";
-    "Dispatch implementer subagent" -> "Handle status";
-    "Handle status" -> "Post-task review" [label="DONE"];
-    "Handle status" -> "Dispatch implementer subagent" [label="NEEDS_CONTEXT\n(provide context)"];
-    "Post-task review" -> "Review OK?";
-    "Review OK?" -> "Dispatch implementer subagent" [label="issues\n(fix)"];
-    "Review OK?" -> "Mark task complete" [label="OK"];
-    "Mark task complete" -> "More tasks?";
-    "More tasks?" -> "Dispatch implementer subagent" [label="yes"];
-    "More tasks?" -> "Invoke /pipeline:finish" [label="no"];
-}
+```
+Read plan, extract all tasks
+  │
+  ▼
+Dispatch implementer subagent
+  │
+  ▼
+Handle status ──NEEDS_CONTEXT──▶ (provide context, re-dispatch)
+  │ DONE
+  ▼
+Post-task review
+  │
+  ▼
+Review OK? ──issues──▶ (fix, re-dispatch)
+  │ OK
+  ▼
+Mark task complete
+  │
+  ▼
+More tasks? ──yes──▶ Dispatch implementer subagent
+  │ no
+  ▼
+Invoke /pipeline:finish
 ```
 
 ## Model Selection

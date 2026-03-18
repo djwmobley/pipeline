@@ -3,8 +3,13 @@
 When the user accepts the visual companion offer during brainstorming, use this approach
 to render visual content in a browser window.
 
+**Substitution checklist (orchestrator must complete before dispatching):**
+
+1. `{{MODEL}}` → value of `models.cheap` from pipeline.yml (e.g., `haiku`)
+2. `[DESCRIPTION OF VISUAL CONTENT NEEDED]` → actual description of what to render
+
 ```
-Task tool (general-purpose, model: config.models.cheap):
+Task tool (general-purpose, model: {{MODEL}}):
   description: "Render visual companion content"
   prompt: |
     You are a visual companion for a design brainstorming session.

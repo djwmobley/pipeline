@@ -59,7 +59,7 @@ Even after acceptance, decide per question: use browser for visual content (mock
 - Scale each section to its complexity
 - Ask after each section whether it looks right
 - Cover: architecture, components, data flow, error handling, testing
-- Include files-to-create/modify list (from drawn-near's arch pattern)
+- Include files-to-create/modify list
 - Include data flow diagram
 - Include build sequence (ordered, dependency-aware)
 

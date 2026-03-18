@@ -33,6 +33,10 @@ git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null
 
 Or read `project.branch` from pipeline.yml.
 
+Capture the current branch name and the base branch name for use in Step 4:
+- Feature branch: `git branch --show-current`
+- Base branch: use `project.branch` from pipeline.yml, or default to `main`
+
 ---
 
 ### Step 3 — Present options
@@ -63,6 +67,9 @@ git branch -d [feature-branch]
 Then cleanup worktree (Step 5).
 
 **Option 2: Push and create PR**
+
+Read `git log [base-branch]..HEAD --oneline` to populate the summary bullets and derive the PR title.
+
 ```bash
 git push -u origin [feature-branch]
 gh pr create --title "[title]" --body "$(cat <<'EOF'
@@ -94,6 +101,8 @@ Wait for exact confirmation. If confirmed:
 ```bash
 git checkout [base-branch]
 git branch -D [feature-branch]
+# If branch was pushed to remote, delete it there too
+git push origin --delete [feature-branch] 2>/dev/null || true
 ```
 Then cleanup worktree (Step 5).
 
@@ -102,9 +111,16 @@ Then cleanup worktree (Step 5).
 ### Step 5 — Cleanup worktree
 
 For Options 1, 2, 4: if in a worktree (git-dir path contains 'worktrees'), clean up after merge/discard.
+
+Run as a single Bash call — variables are lost between calls:
 ```bash
 # Check if we're in a worktree (not the main working tree)
 git rev-parse --git-dir | grep -q "worktrees" && echo "IN_WORKTREE"
+
+# If IN_WORKTREE: switch to main working tree, then remove worktree
+WORKTREE_PATH=$(pwd)
+cd "$(git rev-parse --path-format=absolute --git-common-dir)/.."
+git worktree remove "$WORKTREE_PATH" --force
 ```
 For Option 3: keep worktree.
 

@@ -11,7 +11,7 @@ Capture a browser screenshot and dispatch an analysis agent.
 
 ### Step 0 — Load config
 
-Read `.claude/pipeline.yml`. Check `integrations.chrome_devtools` and `integrations.playwright`.
+Read `.claude/pipeline.yml`. Check `integrations.chrome_devtools.enabled` and `integrations.playwright.enabled`.
 
 ---
 
@@ -23,9 +23,9 @@ Read `.claude/pipeline.yml`. Check `integrations.chrome_devtools` and `integrati
    ```
    mcp__chrome__take_screenshot
    ```
-   If app not loaded, navigate first:
+   If app not loaded, navigate first. Check `integrations.chrome_devtools.dev_url` in pipeline.yml for the URL, or ask the user what URL to navigate to:
    ```
-   mcp__chrome__navigate_page { url: "http://localhost:5173" }
+   mcp__chrome__navigate_page { url: "[dev_url from config, e.g. http://localhost:5173]" }
    ```
 
 2. **Playwright MCP** (if `integrations.playwright.enabled`):

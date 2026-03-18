@@ -1,5 +1,5 @@
 ---
-allowed-tools: Bash(*)
+allowed-tools: Bash(*), Read(*), Glob(*)
 description: Run the project test suite and produce a structured pass/fail report
 ---
 
@@ -12,11 +12,13 @@ Run the test suite and produce a structured report.
 Read `.claude/pipeline.yml` from the project root. Extract:
 - `commands.test_verbose` (preferred) or `commands.test` (fallback)
 
-If no config file exists, use common defaults:
-- If `package.json` exists: `npx vitest run --reporter=verbose` or `npx jest --verbose`
-- If `Cargo.toml` exists: `cargo test`
-- If `go.mod` exists: `go test -v ./...`
-- If `pyproject.toml` exists: `pytest -v`
+If no config file exists, detect the test runner from project files (check in order, use first match):
+1. `package.json` with `vitest` in devDependencies → `npx vitest run --reporter=verbose`
+2. `package.json` with `jest` in devDependencies → `npx jest --verbose`
+3. `package.json` exists (neither found) → try `npx vitest run --reporter=verbose`, fall back to `npx jest --verbose` if the command fails with "command not found" or "module not found" errors (not if tests simply fail)
+4. `Cargo.toml` exists → `cargo test`
+5. `go.mod` exists → `go test -v ./...`
+6. `pyproject.toml` or `requirements.txt` exists → `pytest -v`
 
 ---
 

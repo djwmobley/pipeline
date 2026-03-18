@@ -81,7 +81,7 @@ function loadConfig() {
     return match ? match[1].trim() : null;
   };
 
-  const projectName = getInSection('project', 'name') || defaults.project;
+  const resolvedProjectName = getInSection('project', 'name') || defaults.project;
   const tier = getInSection('knowledge', 'tier');
 
   return {
@@ -89,7 +89,7 @@ function loadConfig() {
     port: parseInt(getInSection('knowledge', 'port') || defaults.port),
     database: getInSection('knowledge', 'database') || defaults.database,
     user: getInSection('knowledge', 'user') || defaults.user,
-    project: projectName,
+    project: resolvedProjectName,
     tier: tier || 'files',
     embedding_model: getInSection('knowledge', 'embedding_model') || null,
     root,

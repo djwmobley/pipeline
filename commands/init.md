@@ -80,6 +80,17 @@ for f in next.config.js next.config.ts next.config.mjs nuxt.config.ts nuxt.confi
   test -f "$f" && echo "CONFIG: $f"
 done
 
+echo "=== PACKAGE MANAGER ==="
+if test -f pnpm-lock.yaml; then echo "PKG_MGR: pnpm"
+elif test -f bun.lockb || test -f bun.lock; then echo "PKG_MGR: bun"
+elif test -f yarn.lock; then echo "PKG_MGR: yarn"
+elif test -f package-lock.json; then echo "PKG_MGR: npm"
+elif test -f package.json; then
+  # No lockfile — check what's available
+  command -v pnpm >/dev/null 2>&1 && echo "PKG_MGR: pnpm (detected, no lockfile)" || echo "PKG_MGR: npm (default)"
+else echo "PKG_MGR: none"
+fi
+
 echo "=== SOURCE FILE COUNT ==="
 find src/ lib/ app/ -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" -o -name "*.rs" -o -name "*.go" -o -name "*.py" 2>/dev/null | wc -l || echo "0"
 
@@ -271,8 +282,26 @@ echo "=== DONE ==="
 | not found | yes | open or alt open | — | **Port open, no pg_isready.** Ask: "Something is listening on port [N] — is that Postgres? What port?" |
 | not found | no | closed | no | **Not installed.** Show install instructions |
 
-For all other integrations: explain what each detected tool adds to the pipeline.
-For missing integrations, show the install/setup command.
+**Present integration results grouped by importance:**
+
+> **Detected integrations:**
+> [list each with what it enables]
+>
+> **Not detected — optional enhancements:**
+> [list each with what it would add, whether it has a fallback, and how to install]
+
+**For each missing integration, clearly state whether it's required or optional and what the fallback is:**
+
+| Integration | Required? | What it enables | Fallback without it | If missing |
+|------------|-----------|----------------|--------------------|----|
+| **Playwright** | Optional | Screenshot capture for `/pipeline:ui-review` | Chrome DevTools MCP, or provide screenshots manually | Ask: "Playwright enables automatic screenshot capture for UI reviews. Want me to install it? (I'll run `[pkg_manager] add -D @playwright/test && npx playwright install chromium`)" If declined: "No problem — install it yourself later with `[pkg_manager] add -D @playwright/test && npx playwright install chromium`, or use Chrome DevTools MCP instead." |
+| **GitHub CLI** | Optional | PR creation in `/pipeline:finish`, issue management | Push branches manually, create PRs in browser | Show: "GitHub CLI (`gh`) enables PR creation from `/pipeline:finish`. Install: https://cli.github.com — or push branches and create PRs manually in the browser." |
+| **Postgres** | Optional | Knowledge tier with semantic search, structured queries | Files tier (markdown-based, zero setup) | Show install link. Note: "Without Postgres, you'll use the files tier — markdown-based session tracking that works but lacks search." |
+| **Ollama** | Optional | Semantic/hybrid search in Postgres tier | FTS keyword search only (still useful) | Show: "Ollama adds semantic search to the Postgres knowledge tier. Install: https://ollama.com — then `ollama pull mxbai-embed-large`. Without it, keyword search still works." |
+| **Chrome DevTools** | Optional | Screenshot capture for `/pipeline:ui-review` | Playwright, or provide screenshots manually | Show: "Launch Chrome with `--remote-debugging-port=9222` for automatic screenshots. Or use Playwright instead." |
+| **Sentry** | Optional | Auto-pull recent errors in `/pipeline:debug` | Reproduce errors manually | Show: "Set `SENTRY_AUTH_TOKEN` env var. Without it, `/pipeline:debug` still works — you just provide the error manually." |
+
+**Key rule:** Always ask before installing anything. If the user declines, show the manual install command so they can do it later. Never silently install packages.
 
 ---
 
@@ -286,19 +315,29 @@ Present both options:
 > work on across 10+ sessions, Postgres is significantly more powerful. Which do you prefer?"
 
 If Postgres chosen and available:
-1. Locate the pipeline plugin's `scripts/` directory
-2. Install dependencies: `cd $SCRIPTS_DIR && npm install --silent`
-3. **Generate project-scoped DB name:** `pipeline_<project_name>` (lowercase, non-alphanumeric → underscore). Each project gets its own database — no context leaks between projects.
+
+The pipeline scripts need the `pg` Node.js package to talk to Postgres. The plugin's scripts use pnpm (they have a `pnpm-lock.yaml`) — always use `pnpm install` here, regardless of the project's own package manager. Ask before installing:
+
+> "I need to install the pipeline's database dependencies (the `pg` package). This goes in the plugin's scripts directory, not your project. OK to install? (I'll run `pnpm install` in the pipeline scripts directory)"
+
+If yes:
+1. Locate the pipeline plugin's `scripts/` directory using the same resolution as `/pipeline:knowledge` Step 0: check `$PIPELINE_DIR/scripts/`, then `${HOME:-$USERPROFILE}/dev/pipeline/scripts/`, then search `${HOME:-$USERPROFILE}/.claude/` for `pipeline-db.js`. Store the resolved absolute path — use this literal path (not a variable) in all subsequent Bash calls.
+2. Install dependencies: `cd <scripts_path> && pnpm install`
+3. **Generate project-scoped DB name:** `pipeline_<project_name>` — lowercase the project name, replace non-alphanumeric characters with underscores, collapse consecutive underscores, strip leading/trailing underscores, prefix with `pipeline_`. Each project gets its own database — no context leaks between projects.
 4. Run setup: `node $SCRIPTS_DIR/pipeline-db.js setup` (creates the project-specific database and tables)
 5. Verify: `node $SCRIPTS_DIR/pipeline-db.js status`
 6. Set `knowledge.tier: "postgres"` in config with:
    - `database: "pipeline_<sanitized_project_name>"` (the generated name)
    - `host`, `port` from detection (use detected port if non-default)
-7. If Ollama is available, suggest: "Run `ollama pull mxbai-embed-large` for semantic search"
+7. If Ollama is available, suggest: "Run `ollama pull mxbai-embed-large` for semantic search. Without it, keyword search still works — Ollama just adds semantic similarity."
 8. Add to config's `commit.post_commit_hooks`:
    `"node $SCRIPTS_DIR/pipeline-embed.js index"` (keeps embeddings current after each commit)
 9. If user has an existing project they want to bring context from, mention:
    > "If you have gotchas or decisions from another project you'd like to carry over, use `/pipeline:knowledge import <source_db_or_file>` after setup."
+
+If declined: "No problem. Run these yourself when you're ready:
+1. `cd [scripts_dir] && pnpm install`
+2. `/pipeline:knowledge setup`"
 
 If files chosen (default):
 1. Create directories: `mkdir -p docs/sessions docs/specs docs/plans`
@@ -310,11 +349,15 @@ If files chosen (default):
 
 Using all detected values, generate `.claude/pipeline.yml`.
 
-Map detected tools to config fields:
-- package.json + typescript → `commands.typecheck: "npx tsc --noEmit"`
-- package.json + eslint → `commands.lint: "npx eslint src/"`
-- package.json + vitest → `commands.test: "npx vitest run"`
-- package.json + jest → `commands.test: "npx jest"`
+Set `project.pkg_manager` to the detected package manager from Step 1 (pnpm, npm, yarn, or bun).
+
+Set `routing.source_dirs` from the directories detected in Step 1 (the "SOURCE DIRS" section). Include only directories that exist and contain source code (e.g., `["src/"]`, `["src/", "lib/"]`, `["cmd/", "internal/", "pkg/"]`). If only `src/` was detected, use `["src/"]`. If no source directories were detected, use `["."]` as fallback.
+
+Map detected tools to config fields. Use the detected package manager's runner where applicable (e.g., pnpm → `pnpm exec`, npm → `npx`, yarn → `yarn`, bun → `bunx`):
+- package.json + typescript → `commands.typecheck: "[runner] tsc --noEmit"`
+- package.json + eslint → `commands.lint: "[runner] eslint src/"`
+- package.json + vitest → `commands.test: "[runner] vitest run"`
+- package.json + jest → `commands.test: "[runner] jest"`
 - Cargo.toml → `commands.test: "cargo test"`, `commands.typecheck: null` (Rust compiler handles it)
 - go.mod → `commands.test: "go test ./..."`, `commands.lint: "golangci-lint run"`
 - pyproject.toml + pytest → `commands.test: "pytest"`, `commands.lint: "ruff check ."`
@@ -339,6 +382,7 @@ Report what was detected and configured:
 **Project:** [name] ([profile])
 **Repo:** [owner/repo]
 **Branch:** [main branch]
+**Package manager:** [pnpm/npm/yarn/bun]
 
 **Commands:**
 - Typecheck: [command or disabled]

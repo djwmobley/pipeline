@@ -360,7 +360,7 @@ Switch to Postgres?
 Switch? (y/N)
 ```
 
-If switching to Postgres: run the same setup as init Step 3 (locate scripts, npm install, setup DB).
+If switching to Postgres: run the same setup as init Step 4 (locate scripts, install deps with pnpm — the plugin uses pnpm regardless of the project's package manager — and setup DB).
 If switching to files: create `docs/sessions/`, `docs/gotchas.md` if missing. Warn that Postgres data is preserved but won't be used.
 
 Update only the `knowledge` section.

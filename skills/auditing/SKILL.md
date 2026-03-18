@@ -14,21 +14,10 @@ codebase independently, then a synthesis agent performs cross-sector analysis.
 
 ## The Process
 
-```dot
-digraph audit {
-    "Phase 0: Grep" [shape=box];
-    "Load constraints" [shape=box];
-    "Launch N sector agents" [shape=box];
-    "Collect reports" [shape=box];
-    "Synthesis agent" [shape=box];
-    "Present report" [shape=doublecircle];
-
-    "Phase 0: Grep" -> "Launch N sector agents";
-    "Load constraints" -> "Launch N sector agents";
-    "Launch N sector agents" -> "Collect reports";
-    "Collect reports" -> "Synthesis agent";
-    "Synthesis agent" -> "Present report";
-}
+```
+Phase 0: Grep ──┐
+                 ├──▶ Launch N sector agents ──▶ Collect reports ──▶ Synthesis agent ──▶ Present report
+Load constraints ┘
 ```
 
 ## Phase 0: Grep Preprocessing
@@ -44,6 +33,14 @@ Default patterns (configurable):
 - Framework-specific patterns (detected from deps)
 
 Filter results by sector and include relevant hits in each agent's prompt.
+
+## Prompt Templates
+
+When dispatching subagents, read and use these prompt template files (located in the same directory as this SKILL.md):
+- `./sector-agent-prompt.md` — Prompt for each sector review agent
+- `./synthesis-agent-prompt.md` — Prompt for the cross-sector synthesis agent
+
+**Before dispatching each agent:** Replace all `config.models.*` placeholders in the prompt with actual values from pipeline.yml (e.g., `config.models.review` → `"sonnet"`). Also substitute any `[PLACEHOLDER]` values with actual data from the current review context.
 
 ## Sector Definitions
 

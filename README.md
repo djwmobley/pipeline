@@ -21,6 +21,42 @@ Pipeline routes your work through the right amount of process based on change si
 | **LARGE** | New feature, multi-file | `/pipeline:brainstorm` → `/pipeline:plan` → `/pipeline:build` → `/pipeline:review` → `/pipeline:commit` |
 | **MILESTONE** | End of feature | `/pipeline:audit` → fix → `/pipeline:commit reviewed:✓` |
 
+## Dependencies
+
+Pipeline has **zero mandatory dependencies** beyond Claude Code itself. Everything else is optional and has a fallback. Init detects what's available and offers to install what it can.
+
+### Required
+
+| Dependency | Why |
+|-----------|-----|
+| **Claude Code** | Pipeline is a Claude Code plugin |
+| **Git** | Commit workflow, change detection, worktrees |
+
+### Optional — auto-installed by init (with your permission)
+
+These are npm packages. Init detects whether you need them, asks before installing, and tells you the manual command if you decline.
+
+| Dependency | What it enables | Fallback without it | Install command |
+|-----------|----------------|--------------------|----|
+| **`pg`** (Node.js) | Postgres knowledge tier — semantic search, structured queries, session tracking | Files tier (markdown-based, works fine for < 10 sessions) | `pnpm install` in plugin scripts dir (plugin uses pnpm regardless of your project's package manager) |
+| **`@playwright/test`** | Automatic screenshot capture for `/pipeline:ui-review` | Chrome DevTools MCP, or provide screenshots manually | `[pkg_manager] add -D @playwright/test && npx playwright install chromium` |
+
+### Optional — system-level (install yourself)
+
+These are system packages or binaries that Pipeline can't install for you. Init detects them and explains what they add.
+
+| Dependency | What it enables | Fallback without it |
+|-----------|----------------|---------------------|
+| **PostgreSQL** | Knowledge tier with semantic search, structured task/decision/gotcha queries, file cache | Files tier — markdown session logs, no search |
+| **Ollama** + `mxbai-embed-large` | Semantic similarity search across sessions and code index | FTS keyword search (still useful, just less precise) |
+| **GitHub CLI** (`gh`) | PR creation from `/pipeline:finish`, issue management | Push branches manually, create PRs in the browser |
+| **Chrome** with `--remote-debugging-port=9222` | Screenshot capture for `/pipeline:ui-review` via Chrome DevTools MCP | Playwright (auto-installable), or provide screenshots manually |
+| **Sentry** (`SENTRY_AUTH_TOKEN` env var) | Auto-pull recent errors in `/pipeline:debug` | Reproduce errors manually — debug still works |
+
+### Package manager detection
+
+Init auto-detects your package manager from lockfiles (`pnpm-lock.yaml` → pnpm, `yarn.lock` → yarn, `bun.lockb` → bun, `package-lock.json` → npm). All generated commands and install operations use whatever it detects. Stored in `project.pkg_manager` in pipeline.yml.
+
 ## Installation
 
 ```bash
@@ -151,14 +187,14 @@ For greenfield projects, init also recommends starter stacks and routes you to `
 
 ### Key Sections
 
-**commands** — Tool commands for quality gates:
+**commands** — Tool commands for quality gates (uses your detected package manager's runner — `pnpm exec`, `npx`, `yarn`, `bunx`):
 ```yaml
 commands:
-  typecheck: "npx tsc --noEmit"    # null to disable
-  lint: "npx eslint src/"           # null to disable
+  typecheck: "pnpm exec tsc --noEmit"  # null to disable
+  lint: "pnpm exec eslint src/"         # null to disable
   lint_error_pattern: " error "
-  test: "npx vitest run"
-  test_verbose: "npx vitest run --reporter=verbose"
+  test: "pnpm exec vitest run"
+  test_verbose: "pnpm exec vitest run --reporter=verbose"
 ```
 
 **routing** — Size thresholds:
@@ -263,9 +299,10 @@ Full knowledge management system with three scripts:
 - **Cross-project transfer** — export gotchas and decisions to JSON, import into a new project
 
 **Requirements:**
-- PostgreSQL on localhost:5432 (or configured host/port)
-- pgvector extension (optional — degrades to FTS-only without it)
-- Ollama with mxbai-embed-large (optional — only needed for semantic search)
+- PostgreSQL on localhost:5432 (or configured host/port) — **required** for Postgres tier
+- `pg` npm package in pipeline scripts dir — **required**, auto-installed by init with your permission
+- pgvector extension — **optional**, degrades to FTS-only without it
+- Ollama with mxbai-embed-large — **optional**, only needed for semantic search (keyword search still works)
 
 **Setup:**
 ```bash

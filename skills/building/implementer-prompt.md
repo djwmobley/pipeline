@@ -1,9 +1,16 @@
 # Implementer Prompt
 
+**Substitution checklist (orchestrator must complete before dispatching):**
+
+1. `{{MODEL}}` → value of `models.cheap` (haiku) for mechanical tasks, or `models.implement` (sonnet) for integration tasks, from pipeline.yml
+2. `[task name]` → actual task name from the plan
+3. `[FULL TEXT of task from plan]` → paste the complete task description
+4. `[Scene-setting: where this fits, dependencies, architectural context]` → paste relevant context
+5. `[directory]` → actual working directory path
+
 ```
-Task tool (general-purpose):
+Task tool (general-purpose, model: {{MODEL}}):
   description: "Implement Task N: [task name]"
-  model: [from plan's model routing — haiku for mechanical, sonnet for integration]
   prompt: |
     You are implementing Task N: [task name]
 

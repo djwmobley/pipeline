@@ -21,17 +21,8 @@ Write code before the test? Delete it. Start over. No exceptions.
 
 ## Red-Green-Refactor
 
-```dot
-digraph tdd_cycle {
-    rankdir=LR;
-    red [label="RED\nWrite failing test", shape=box, style=filled, fillcolor="#ffcccc"];
-    green [label="GREEN\nMinimal code", shape=box, style=filled, fillcolor="#ccffcc"];
-    refactor [label="REFACTOR\nClean up", shape=box, style=filled, fillcolor="#ccccff"];
-
-    red -> green [label="verify\nfails"];
-    green -> refactor [label="verify\npasses"];
-    refactor -> red [label="next\nfeature"];
-}
+```
+RED (write failing test) ──verify fails──▶ GREEN (minimal code) ──verify passes──▶ REFACTOR (clean up) ──next feature──▶ RED
 ```
 
 ### RED — Write Failing Test

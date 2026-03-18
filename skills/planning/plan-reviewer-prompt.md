@@ -1,7 +1,13 @@
 # Plan Reviewer
 
+**Substitution checklist (orchestrator must complete before dispatching):**
+
+1. `{{MODEL}}` → value of `models.cheap` from pipeline.yml (e.g., `haiku`)
+2. `[PLAN_FILE_PATH]` → actual path. **Paste the full plan content below the prompt** — do not make the subagent read the file.
+3. `[SPEC_FILE_PATH]` → actual path. **Paste the full spec content below the prompt** — do not make the subagent read the file.
+
 ```
-Task tool (general-purpose, model: config.models.cheap):
+Task tool (general-purpose, model: {{MODEL}}):
   description: "Review plan document"
   prompt: |
     You are a plan document reviewer. Verify this plan is complete and ready for implementation.
@@ -27,4 +33,10 @@ Task tool (general-purpose, model: config.models.cheap):
     **Status:** Approved | Issues Found
     **Issues (if any):** [Task X, Step Y]: [issue] - [why it matters]
     **Recommendations (advisory):** [suggestions]
+
+## Plan Content
+[PASTE FULL PLAN CONTENT HERE]
+
+## Spec Content
+[PASTE FULL SPEC CONTENT HERE]
 ```
