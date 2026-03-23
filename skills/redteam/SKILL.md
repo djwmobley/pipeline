@@ -156,6 +156,12 @@ When dispatching subagents, read and use these prompt template files (located in
 
 **Before dispatching each agent:** Replace all `{{MODEL}}` and `[PLACEHOLDER]` values with actual data from config and the current assessment context.
 
+**Placeholder syntax convention:**
+- `{{DOUBLE_BRACES}}` — Model name for the Agent tool's `model:` parameter. Not inside prompt text.
+- `[BRACKET_CAPS]` — Content substitution inside prompt text. Replaced with actual data (findings, config values, file contents).
+
+This distinction exists because `{{MODEL}}` controls which model runs the agent, while `[PLACEHOLDER]` values are injected into the prompt the agent receives.
+
 ## Key Principles
 
 - **Read-only** — never modify code during assessment

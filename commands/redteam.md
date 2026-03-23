@@ -72,6 +72,10 @@ test -f package.json && grep -q '"hono"' package.json 2>/dev/null && echo "FRAME
 test -f package.json && grep -q '"koa"' package.json 2>/dev/null && echo "FRAMEWORK: koa"
 test -f package.json && grep -q '"@ionic"' package.json 2>/dev/null && echo "FRAMEWORK: ionic"
 test -f ionic.config.json && echo "FRAMEWORK: ionic"
+# React + Vite (not a meta-framework)
+test -f package.json && grep -q '"react"' package.json 2>/dev/null && grep -q '"vite"' package.json 2>/dev/null && ! grep -q '"next"' package.json 2>/dev/null && ! grep -q '"remix"' package.json 2>/dev/null && ! grep -q '"astro"' package.json 2>/dev/null && echo "FRAMEWORK: react-vite"
+# Vue + Vite (not Nuxt)
+test -f package.json && grep -q '"vue"' package.json 2>/dev/null && grep -q '"vite"' package.json 2>/dev/null && ! grep -q '"nuxt"' package.json 2>/dev/null && echo "FRAMEWORK: vue-vite"
 test -f manage.py && echo "FRAMEWORK: django"
 test -f package.json 2>/dev/null || {
   grep -q "fastapi" requirements.txt pyproject.toml 2>/dev/null && echo "FRAMEWORK: fastapi"
@@ -100,6 +104,45 @@ echo "=== DONE ==="
 ```
 
 Store the detected framework as `DETECTED_FRAMEWORK`.
+
+**Framework label → checklist mapping:**
+
+| Detection Label | Checklist Heading |
+|---|---|
+| nextjs | Next.js |
+| nuxt | Nuxt |
+| sveltekit | SvelteKit |
+| remix | Remix |
+| astro | Astro |
+| angular | Angular |
+| react-vite | React + Vite |
+| vue-vite | Vue + Vite |
+| react-native | React Native / Expo |
+| expo | React Native / Expo |
+| capacitor | Capacitor / Ionic |
+| ionic | Capacitor / Ionic |
+| flutter | Flutter |
+| express | Express |
+| fastify | Fastify |
+| hono | Hono |
+| koa | Koa |
+| django | Django |
+| fastapi | FastAPI |
+| flask | Flask |
+| laravel | Laravel |
+| rails | Rails |
+| echo | Echo / Gin / Fiber (Go) |
+| gin | Echo / Gin / Fiber (Go) |
+| fiber | Echo / Gin / Fiber (Go) |
+| axum | Axum / Actix (Rust) |
+| actix | Axum / Actix (Rust) |
+| spring | Spring Boot |
+| ktor | Ktor |
+| firebase | Firebase |
+| go-cli | *(no framework checklist — use generic domain checklist)* |
+| clap-cli | *(no framework checklist — use generic domain checklist)* |
+
+Use this table to look up the correct section heading when extracting framework-specific checklists from `skills/redteam/framework-checklists.md`.
 
 Now determine specialist count using the profile-based selection table (Step 3) and `redteam.skip`.
 
