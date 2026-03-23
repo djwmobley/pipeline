@@ -102,9 +102,14 @@ If user declines, stop.
 
 For each finding where `CREATE_ISSUE` is true:
 
+**Shell safety:** All values derived from report content (finding IDs, descriptions, remediation text) must be shell-escaped before interpolation. Use heredocs for multi-line content and single-quoted strings for short values to prevent command injection via `$()`, backticks, or double-quote breakout.
+
 ```bash
-gh issue create --repo [project.repo] \
-  --title "[FINDING_ID]: [one-line description]" \
+gh issue create --repo '[project.repo]' \
+  --title "$(cat <<'TITLE'
+[FINDING_ID]: [one-line description]
+TITLE
+)" \
   --body "$(cat <<'EOF'
 ## Security Finding
 
@@ -149,7 +154,7 @@ Skip issue creation. Note: "GitHub integration not enabled — skipping issue cr
 For each finding being remediated:
 
 ```bash
-node scripts/pipeline-db.js update task new "[FINDING_ID]: [one-line description]" "remediate" [github_issue_number]
+node scripts/pipeline-db.js update task new '[FINDING_ID]: [one-line description]' 'remediate' [github_issue_number]
 ```
 
 (If no GitHub issue was created, omit the issue number.)
@@ -224,7 +229,13 @@ For each quick-win finding:
    ```
    If any gate fails: report the failure, do NOT proceed to the next finding. Fix the failure first.
 
-4. Commit: `fix(security): [FINDING_ID] — [one-line description]`
+4. Commit using heredoc for the message (prevents shell injection from finding descriptions):
+   ```bash
+   git commit -m "$(cat <<'EOF'
+   fix(security): [FINDING_ID] — [one-line description]
+   EOF
+   )"
+   ```
 
 5. Update task status → done
    - Postgres: `node scripts/pipeline-db.js update task [DB_TASK_ID] done`
@@ -232,7 +243,7 @@ For each quick-win finding:
 
 6. Close GitHub issue (if `integrations.github.enabled` and an issue was created):
    ```bash
-   gh issue close [issue_number] --repo [project.repo] --comment "Fixed in $(git rev-parse --short HEAD)"
+   gh issue close [issue_number] --repo '[project.repo]' --comment "Fixed in $(git rev-parse --short HEAD)"
    ```
 
 ---
@@ -270,7 +281,13 @@ For each medium-effort finding:
 
 5. Run preflight gates (same as quick wins)
 
-6. Commit: `fix(security): [FINDING_ID] — [one-line description]`
+6. Commit using heredoc (same pattern as quick wins):
+   ```bash
+   git commit -m "$(cat <<'EOF'
+   fix(security): [FINDING_ID] — [one-line description]
+   EOF
+   )"
+   ```
 
 7. Update task status → done
    - Postgres: `node scripts/pipeline-db.js update task [DB_TASK_ID] done`
@@ -305,7 +322,13 @@ For each architectural finding:
    - Dispatch sonnet reviewer using `skills/building/reviewer-prompt.md`
    - Review loop (same as medium effort, max 3 iterations per step)
    - Run preflight gates
-   - Commit per step: `fix(security): [FINDING_ID] step [N] — [step description]`
+   - Commit per step using heredoc:
+     ```bash
+     git commit -m "$(cat <<'EOF'
+     fix(security): [FINDING_ID] step [N] — [step description]
+     EOF
+     )"
+     ```
 
 4. Update task status → done
    - Postgres: `node scripts/pipeline-db.js update task [DB_TASK_ID] done`
@@ -386,13 +409,13 @@ If new findings are introduced: flag them prominently. These may need another re
 **If `knowledge.tier` is `"postgres"` AND `integrations.postgres.enabled`:**
 
 ```bash
-node scripts/pipeline-db.js update decision "security-remediation" "Remediation [date]: [N] fixed, [M] verified, [P] remaining" "[summary of what was fixed and verification results]"
+node scripts/pipeline-db.js update decision 'security-remediation' 'Remediation [date]: [N] fixed, [M] verified, [P] remaining' '[summary of what was fixed and verification results]'
 ```
 
 For any remaining or new findings, store as gotchas:
 
 ```bash
-node scripts/pipeline-db.js update gotcha new "[FINDING_ID]: [brief description]" "[why it wasn't fixed or what to watch for]"
+node scripts/pipeline-db.js update gotcha new '[FINDING_ID]: [brief description]' '[why it wasn't fixed or what to watch for]'
 ```
 
 **If `knowledge.tier` is `"files"`:**

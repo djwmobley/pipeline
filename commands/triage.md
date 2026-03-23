@@ -34,6 +34,8 @@ git ls-files --others --exclude-standard <each_source_dir>
 
 Use the count of those files as "files changed" and estimate lines by summing `wc -l` on each. Skip to Step 2.
 
+**source_dirs shell safety:** Before constructing the regex, validate each `routing.source_dirs` entry matches `[a-zA-Z0-9/_.-]+` only. If any entry contains shell metacharacters, reject it and stop.
+
 **Normal case (commits exist):** Construct a grep regex from `routing.source_dirs` (e.g., if `["src/", "lib/"]` then regex is `^(src/|lib/)`). Run:
 
 git diff --name-only HEAD | grep -E "<constructed_regex>" || true
