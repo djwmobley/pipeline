@@ -250,6 +250,43 @@ Security red team assessment with parallel domain specialists.
 
 ---
 
+### `/pipeline:remediate`
+
+Fixes security findings from a red team report. Parses findings, creates GitHub issues, batches fixes through the build/review/commit pipeline, and verifies with specialist re-runs.
+
+**What it does:**
+1. Locates the most recent red team report (or one you specify)
+2. Dispatches haiku triage agent to parse all findings into structured data
+3. Presents remediation plan — finding count, batches, issues to create — you approve before work starts
+4. Creates GitHub issues for findings above your configured threshold
+5. Creates knowledge tier tasks for tracking
+6. Executes fixes in batches:
+   - **Quick wins** — single implementer agent, no reviewer
+   - **Medium effort** — implementer + reviewer with fix loop
+   - **Architectural** — opus planner breaks the fix into safe steps, then implementer + reviewer per step
+7. Reports progress between batches with commit SHAs
+8. Re-runs affected specialist domains to verify fixes
+9. Persists summary to knowledge tier
+
+**Arguments:**
+- No arguments — uses most recent `docs/security/redteam-*.md`
+- `[path]` — use a specific report file
+
+**Batch strategies:**
+- `"effort"` (default) — quick wins first, then medium, then architectural. Maximizes early progress.
+- `"severity"` — CRITICAL first regardless of effort. Addresses highest risk first.
+
+**Issue creation thresholds:**
+- `"all"` — every finding gets a GitHub issue
+- `"medium-high"` (default) — CRITICAL and HIGH always, MEDIUM only if confidence HIGH
+- `"high"` — CRITICAL and HIGH only
+
+**Verification:** After all fixes, re-runs the specialist domains that had findings. Compares original count vs remaining vs new findings introduced by fixes.
+
+**Output:** Commits per finding (or per step for architectural), tracking in `docs/security/remediation-[date].md` or Postgres tasks, closed GitHub issues with commit SHAs.
+
+---
+
 ### `/pipeline:debug`
 
 Systematic 4-phase root-cause diagnosis.

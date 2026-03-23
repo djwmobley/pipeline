@@ -59,6 +59,13 @@ redteam:
     - { pattern: "cors\\(\\)", label: "permissive-cors" }
     - { pattern: "disable.*csrf|csrf.*false", label: "csrf-disabled" }
 
+# Red team remediation
+# Run /pipeline:remediate after /pipeline:redteam to fix findings
+remediate:
+  auto_issue_threshold: "medium-high"  # "all", "medium-high", "high" — controls which findings get GitHub issues
+  verification_rerun: true             # Re-run affected specialists after fixes to verify
+  batch_strategy: "effort"             # "effort" (quick→medium→arch) or "severity" (critical first)
+
 # Git
 commit:
   co_author: "Claude <noreply@anthropic.com>"  # Generic — works regardless of which model is active
@@ -133,7 +140,7 @@ integrations:
     use_in: [brainstorm]
   github:
     enabled: false
-    use_in: [commit, finish]
+    use_in: [commit, finish, remediate]
   chrome_devtools:
     enabled: false
     use_in: [ui-review]

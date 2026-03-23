@@ -190,6 +190,26 @@ Controls the `/pipeline:redteam` security assessment.
 
 **Model routing:** Recon uses `models.cheap` (haiku). Specialists use `models.review` (sonnet). Lead analyst uses `models.architecture` (opus). HTML report uses `models.cheap` (haiku).
 
+### remediate
+
+Controls the `/pipeline:remediate` security finding remediation.
+
+| Field | Default | What It Does |
+|-------|---------|-------------|
+| `auto_issue_threshold` | `"medium-high"` | Which findings get GitHub issues. `"all"`: every finding. `"medium-high"`: CRITICAL/HIGH always, MEDIUM only if confidence HIGH. `"high"`: CRITICAL and HIGH only. |
+| `verification_rerun` | `true` | Re-run affected specialist domains after fixes to verify vulnerabilities are closed |
+| `batch_strategy` | `"effort"` | Execution order. `"effort"`: quick wins → medium → architectural. `"severity"`: CRITICAL first regardless of effort. |
+
+**Batch effort tiers:**
+
+| Tier | Description | Agent Strategy |
+|------|-------------|---------------|
+| Quick win (< 1 hour) | Single-file fix | Sonnet implementer only |
+| Medium (1-4 hours) | Multi-file or pattern change | Sonnet implementer + sonnet reviewer |
+| Architectural (> 4 hours) | Structural change | Opus planner → sonnet implementer + sonnet reviewer per step |
+
+**Model routing:** Triage uses `models.cheap` (haiku). Implementation uses `models.implement` (sonnet). Review uses `models.review` (sonnet). Architectural planning uses `models.architecture` (opus). Verification re-runs use `models.review` (sonnet).
+
 ### commit
 
 | Field | Default | What It Does |
@@ -257,7 +277,7 @@ Each integration has `enabled` (true/false) and `use_in` (which commands use it)
 |-------------|------------------|----------------|
 | `postgres` | `pg_isready` or port 5432 | Knowledge tier |
 | `ollama` | `localhost:11434` responds | Semantic search via local embeddings ([Ollama](https://ollama.com) — runs any embedding model on your machine, no API keys, no cloud) |
-| `github` | `GITHUB_TOKEN` env var | PR creation in `/pipeline:finish` |
+| `github` | `GITHUB_TOKEN` env var | PR creation in `/pipeline:finish`, issue tracking in `/pipeline:remediate` |
 | `sentry` | `SENTRY_AUTH_TOKEN` env var | Error import in `/pipeline:debug` |
 | `chrome_devtools` | `localhost:9222` responds | Screenshots for `/pipeline:ui-review` |
 | `playwright` | `npx playwright --version` works | Screenshots (fallback) |
