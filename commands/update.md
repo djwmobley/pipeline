@@ -59,7 +59,7 @@ Re-run all integration probes (single script to avoid parallel-cancel issues):
 ```bash
 echo "=== ENV VARS ==="
 echo "SENTRY_AUTH_TOKEN=${SENTRY_AUTH_TOKEN:+SET}"
-echo "FIGMA_ACCESS_TOKEN=${FIGMA_ACCESS_TOKEN:+SET}"
+echo "FIGMA_API_KEY=${FIGMA_API_KEY:+SET}"
 echo "POSTHOG_API_KEY=${POSTHOG_API_KEY:+SET}"
 echo "GAMMA_API_KEY=${GAMMA_API_KEY:+SET}"
 echo "GITHUB_TOKEN=${GITHUB_TOKEN:+SET}"

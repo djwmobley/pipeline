@@ -207,7 +207,7 @@ Run this single integration probe script:
 ```bash
 echo "=== ENV VARS ==="
 echo "SENTRY_AUTH_TOKEN=${SENTRY_AUTH_TOKEN:+SET}"
-echo "FIGMA_ACCESS_TOKEN=${FIGMA_ACCESS_TOKEN:+SET}"
+echo "FIGMA_API_KEY=${FIGMA_API_KEY:+SET}"
 echo "POSTHOG_API_KEY=${POSTHOG_API_KEY:+SET}"
 echo "GAMMA_API_KEY=${GAMMA_API_KEY:+SET}"
 echo "GITHUB_TOKEN=${GITHUB_TOKEN:+SET}"
@@ -270,6 +270,32 @@ gh --version 2>/dev/null || echo "gh: no"
 echo "=== DONE ==="
 ```
 
+**Design tool detection (non-script — MCP tool availability is known to you, not bash):**
+
+Check your available tools for MCP server connections:
+- If any `mcp__stitch__*` tools are callable → **Stitch MCP is connected**
+- If any `mcp__figma__*` tools are callable → **Figma MCP is connected**
+
+**Design tool decision matrix:**
+
+| Figma MCP | Stitch MCP | Action |
+|----------|-----------|--------|
+| connected | connected | Ask: "Both Figma and Stitch are available. Figma imports existing designs for comparison. Stitch generates new mockups from text prompts. Which do you want for this project? (figma / stitch / both)" |
+| connected | not connected | Enable Figma. Mention: "Stitch can generate design mockups from text — see `docs/prerequisites.md` to set it up." |
+| not connected | connected | Enable Stitch. Mention: "If you have existing Figma designs, you can add the Figma MCP server too — see `docs/prerequisites.md`." |
+| not connected | not connected | Neither. Show: "No design tools detected. Brainstorming will use simple HTML wireframes. See `docs/prerequisites.md` to set up Stitch (free, generates AI mockups) or Figma." |
+
+If Stitch is enabled, ask about device type:
+> "What's the primary device target for designs in this project?
+> 1. **Desktop** (default)
+> 2. **Mobile**
+> 3. **Tablet**
+> 4. **Device-agnostic**"
+
+Set `integrations.stitch.device_type` accordingly. Do NOT create a Stitch project during init — it's created lazily on first brainstorm use so the title matches the feature being designed.
+
+---
+
 **Interpret Postgres results:**
 
 | pg_isready | Install found | Port 5432 | Alt port open | Interpretation |
@@ -294,12 +320,14 @@ echo "=== DONE ==="
 
 | Integration | Required? | What it enables | Fallback without it | If missing |
 |------------|-----------|----------------|--------------------|----|
-| **Playwright** | Optional | Screenshot capture for `/pipeline:ui-review` | Chrome DevTools MCP, or provide screenshots manually | Ask: "Playwright enables automatic screenshot capture for UI reviews. Want me to install it? (I'll run `[pkg_manager] add -D @playwright/test && npx playwright install chromium`)" If declined: "No problem — install it yourself later with `[pkg_manager] add -D @playwright/test && npx playwright install chromium`, or use Chrome DevTools MCP instead." |
-| **GitHub CLI** | Optional | PR creation in `/pipeline:finish`, issue management | Push branches manually, create PRs in browser | Show: "GitHub CLI (`gh`) enables PR creation from `/pipeline:finish`. Install: https://cli.github.com — or push branches and create PRs manually in the browser." |
-| **Postgres** | Optional | Knowledge tier with semantic search, structured queries | Files tier (markdown-based, zero setup) | Show install link. Note: "Without Postgres, you'll use the files tier — markdown-based session tracking that works but lacks search." |
-| **Ollama** | Optional | Semantic/hybrid search in Postgres tier | FTS keyword search only (still useful) | Show: "Ollama runs embedding models locally (no API keys, no cloud). Install: https://ollama.com — then pull an embedding model (e.g., `ollama pull mxbai-embed-large` or `ollama pull nomic-embed-text`). Without it, keyword search still works." |
-| **Chrome DevTools** | Optional | Screenshot capture for `/pipeline:ui-review` | Playwright, or provide screenshots manually | Show: "Launch Chrome with `--remote-debugging-port=9222` for automatic screenshots. Or use Playwright instead." |
-| **Sentry** | Optional | Auto-pull recent errors in `/pipeline:debug` | Reproduce errors manually | Show: "Set `SENTRY_AUTH_TOKEN` env var. Without it, `/pipeline:debug` still works — you just provide the error manually." |
+| **Stitch** | Optional | AI-generated design mockups in `/pipeline:brainstorm` and `/pipeline:ui-review` | HTML wireframes via visual companion subagent | Show: "See `docs/prerequisites.md` for Stitch setup (free, generates AI mockups from text)." |
+| **Figma** | Optional | Import existing designs for comparison in `/pipeline:ui-review` and reference in `/pipeline:brainstorm` | Stitch for new mockups, or no design reference | Show: "See `docs/prerequisites.md` for Figma MCP setup." |
+| **Playwright** | Optional | Screenshot capture for `/pipeline:ui-review` | Chrome DevTools MCP, or provide screenshots manually | Ask: "Playwright enables automatic screenshot capture for UI reviews. Want me to install it? (I'll run `[pkg_manager] add -D @playwright/test && npx playwright install chromium`)" If declined: "No problem — see `docs/prerequisites.md` for manual setup, or use Chrome DevTools MCP instead." |
+| **GitHub CLI** | Optional | PR creation in `/pipeline:finish`, issue management | Push branches manually, create PRs in browser | Show: "GitHub CLI (`gh`) enables PR creation from `/pipeline:finish`. See `docs/prerequisites.md` for setup." |
+| **Postgres** | Optional | Knowledge tier with semantic search, structured queries | Files tier (markdown-based, zero setup) | Show: "Without Postgres, you'll use the files tier — markdown-based session tracking that works but lacks search. See `docs/prerequisites.md` for setup." |
+| **Ollama** | Optional | Semantic/hybrid search in Postgres tier | FTS keyword search only (still useful) | Show: "Ollama runs embedding models locally (no API keys, no cloud). See `docs/prerequisites.md` for setup. Without it, keyword search still works." |
+| **Chrome DevTools** | Optional | Screenshot capture for `/pipeline:ui-review` | Playwright, or provide screenshots manually | Show: "Launch Chrome with `--remote-debugging-port=9222` for automatic screenshots. See `docs/prerequisites.md` for details." |
+| **Sentry** | Optional | Auto-pull recent errors in `/pipeline:debug` | Reproduce errors manually | Show: "Set `SENTRY_AUTH_TOKEN` env var. See `docs/prerequisites.md` for setup." |
 
 **Key rule:** Always ask before installing anything. If the user declines, show the manual install command so they can do it later. Never silently install packages.
 

@@ -93,7 +93,12 @@ integrations:
     use_in: [debug]
   figma:
     enabled: false
-    use_in: [ui-review]
+    use_in: [brainstorm, ui-review]
+  stitch:
+    enabled: false
+    use_in: [brainstorm, ui-review]
+    project_id: null      # Created lazily on first brainstorm use
+    device_type: DESKTOP  # MOBILE, DESKTOP, TABLET, AGNOSTIC
   posthog:
     enabled: false
     use_in: [review]

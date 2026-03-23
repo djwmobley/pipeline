@@ -1,5 +1,5 @@
 ---
-allowed-tools: Bash(*), Read(*), Write(*), Glob(*), Grep(*), Task(*)
+allowed-tools: Bash(*), Read(*), Write(*), Glob(*), Grep(*), Task(*), mcp__stitch__create_project, mcp__stitch__list_projects, mcp__stitch__get_project, mcp__stitch__list_screens, mcp__stitch__get_screen, mcp__stitch__generate_screen_from_text, mcp__stitch__edit_screens, mcp__stitch__generate_variants, mcp__figma__get_file, mcp__figma__get_file_nodes, mcp__figma__get_images
 description: Design before LARGE changes — explore context, clarify requirements, propose approaches, write spec
 ---
 
@@ -15,6 +15,10 @@ Read `.claude/pipeline.yml` from the project root. Extract:
 - `docs.specs_dir` — where to save spec documents
 - `review.non_negotiable` — intentional decisions to respect
 - `security` — security checklist to evaluate against
+- `integrations.stitch.enabled` — whether Stitch MCP is available for design mockups
+- `integrations.stitch.project_id` — existing Stitch project for this pipeline project (may be null)
+- `integrations.stitch.device_type` — target device for generated screens
+- `integrations.figma.enabled` — whether Figma MCP is available for design reference
 
 If no config file exists, report: "No `.claude/pipeline.yml` found. Run `/pipeline:init` first." and stop.
 

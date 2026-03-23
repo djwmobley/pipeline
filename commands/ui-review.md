@@ -1,5 +1,5 @@
 ---
-allowed-tools: Bash(*), Read(*), Task(*), mcp__chrome__take_screenshot, mcp__chrome__navigate_page, mcp__chrome__take_snapshot, mcp__plugin_playwright_playwright__browser_take_screenshot, mcp__plugin_playwright_playwright__browser_navigate, mcp__plugin_playwright_playwright__browser_snapshot
+allowed-tools: Bash(*), Read(*), Task(*), mcp__chrome__take_screenshot, mcp__chrome__navigate_page, mcp__chrome__take_snapshot, mcp__plugin_playwright_playwright__browser_take_screenshot, mcp__plugin_playwright_playwright__browser_navigate, mcp__plugin_playwright_playwright__browser_snapshot, mcp__stitch__list_screens, mcp__stitch__get_screen, mcp__stitch__get_project, mcp__figma__get_file, mcp__figma__get_file_nodes, mcp__figma__get_images
 description: Capture a screenshot and analyze the UI — layout, hit targets, text, visual issues
 ---
 
@@ -11,7 +11,10 @@ Capture a browser screenshot and dispatch an analysis agent.
 
 ### Step 0 — Load config
 
-Read `.claude/pipeline.yml`. Check `integrations.chrome_devtools.enabled` and `integrations.playwright.enabled`.
+Read `.claude/pipeline.yml`. Check:
+- `integrations.chrome_devtools.enabled` and `integrations.playwright.enabled` (screenshot capture)
+- `integrations.stitch.enabled` and `integrations.stitch.project_id` (design mockup comparison)
+- `integrations.figma.enabled` (Figma design reference)
 
 ---
 
@@ -39,9 +42,64 @@ Read `.claude/pipeline.yml`. Check `integrations.chrome_devtools.enabled` and `i
 
 ---
 
+### Step 1b — Load design reference (optional)
+
+Check if a design tool has mockups to compare against.
+
+**If Stitch is enabled and `integrations.stitch.project_id` is set:**
+1. Call `mcp__stitch__list_screens` with the project ID
+2. If screens exist, present them:
+   > "Found [N] Stitch mockups for this project:
+   > [list screen names/descriptions]
+   > Compare the screenshot against any of these? (Pick one, or skip)"
+3. If user picks one, call `mcp__stitch__get_screen` to retrieve it
+4. Store the mockup data for use in Step 2's analysis prompt
+
+**If Figma is enabled:**
+1. Ask: "Have a Figma file to compare against? Paste the URL, or skip."
+2. If provided, use `mcp__figma__get_file_nodes` and `mcp__figma__get_images` to fetch relevant frames
+3. Store the exported image for use in Step 2's analysis prompt
+
+**If neither:** Skip — analyze the screenshot standalone (current behavior).
+
+---
+
 ### Step 2 — Analyze
 
-Launch a general-purpose sub-agent (model: haiku) to analyze the screenshot:
+Launch a general-purpose sub-agent (model: haiku) to analyze the screenshot.
+
+**If a design reference was loaded in Step 1b**, use the comparison prompt:
+
+```
+Task(general-purpose, model: "haiku"):
+  "Read the screenshot at [PATH] and the design reference at [REFERENCE].
+
+  Report:
+
+  1. FIDELITY — How closely does the implementation match the design?
+     For each difference: what's different, severity (cosmetic/functional/missing).
+
+  2. LAYOUT OVERVIEW — Every visible section top to bottom.
+     For each: what's in it, approximate height.
+
+  3. INTERACTIVE ELEMENTS — Every tappable/interactive element.
+     For each: label/icon, position, estimated hit target size.
+     Flag anything under 44x44px.
+
+  4. TEXT AUDIT — All visible text.
+     Flag: truncated, too small (under 12px), low contrast.
+
+  5. VISUAL ISSUES — Any of:
+     - Misalignment
+     - Inconsistent spacing
+     - Elements clipped by viewport
+     - Overlapping content
+     - Responsive layout problems
+
+  6. VERDICT — One sentence: most important fidelity gap or visual issue to fix."
+```
+
+**If no design reference**, use the standalone prompt (omit the FIDELITY section):
 
 ```
 Task(general-purpose, model: "haiku"):

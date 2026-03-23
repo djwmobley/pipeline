@@ -35,13 +35,25 @@ Complete these steps in order:
 ## The Process
 
 **Visual companion (optional):**
-When upcoming questions will involve visual content (mockups, layouts, diagrams), offer:
+Read `integrations.stitch.enabled` and `integrations.figma.enabled` from pipeline.yml, then offer the appropriate design tool:
+
+If Stitch is enabled:
+> "I can generate design mockups using Stitch — AI-generated screens from your descriptions.
+> Want to use that as we work through the design?"
+
+If Figma is enabled (and Stitch is not):
+> "I can pull your Figma designs for reference as we brainstorm.
+> Want to use that? (I'll need a Figma file URL)"
+
+If neither is enabled:
 > "Some of what we're working on might be easier to show in a browser — mockups, diagrams, comparisons.
 > Want to try it? (Requires opening a local URL)"
 
 This offer MUST be its own message. If declined, proceed text-only.
 
-Even after acceptance, decide per question: use browser for visual content (mockups, wireframes, layout comparisons), use terminal for text (requirements, conceptual choices, tradeoff lists). A question about a UI topic is not automatically visual.
+Even after acceptance, decide per question: use the design tool for visual content (mockups, wireframes, layout comparisons), use terminal for text (requirements, conceptual choices, tradeoff lists). A question about a UI topic is not automatically visual.
+
+See `visual-companion.md` for the detailed dispatch logic for each path.
 
 **Understanding the idea:**
 - Check out the current project state first (files, docs, recent commits)

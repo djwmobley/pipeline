@@ -218,7 +218,8 @@ Each integration has `enabled` (true/false) and `use_in` (which commands use it)
 | `sentry` | `SENTRY_AUTH_TOKEN` env var | Error import in `/pipeline:debug` |
 | `chrome_devtools` | `localhost:9222` responds | Screenshots for `/pipeline:ui-review` |
 | `playwright` | `npx playwright --version` works | Screenshots (fallback) |
-| `figma` | `FIGMA_ACCESS_TOKEN` env var | Design comparison |
+| `figma` | Figma MCP server (`figma-developer-mcp`) | Import existing designs for comparison |
+| `stitch` | Stitch MCP server (Google) | AI-generated design mockups from text prompts |
 | `posthog` | `POSTHOG_API_KEY` env var | Feature flag checks in review |
 | `gamma` | `GAMMA_API_KEY` env var | Visual presentations from specs ([gamma.app](https://gamma.app)) |
 
