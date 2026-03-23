@@ -28,7 +28,7 @@ Extract:
 
 **source_dirs validation:**
 1. If `routing.source_dirs` contains `["."]`, warn: "source_dirs is set to [\".\"] which will scan ALL files including config, docs, and lockfiles. Run `/pipeline:update` to set a specific source directory before running a full audit." Then filter Phase 0 grep and sector scans to common source extensions only (.ts, .tsx, .js, .jsx, .rs, .go, .py).
-2. **Shell safety:** Validate each entry matches `[a-zA-Z0-9/_.-]+` only. If any entry contains shell metacharacters (`$`, `` ` ``, `(`, `)`, `;`, `|`, `&`, `"`, `'`, `\`), reject it and stop.
+2. **Shell safety:** Validate each entry matches `[a-zA-Z0-9/_.-]+` only. If any entry contains shell metacharacters (`$`, `` ` ``, `(`, `)`, `;`, `|`, `&`, `!`, `"`, `'`, `\`, `{`, `}`), reject it and stop.
 
 If `review.sectors` is empty:
 

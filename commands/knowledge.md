@@ -147,12 +147,12 @@ PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-db.js update decision '$TOPIC' '$
 
 **"search" "<query>"** →
 ```bash
-PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-cache.js search "$QUERY"
+PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-cache.js search '$QUERY'
 ```
 
 **"hybrid" "<query>"** →
 ```bash
-PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-embed.js hybrid "$QUERY"
+PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-embed.js hybrid '$QUERY'
 ```
 
 **"index" [--all]** →
@@ -162,17 +162,17 @@ PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-embed.js index $FLAG
 
 **"add" <path> "<description>"** →
 ```bash
-PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-embed.js add "$PATH" "$DESC"
+PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-embed.js add '$PATH' '$DESC'
 ```
 
 **"check" <filepath>** →
 ```bash
-PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-cache.js check "$FILEPATH"
+PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-cache.js check '$FILEPATH'
 ```
 
 **"cache" <filepath> "<summary>"** →
 ```bash
-PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-cache.js update "$FILEPATH" "$SUMMARY"
+PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-cache.js update '$FILEPATH' '$SUMMARY'
 ```
 
 **"query" "<SQL>"** →
@@ -187,6 +187,6 @@ PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-db.js export $FILE
 
 **"import" <source> [--all]** →
 ```bash
-PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-db.js import "$SOURCE" $FLAG
+PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-db.js import '$SOURCE' $FLAG
 ```
 Without `--all`, this is a dry run — shows what would be imported. With `--all`, imports gotchas and decisions, skipping duplicates.

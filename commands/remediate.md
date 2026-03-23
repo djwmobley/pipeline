@@ -415,7 +415,7 @@ node scripts/pipeline-db.js update decision 'security-remediation' 'Remediation 
 For any remaining or new findings, store as gotchas:
 
 ```bash
-node scripts/pipeline-db.js update gotcha new '[FINDING_ID]: [brief description]' '[why it wasn't fixed or what to watch for]'
+node scripts/pipeline-db.js update gotcha new '[FINDING_ID]: [brief description]' '[why it was not fixed or what to watch for]'
 ```
 
 **If `knowledge.tier` is `"files"`:**
