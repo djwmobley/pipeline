@@ -20,7 +20,9 @@ Read `.claude/pipeline.yml` from the project root. Extract:
 
 If no config file exists, report: "No `.claude/pipeline.yml` found. Run `/pipeline:init` first." and stop.
 
-**source_dirs sanity check:** If `routing.source_dirs` contains `["."]`, warn: "source_dirs is set to [\".\"] which counts ALL files as source, inflating the review gate count. Run `/pipeline:update` to set a specific source directory." Then filter by common source extensions (.ts, .tsx, .js, .jsx, .rs, .go, .py) instead of directory paths for the review gate check.
+**source_dirs validation:**
+1. If `routing.source_dirs` contains `["."]`, warn: "source_dirs is set to [\".\"] which counts ALL files as source, inflating the review gate count. Run `/pipeline:update` to set a specific source directory." Then filter by common source extensions (.ts, .tsx, .js, .jsx, .rs, .go, .py) instead of directory paths for the review gate check.
+2. **Shell safety:** Validate each entry matches `[a-zA-Z0-9/_.-]+` only. If any entry contains shell metacharacters (`$`, `` ` ``, `(`, `)`, `;`, `|`, `&`, `!`, `"`, `'`, `\`, `{`, `}`), reject it with: "source_dirs entry '[entry]' contains unsafe characters. Only alphanumeric, `/`, `_`, `.`, `-` are allowed." and stop.
 
 ---
 
@@ -131,6 +133,8 @@ type(scope): summary
 
 Co-Authored-By: [value from commit.co_author in pipeline.yml]
 ```
+
+**co_author validation:** Validate `commit.co_author` matches the format `Name <email>` (no newlines, no shell metacharacters). Strip any newlines or control characters before use in the commit message.
 
 Types: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `perf`, `style`
 

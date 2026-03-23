@@ -119,7 +119,7 @@ After all agents return, synthesize into a unified research brief:
 ### Decisions Ready to Lock
 - [Decision with HIGH confidence that can be locked before planning]
 
-For each decision ready to lock, if knowledge.tier is postgres: `PROJECT_ROOT=[project_root] node [scripts_dir]/pipeline-db.js query "UPDATE decisions SET status='locked' WHERE topic='[topic]'"`. For files tier: append `[LOCKED]` prefix to the decision in DECISIONS.md.
+For each decision ready to lock, if knowledge.tier is postgres: `PROJECT_ROOT=[project_root] node [scripts_dir]/pipeline-db.js update decision '[topic]' '[decision text]' 'locked'`. For files tier: append `[LOCKED]` prefix to the decision in DECISIONS.md.
 
 ### Open Questions
 - [Anything still uncertain that brainstorm/arch should address]
@@ -132,9 +132,9 @@ For each decision ready to lock, if knowledge.tier is postgres: `PROJECT_ROOT=[p
 
 ### Step 5 — Store results
 
-**Postgres tier:** Write the research brief to a temp file, then insert with escaped content. Single quotes in the brief MUST be doubled (`'` → `''`) before SQL insertion. Use the same `<resolved_scripts_dir>` from Step 2.
+**Postgres tier:** Use the `update decision` subcommand (parameterized) rather than raw SQL to avoid injection. Use the same `<resolved_scripts_dir>` from Step 2.
 ```bash
-PROJECT_ROOT=$(pwd) node <resolved_scripts_dir>/pipeline-db.js query "INSERT INTO research (title, body) VALUES ('[topic]', '[escaped_brief]')"
+PROJECT_ROOT=$(pwd) node <resolved_scripts_dir>/pipeline-db.js update decision 'research-[topic]' '[one-line summary]' '[full research brief]'
 ```
 Then update embeddings:
 ```bash

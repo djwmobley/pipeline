@@ -106,16 +106,16 @@ PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-db.js status
 **"session" <N> <tests> "<summary>"** →
 - Files tier:
 ```bash
-PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-files.js session $N $TESTS "$SUMMARY"
+PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-files.js session $N $TESTS '$SUMMARY'
 ```
 - Postgres tier:
 ```bash
-PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-db.js update session $N $TESTS "$SUMMARY"
+PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-db.js update session $N $TESTS '$SUMMARY'
 ```
 
 **"task new" "<title>" [phase]** →
 ```bash
-PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-db.js update task new "$TITLE" $PHASE
+PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-db.js update task new '$TITLE' $PHASE
 ```
 
 **"task" <id> <status>** →
@@ -126,33 +126,33 @@ PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-db.js update task $ID $STATUS
 **"gotcha" "<issue>" "<rule>"** →
 - Files tier:
 ```bash
-PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-files.js gotcha "$ISSUE" "$RULE"
+PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-files.js gotcha '$ISSUE' '$RULE'
 ```
 - Postgres tier:
 ```bash
-PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-db.js update gotcha new "$ISSUE" "$RULE"
+PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-db.js update gotcha new '$ISSUE' '$RULE'
 ```
 
 **"decision" "<topic>" "<decision>" "<reason>"** →
 - Files tier:
 ```bash
-PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-files.js decision "$TOPIC" "$DECISION" "$REASON"
+PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-files.js decision '$TOPIC' '$DECISION' '$REASON'
 ```
 - Postgres tier:
 ```bash
-PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-db.js update decision "$TOPIC" "$DECISION" "$REASON"
+PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-db.js update decision '$TOPIC' '$DECISION' '$REASON'
 ```
 
 **Note:** Do NOT use raw SQL for decisions — single quotes in values will break the query. Use the `update decision` subcommand which handles parameterization.
 
 **"search" "<query>"** →
 ```bash
-PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-cache.js search "$QUERY"
+PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-cache.js search '$QUERY'
 ```
 
 **"hybrid" "<query>"** →
 ```bash
-PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-embed.js hybrid "$QUERY"
+PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-embed.js hybrid '$QUERY'
 ```
 
 **"index" [--all]** →
@@ -162,22 +162,22 @@ PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-embed.js index $FLAG
 
 **"add" <path> "<description>"** →
 ```bash
-PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-embed.js add "$PATH" "$DESC"
+PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-embed.js add '$PATH' '$DESC'
 ```
 
 **"check" <filepath>** →
 ```bash
-PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-cache.js check "$FILEPATH"
+PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-cache.js check '$FILEPATH'
 ```
 
 **"cache" <filepath> "<summary>"** →
 ```bash
-PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-cache.js update "$FILEPATH" "$SUMMARY"
+PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-cache.js update '$FILEPATH' '$SUMMARY'
 ```
 
 **"query" "<SQL>"** →
 ```bash
-PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-db.js query "$SQL"
+PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-db.js query '$SQL'
 ```
 
 **"export" [file]** →
@@ -187,6 +187,6 @@ PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-db.js export $FILE
 
 **"import" <source> [--all]** →
 ```bash
-PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-db.js import "$SOURCE" $FLAG
+PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-db.js import '$SOURCE' $FLAG
 ```
 Without `--all`, this is a dry run — shows what would be imported. With `--all`, imports gotchas and decisions, skipping duplicates.

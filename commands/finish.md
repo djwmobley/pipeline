@@ -81,7 +81,10 @@ Read `git log [base-branch]..HEAD --oneline` to populate the summary bullets and
 
 ```bash
 git push -u origin [feature-branch]
-gh pr create --title "[title]" --body "$(cat <<'EOF'
+gh pr create --title "$(cat <<'TITLE'
+[title]
+TITLE
+)" --body "$(cat <<'EOF'
 ## Summary
 [2-3 bullets]
 

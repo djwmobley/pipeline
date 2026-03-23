@@ -24,6 +24,8 @@ Read `.claude/pipeline.yml` from the project root. Extract:
 
 If no config exists: "No `.claude/pipeline.yml` found. Run `/pipeline:init` first." Stop.
 
+**source_dirs shell safety:** Validate each `routing.source_dirs` entry matches `[a-zA-Z0-9/_.-]+` only. If any entry contains shell metacharacters, reject it and stop.
+
 **Query knowledge tier for security context:**
 
 If `knowledge.tier` is `"postgres"` AND `integrations.postgres.enabled`:
@@ -327,17 +329,17 @@ Report: "HTML report saved to `docs/security/redteam-[date].html` — open in an
 
 Record the session:
 ```bash
-node scripts/pipeline-db.js update session [next_session_number] 0 "Red team assessment: [N] findings ([C] critical, [H] high, [M] medium, [L] low)"
+node scripts/pipeline-db.js update session [next_session_number] 0 'Red team assessment: [N] findings ([C] critical, [H] high, [M] medium, [L] low)'
 ```
 
 For each CRITICAL or HIGH finding, store as a gotcha:
 ```bash
-node scripts/pipeline-db.js update gotcha new "[finding ID: brief summary]" "[remediation action]"
+node scripts/pipeline-db.js update gotcha new '[finding ID: brief summary]' '[remediation action]'
 ```
 
 Record the decision:
 ```bash
-node scripts/pipeline-db.js update decision "security-assessment" "Red team [date]: [overall verdict]" "[summary of security posture and key risks]"
+node scripts/pipeline-db.js update decision 'security-assessment' 'Red team [date]: [overall verdict]' '[summary of security posture and key risks]'
 ```
 
 **If `knowledge.tier` is `"files"`:**

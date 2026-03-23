@@ -181,5 +181,8 @@ git push origin [project.branch from config] --follow-tags
 If yes and GitHub CLI available, extract only the new version's section from CHANGELOG.md (from `## [version]` to the next `## ` heading or end of file) and pass it as release notes:
 ```bash
 # Extract just this release's changelog section (not the entire file)
-gh release create v[version] --title "v[version]" --notes "[extracted changelog section for this version only]"
+gh release create v[version] --title "v[version]" --notes "$(cat <<'NOTES'
+[extracted changelog section for this version only]
+NOTES
+)"
 ```
