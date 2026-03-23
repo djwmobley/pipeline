@@ -37,11 +37,15 @@ Complete these steps in order:
 **Visual companion (optional):**
 Read `integrations.stitch.enabled` and `integrations.figma.enabled` from pipeline.yml, then offer the appropriate design tool:
 
-If Stitch is enabled:
+If both Stitch and Figma are enabled:
+> "I can generate new design mockups with Stitch and pull your existing Figma designs for reference.
+> Want to use both, just one, or skip visuals? (both / stitch / figma / skip)"
+
+If only Stitch is enabled:
 > "I can generate design mockups using Stitch — AI-generated screens from your descriptions.
 > Want to use that as we work through the design?"
 
-If Figma is enabled (and Stitch is not):
+If only Figma is enabled:
 > "I can pull your Figma designs for reference as we brainstorm.
 > Want to use that? (I'll need a Figma file URL)"
 

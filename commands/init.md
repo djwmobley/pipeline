@@ -207,7 +207,6 @@ Run this single integration probe script:
 ```bash
 echo "=== ENV VARS ==="
 echo "SENTRY_AUTH_TOKEN=${SENTRY_AUTH_TOKEN:+SET}"
-echo "FIGMA_API_KEY=${FIGMA_API_KEY:+SET}"
 echo "POSTHOG_API_KEY=${POSTHOG_API_KEY:+SET}"
 echo "GAMMA_API_KEY=${GAMMA_API_KEY:+SET}"
 echo "GITHUB_TOKEN=${GITHUB_TOKEN:+SET}"
@@ -276,6 +275,8 @@ Check your available tools for MCP server connections:
 - If any `mcp__stitch__*` tools are callable → **Stitch MCP is connected**
 - If any `mcp__figma__*` tools are callable → **Figma MCP is connected**
 
+Note: Figma detection is MCP-only. The `FIGMA_API_KEY` env var is used internally by the Figma MCP server — if the MCP server is not configured, the env var alone does nothing.
+
 **Design tool decision matrix:**
 
 | Figma MCP | Stitch MCP | Action |
@@ -287,12 +288,12 @@ Check your available tools for MCP server connections:
 
 If Stitch is enabled, ask about device type:
 > "What's the primary device target for designs in this project?
-> 1. **Desktop** (default)
-> 2. **Mobile**
-> 3. **Tablet**
-> 4. **Device-agnostic**"
+> 1. **Desktop** (default) → `DESKTOP`
+> 2. **Mobile** → `MOBILE`
+> 3. **Tablet** → `TABLET`
+> 4. **Device-agnostic** → `AGNOSTIC`"
 
-Set `integrations.stitch.device_type` accordingly. Do NOT create a Stitch project during init — it's created lazily on first brainstorm use so the title matches the feature being designed.
+Set `integrations.stitch.device_type` to the corresponding enum value (e.g., `DESKTOP`, `MOBILE`, `TABLET`, `AGNOSTIC`). Do NOT create a Stitch project during init — it's created lazily on first brainstorm use so the title matches the feature being designed.
 
 ---
 

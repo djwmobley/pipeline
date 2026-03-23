@@ -67,7 +67,8 @@ knowledge:
 
 integrations:
   sentry: { enabled: false, use_in: [debug] }
-  figma: { enabled: false, use_in: [ui-review] }
+  figma: { enabled: false, use_in: [brainstorm, ui-review] }
+  stitch: { enabled: false, use_in: [brainstorm, ui-review], project_id: null, device_type: DESKTOP }
   posthog: { enabled: false, use_in: [review] }
   ollama: { enabled: false, use_in: [knowledge] }
   postgres: { enabled: false, use_in: [knowledge] }

@@ -7,9 +7,10 @@ path based on the project's design tool configuration.
 
 1. Read `integrations.stitch.enabled` from pipeline.yml
 2. Read `integrations.figma.enabled` from pipeline.yml
-3. If Stitch enabled → use **Path A** (direct MCP calls, no subagent)
-4. If Figma enabled (no Stitch) → use **Path B** (Figma reference)
-5. If neither → use **Path C** (HTML fallback via haiku subagent)
+3. If both enabled → use **Path A** for generation + **Path B** for reference (Stitch generates new screens, Figma provides existing designs)
+4. If only Stitch enabled → use **Path A** (direct MCP calls, no subagent)
+5. If only Figma enabled → use **Path B** (Figma reference). If the user asks for new mockups rather than referencing existing designs, fall through to **Path C**.
+6. If neither → use **Path C** (HTML fallback via haiku subagent)
 
 ---
 

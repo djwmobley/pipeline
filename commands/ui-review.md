@@ -46,6 +46,9 @@ Read `.claude/pipeline.yml`. Check:
 
 Check if a design tool has mockups to compare against.
 
+**If Stitch is enabled but `integrations.stitch.project_id` is null:**
+Skip Stitch comparison. Note: "No Stitch mockups yet for this project. Run `/pipeline:brainstorm` to generate design mockups first."
+
 **If Stitch is enabled and `integrations.stitch.project_id` is set:**
 1. Call `mcp__stitch__list_screens` with the project ID
 2. If screens exist, present them:
