@@ -47,6 +47,19 @@ security:
   - { check: "Network call?", rule: "TLS only, AbortController, no embedded secrets" }
   - { check: "Renders user content?", rule: "Sanitize HTML — never render raw user input" }
 
+redteam:
+  mode: "white-box"
+  url: null
+  specialists: "auto"
+  skip: []
+  html_report: true
+  recon_patterns:
+    - { pattern: "eval\\(", label: "eval-usage" }
+    - { pattern: "innerHTML", label: "inner-html" }
+    - { pattern: "SELECT.*\\+|INSERT.*\\+", label: "string-concat-sql" }
+    - { pattern: "localStorage\\.setItem.*token", label: "token-in-localstorage" }
+    - { pattern: "cors\\(\\)", label: "permissive-cors" }
+
 commit:
   co_author: "Claude <noreply@anthropic.com>"
   never_stage: [".env", "*.key", "credentials*", "node_modules/"]
@@ -147,6 +160,35 @@ Which Claude model handles which job. Model names: `haiku`, `sonnet`, `opus`.
 | `architecture` | `opus` | High-stakes architectural decisions |
 
 **Rule of thumb:** Haiku explores and does mechanical work. Sonnet reasons and writes code. Opus makes decisions that are hard to reverse.
+
+### redteam
+
+Controls the `/pipeline:redteam` security assessment.
+
+| Field | Default | What It Does |
+|-------|---------|-------------|
+| `mode` | `"white-box"` | Assessment mode. `white-box` reads source code. `black-box` probes a running app at `url`. |
+| `url` | `null` | Target URL for black-box mode (e.g., `http://localhost:3000`) |
+| `specialists` | `"auto"` | `"auto"` selects specialists based on project profile + detected framework. Or explicit list: `[INJ, AUTH, XSS]` |
+| `skip` | `[]` | Specialist IDs to exclude (e.g., `[CERT]` for localhost-only apps) |
+| `html_report` | `true` | Generate a standalone HTML report alongside the markdown report |
+| `recon_patterns` | *(see template)* | Grep patterns for Phase 0 recon. Same format as `review.phase0_patterns`. |
+
+**Specialist domains:** INJ (Injection), AUTH (Authentication), XSS (Cross-Site Scripting), CSRF (CSRF), CRYPTO (Cryptography), CONFIG (Misconfiguration), DEPS (Dependencies), ACL (Access Control), RATE (Rate Limiting), DATA (Data Exposure), FILE (File Safety), CERT (Certificate & Transport).
+
+**Auto-selection by profile:**
+
+| Profile | Specialists |
+|---------|------------|
+| spa | INJ, AUTH, XSS, CSRF, CONFIG, DEPS, ACL, DATA |
+| fullstack | INJ, AUTH, XSS, CSRF, CRYPTO, CONFIG, DEPS, ACL, RATE, DATA |
+| mobile | INJ, AUTH, CRYPTO, CONFIG, DEPS, ACL, DATA, CERT |
+| mobile-web | INJ, AUTH, XSS, CSRF, CRYPTO, CONFIG, DEPS, ACL, DATA, CERT |
+| api | INJ, AUTH, CRYPTO, CONFIG, DEPS, ACL, RATE, DATA |
+| cli | INJ, CONFIG, DEPS, FILE, ACL |
+| library | INJ, DEPS, FILE, DATA |
+
+**Model routing:** Recon uses `models.cheap` (haiku). Specialists use `models.review` (sonnet). Lead analyst uses `models.architecture` (opus). HTML report uses `models.cheap` (haiku).
 
 ### commit
 

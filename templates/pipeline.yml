@@ -39,6 +39,26 @@ security:
   - { check: "User input?", rule: "Sanitize before storage" }
   - { check: "Network call?", rule: "TLS only, AbortController, no embedded secrets" }
 
+# Red team security assessment
+# Run /pipeline:redteam before beta/production releases
+redteam:
+  mode: "white-box"           # white-box (source access) or black-box (URL-only, runtime probing)
+  url: null                   # Target URL for black-box mode (e.g., http://localhost:3000)
+  specialists: "auto"         # "auto" (profile+framework-based) or explicit list: [INJ, AUTH, XSS, ...]
+  skip: []                    # Specialist IDs to skip (e.g., [CERT] for localhost-only apps)
+  html_report: true           # Generate standalone HTML report artifact alongside markdown
+  recon_patterns:             # Grep patterns for Phase 0 recon
+    - { pattern: "eval\\(", label: "eval-usage" }
+    - { pattern: "innerHTML", label: "inner-html" }
+    - { pattern: "document\\.write", label: "doc-write" }
+    - { pattern: "\\$\\{.*\\}", label: "template-literal-in-query" }
+    - { pattern: "exec\\(", label: "exec-usage" }
+    - { pattern: "spawn\\(", label: "spawn-usage" }
+    - { pattern: "SELECT.*\\+|INSERT.*\\+", label: "string-concat-sql" }
+    - { pattern: "localStorage\\.setItem.*token", label: "token-in-localstorage" }
+    - { pattern: "cors\\(\\)", label: "permissive-cors" }
+    - { pattern: "disable.*csrf|csrf.*false", label: "csrf-disabled" }
+
 # Git
 commit:
   co_author: "Claude <noreply@anthropic.com>"  # Generic — works regardless of which model is active

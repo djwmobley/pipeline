@@ -59,6 +59,36 @@ Present the recommendation:
 
 ---
 
+### Step 1b — Security assessment check
+
+Check for existing red team reports:
+
+```bash
+ls docs/security/redteam-*.md 2>/dev/null
+```
+
+**If no red team report exists AND this is a minor or major release:**
+
+> "No security assessment found for this project.
+> Consider running `/pipeline:redteam` before release — it probes for
+> injection, auth bypass, XSS, and other vulnerabilities from an attacker's perspective.
+>
+> Skip for now? (y/N)"
+
+If user chooses N (default), stop and suggest: "Run `/pipeline:redteam`, address findings, then `/pipeline:release` again."
+
+**If a red team report exists:**
+
+Read the most recent report. Extract the date and finding counts from the Assessment Metadata section.
+
+> "Last security assessment: [date] — [N] critical, [M] high findings
+> [If critical + high > 0: 'Ensure these have been addressed before release.']
+> [If critical + high == 0: 'No critical or high findings — good to proceed.']"
+
+This is a recommendation, not a gate — the user can skip regardless.
+
+---
+
 ### Step 2 — Verify before release
 
 Run the full test suite one final time:

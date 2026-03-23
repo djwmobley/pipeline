@@ -174,6 +174,11 @@ test -f package.json && grep -q '"express"' package.json 2>/dev/null && echo "FR
 test -f package.json && grep -q '"fastify"' package.json 2>/dev/null && echo "FRAMEWORK: fastify"
 test -f package.json && grep -q '"hono"' package.json 2>/dev/null && echo "FRAMEWORK: hono"
 test -f package.json && grep -q '"koa"' package.json 2>/dev/null && echo "FRAMEWORK: koa"
+test -f package.json && grep -q '"@ionic"' package.json 2>/dev/null && echo "FRAMEWORK: ionic"
+test -f ionic.config.json && echo "FRAMEWORK: ionic"
+
+# PHP frameworks
+test -f artisan && echo "FRAMEWORK: laravel"
 
 # Python frameworks
 test -f manage.py && echo "FRAMEWORK: django"
@@ -204,6 +209,13 @@ test -f Cargo.toml && {
 test -f pom.xml && grep -q "spring" pom.xml 2>/dev/null && echo "FRAMEWORK: spring"
 test -f build.gradle && grep -q "spring" build.gradle 2>/dev/null && echo "FRAMEWORK: spring"
 test -f build.gradle.kts && grep -q "ktor" build.gradle.kts 2>/dev/null && echo "FRAMEWORK: ktor"
+
+# Cloud/platform
+test -f firebase.json && echo "FRAMEWORK: firebase"
+test -f package.json && grep -q '"firebase"' package.json 2>/dev/null && echo "FRAMEWORK: firebase"
+
+# Mobile (additional)
+test -f pubspec.yaml && grep -q "flutter" pubspec.yaml 2>/dev/null && echo "FRAMEWORK: flutter"
 
 echo "=== DIRECTORY STRUCTURE ==="
 for d in src lib app pkg cmd internal server pages routes components api models controllers handlers views services middleware stores hooks screens navigation prisma drizzle supabase ios android; do

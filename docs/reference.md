@@ -215,6 +215,41 @@ Full codebase review with parallel sector agents.
 
 ---
 
+### `/pipeline:redteam`
+
+Security red team assessment with parallel domain specialists.
+
+**What it does:**
+1. Queries knowledge tier for past security decisions and gotchas
+2. Presents token estimate and specialist list — you approve before any agents launch
+3. Dispatches haiku recon agent to map attack surface (entry points, auth boundaries, data sinks)
+4. Selects specialists based on project profile + detected framework
+5. Launches parallel sonnet specialists — each with domain-specific + framework-specific checklists
+6. Lead analyst (opus) synthesizes findings into exploit chains and risk matrix
+7. Produces markdown report + optional standalone HTML artifact
+8. Persists critical findings to knowledge tier
+
+**Arguments:**
+- No arguments — full assessment with auto-selected specialists
+- `white-box` / `black-box` — override mode from config
+- `--specialists INJ,AUTH,XSS` — override auto-selection
+
+**Modes:**
+- **White-box** (default) — reads source code, full code analysis
+- **Black-box** — probes running application at configured URL
+
+**12 specialist domains:** INJ (Injection), AUTH (Authentication), XSS (Cross-Site Scripting), CSRF (Cross-Site Request Forgery), CRYPTO (Cryptography), CONFIG (Security Misconfiguration), DEPS (Dependency & Supply Chain), ACL (Access Control), RATE (Rate Limiting & DoS), DATA (Data Exposure), FILE (File & Path Safety), CERT (Certificate & Transport).
+
+**Profile-aware:** Different project types get different specialists. A CLI tool skips XSS and CSRF. An API skips browser-specific domains.
+
+**Framework-aware:** A Next.js injection specialist checks Server Actions. A Django one checks ORM escape hatches. Framework detection runs automatically.
+
+**Output:** `docs/security/redteam-[date].md` (+ `.html` if `redteam.html_report` is true)
+
+**Token cost:** ~240-320K for a 10-specialist run. The command shows you the estimate before launching.
+
+---
+
 ### `/pipeline:debug`
 
 Systematic 4-phase root-cause diagnosis.
