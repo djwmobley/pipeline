@@ -87,7 +87,7 @@ Use when `integrations.figma.enabled: true` and Stitch is not enabled.
 Figma is read-only — it imports existing designs rather than generating new ones.
 
 1. Ask the user: "Which Figma file should I reference? Paste the file URL or key."
-2. Use `mcp__figma__get_file` or `mcp__figma__get_file_nodes` to fetch the design
+2. Use `mcp__figma__get_file_nodes` to fetch the relevant design nodes
 3. Use `mcp__figma__get_images` to export specific frames as images for discussion
 4. Present the relevant frames during brainstorming as reference points
 5. For each design question, show the relevant Figma frame alongside the discussion

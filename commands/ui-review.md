@@ -1,5 +1,5 @@
 ---
-allowed-tools: Bash(*), Read(*), Task(*), mcp__chrome__take_screenshot, mcp__chrome__navigate_page, mcp__chrome__take_snapshot, mcp__plugin_playwright_playwright__browser_take_screenshot, mcp__plugin_playwright_playwright__browser_navigate, mcp__plugin_playwright_playwright__browser_snapshot, mcp__stitch__list_screens, mcp__stitch__get_screen, mcp__stitch__get_project, mcp__figma__get_file, mcp__figma__get_file_nodes, mcp__figma__get_images
+allowed-tools: Bash(*), Read(*), Task(*), mcp__chrome__take_screenshot, mcp__chrome__navigate_page, mcp__chrome__take_snapshot, mcp__plugin_playwright_playwright__browser_take_screenshot, mcp__plugin_playwright_playwright__browser_navigate, mcp__plugin_playwright_playwright__browser_snapshot, mcp__stitch__list_screens, mcp__stitch__get_screen, mcp__stitch__get_project, mcp__figma__get_file_nodes, mcp__figma__get_images
 description: Capture a screenshot and analyze the UI — layout, hit targets, text, visual issues
 ---
 
