@@ -225,6 +225,35 @@ Planned enhancements not yet implemented:
 - **Workflow chaining** — Chain commands together so once design is done, the user can combine one or more workflows for fire-and-forget execution once they have comfort with Pipeline's quality and workmanship. Example: `/pipeline:brainstorm` → `/pipeline:plan` → `/pipeline:build` → `/pipeline:review` → `/pipeline:commit` as a single invocation.
 - **Human-in-the-loop guidance** — Surface gotchas to users who are building everything as sole designer/orchestrator. Clearly distinguish what SHOULD be checked by a human (recommended review points) from what MUST be checked by a human (safety-critical decisions, destructive operations, security sign-offs) when using Pipeline.
 
+## Roadmap
+
+Tracked items for future development. Checked items are shipped.
+
+### Open
+
+- [ ] **Big 4 awareness for engineering agents** — What do code-generating agents know about functionality, usability, security, and performance at build time? How should this knowledge be structured? Security at build-time is a separate track from security agents.
+- [ ] **Full lifecycle visual diagram** — The pipeline flow crosses multiple context windows: PM → UX → orchestrator → engineer → QA → red team → orchestrator → engineer → QA → purple team → engineer → git. Needs a visual representation showing all agents, decision gates, loop-back points, and state handoffs.
+- [ ] **SBOM generation** — Add software bill of materials output to the DEPS security specialist.
+- [ ] **Research skill buildout** — Currently the weakest skill (~27 lines, no frontmatter, no prompt templates). Needs the same rigor as other skills.
+- [ ] **Error handling guide** — What happens when gates fail, tools are missing, or Postgres is down? Users need to know recovery paths.
+- [ ] **Dashboard screenshot in README** — Visual proof of what the dashboard looks like.
+- [ ] **`--quick` mode for init** — Auto-detect everything, ask only what can't be detected.
+
+### Shipped
+
+- [x] Severity labels on all emoji indicators (terminal accessibility)
+- [x] DATA boundary tags on all prompt templates (prompt injection prevention)
+- [x] Dual entry points in docs (greenfield vs existing code)
+- [x] Fast Track in prerequisites
+- [x] Layered command reference (Layer 1-4)
+- [x] HTML documentation page
+- [x] `/pipeline:simplify` documentation
+- [x] Auto-persist knowledge tier across all 13 commands
+- [x] Purple team verification lifecycle
+- [x] `/pipeline:security` meta-command
+- [x] `/pipeline:markdown-review` with three tiers
+- [x] Red team DEPS specialist with live audit
+
 ## Acknowledgments
 
 Pipeline is a synthesis of ideas from three open-source projects, combined with original work on size routing, model routing, and config-driven architecture.
