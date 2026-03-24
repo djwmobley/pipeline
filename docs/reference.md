@@ -253,13 +253,15 @@ Security red team assessment with parallel domain specialists.
 
 **12 specialist domains:** INJ (Injection), AUTH (Authentication), XSS (Cross-Site Scripting), CSRF (Cross-Site Request Forgery), CRYPTO (Cryptography), CONFIG (Security Misconfiguration), DEPS (Dependency & Supply Chain), ACL (Access Control), RATE (Rate Limiting & DoS), DATA (Data Exposure), FILE (File & Path Safety), CERT (Certificate & Transport).
 
-**DEPS live audit:** The DEPS specialist runs the project's configured `commands.security_audit` command (e.g., `npm audit --json`, `pip audit -f json`) to query real-time vulnerability databases. This provides ground truth beyond model training data — findings include CVE IDs, affected package versions, and cross-references against source code to distinguish actively-used packages from transitive-only exposure.
+**SBOM generation:** During recon, the agent generates a CycloneDX 1.6 SBOM (`docs/findings/sbom-YYYY-MM-DD.cdx.json`) containing every dependency — direct, dev, and transitive — parsed from your lockfile. The DEPS specialist reads this as its primary package inventory. Controlled by `redteam.sbom` in config. Set `redteam.sbom.enabled: false` to skip.
+
+**DEPS live audit:** The DEPS specialist runs the project's configured `commands.security_audit` command (e.g., `npm audit --json`, `pip audit -f json`) to query real-time vulnerability databases. It cross-references audit output with the SBOM artifact for complete coverage. Findings include CVE IDs, affected package versions, and cross-references against source code to distinguish actively-used packages from transitive-only exposure.
 
 **Profile-aware:** Different project types get different specialists. A CLI tool skips XSS and CSRF. An API skips browser-specific domains.
 
 **Framework-aware:** A Next.js injection specialist checks Server Actions. A Django one checks ORM escape hatches. Framework detection runs automatically.
 
-**Output:** `docs/findings/redteam-[date].md` (+ `.html` if `redteam.html_report` is true)
+**Output:** `docs/findings/redteam-[date].md` (+ `.html` if `redteam.html_report` is true), `docs/findings/sbom-[date].cdx.json` (if `redteam.sbom.enabled`)
 
 **Token cost:** ~240-320K for a 10-specialist run. The command shows you the estimate before launching.
 

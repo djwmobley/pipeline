@@ -57,7 +57,7 @@ Red team thinks like someone trying to break into your application. It deploys u
 | CSRF | Tricking users into performing actions they didn't intend |
 | Cryptography | Weak encryption, hardcoded keys, insecure random numbers |
 | Configuration | Debug mode left on, verbose error messages, missing security headers |
-| Dependencies | Runs live vulnerability audit (`npm audit`, `pip audit`, etc.), checks for known CVEs, lockfile integrity, typosquatting, abandoned packages |
+| Dependencies | Runs live vulnerability audit (`npm audit`, `pip audit`, etc.), reads SBOM artifact from recon, checks for known CVEs, lockfile integrity, typosquatting, abandoned packages |
 | Access Control | Users accessing data they shouldn't, privilege escalation |
 | Rate Limiting | No limits on login attempts, denial-of-service vectors |
 | Data Exposure | Sensitive data in logs, URLs, or API responses |
@@ -65,6 +65,8 @@ Red team thinks like someone trying to break into your application. It deploys u
 | Transport | Missing HTTPS, weak TLS, certificate validation issues |
 
 Not every project gets all 12. Pipeline selects specialists based on your project type — a command-line tool doesn't need XSS checks.
+
+Before specialists launch, the recon agent also generates a **Software Bill of Materials (SBOM)** — a structured inventory of every dependency in your project (direct, dev, and transitive). This CycloneDX 1.6 JSON file is saved to `docs/findings/` and used by the DEPS specialist as its primary package list. See [SBOM Generation](#8-sbom-generation) below.
 
 After the specialists finish, a lead analyst synthesizes the results: deduplicates, identifies exploit chains (multi-step attacks), and produces a prioritized report.
 
@@ -108,6 +110,7 @@ Every security assessment produces files in `docs/findings/`:
 - `redteam-2025-03-15.md` — What was found
 - `remediation-2025-03-16.md` — What was fixed
 - `purpleteam-2025-03-17.md` — Whether the fixes worked
+- `sbom-2025-03-15.cdx.json` — Complete dependency inventory (CycloneDX 1.6)
 
 Each finding has:
 
@@ -138,7 +141,54 @@ You can open any security issue and see the complete story: what was found, what
 
 ---
 
-## 7. When to Run Each Command
+## 8. SBOM Generation
+
+A Software Bill of Materials (SBOM) is a complete inventory of every software component in your project — not just the packages you listed in `package.json`, but every transitive dependency those packages pull in. This matters because 80%+ of your attack surface is in transitive dependencies you never explicitly chose.
+
+Pipeline generates an SBOM during red team recon, before specialists launch. The recon agent:
+
+1. Reads your lockfile (`package-lock.json`, `yarn.lock`, `Cargo.lock`, `poetry.lock`, etc.) for the full resolved dependency tree
+2. Reads your manifest (`package.json`, `Cargo.toml`, etc.) to classify each package as direct, dev, or transitive
+3. Writes a **CycloneDX 1.6 JSON** file to `docs/findings/sbom-YYYY-MM-DD.cdx.json`
+
+The output file contains every component with:
+- **Name and version** — exact resolved version from the lockfile
+- **Scope** — `required` (runtime), `excluded` (dev-only), or transitive
+- **Package URL (PURL)** — standard identifier like `pkg:npm/express@4.18.2`
+
+### How Specialists Use It
+
+The DEPS (Dependency & Supply Chain) specialist reads the SBOM as its primary package list. Instead of re-parsing your manifest, it gets the complete inventory including transitive dependencies and cross-references it against:
+- Live vulnerability audit output (`npm audit`, `pip audit`, etc.)
+- Known CVE databases
+- Lockfile integrity checks
+
+### Supported Ecosystems
+
+| Package Manager | Lockfile | PURL Format |
+|----------------|----------|-------------|
+| npm / yarn / pnpm / bun | `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`, `bun.lock` | `pkg:npm/name@version` |
+| pip / poetry | `poetry.lock` | `pkg:pypi/name@version` |
+| cargo | `Cargo.lock` | `pkg:cargo/name@version` |
+| go | `go.sum` + `go.mod` | `pkg:golang/module@version` |
+
+### Configuration
+
+SBOM generation is controlled by `redteam.sbom` in your `pipeline.yml`:
+
+```yaml
+redteam:
+  sbom:
+    enabled: true              # Set to false to skip SBOM generation
+    format: "cyclonedx"        # Only CycloneDX supported currently
+    output_dir: "docs/findings/"
+```
+
+If no lockfile is found, the SBOM falls back to direct dependencies only (from the manifest) and notes this limitation in the output.
+
+---
+
+## 9. When to Run Each Command
 
 | Situation | Command | When |
 |---|---|---|

@@ -63,7 +63,7 @@ You describe what you want. Pipeline routes you through:
 
 ### You security-test before release
 
-`/pipeline:redteam` dispatches a recon agent to map your attack surface, then launches parallel security specialists — one per domain (injection, auth, XSS, etc.). Each specialist gets framework-specific checklists (a Next.js injection specialist checks different things than a Django one). A lead analyst chains findings into exploit scenarios and produces a risk matrix with a remediation roadmap.
+`/pipeline:redteam` dispatches a recon agent to map your attack surface and generate a CycloneDX 1.6 SBOM (complete dependency inventory including transitive dependencies), then launches parallel security specialists — one per domain (injection, auth, XSS, etc.). Each specialist gets framework-specific checklists (a Next.js injection specialist checks different things than a Django one). The DEPS specialist cross-references the SBOM with live vulnerability audit output. A lead analyst chains findings into exploit scenarios and produces a risk matrix with a remediation roadmap.
 
 The assessment saves to `docs/findings/` — with an optional HTML report you can share with stakeholders who don't use the terminal.
 
