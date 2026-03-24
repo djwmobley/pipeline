@@ -364,15 +364,15 @@ Run /pipeline:review, apply all fixes, then /pipeline:commit reviewed:✓</code>
 <div class="review-example">
 <p><strong>Files reviewed</strong></p>
 <p><span class="file-ref">src/hooks/useAuth.ts</span>, <span class="file-ref">src/pages/Login.tsx</span>, <span class="file-ref">src/lib/api.ts</span></p>
-<p><span class="severity-red">Must fix</span></p>
+<p><span class="severity-red">🔴 HIGH — Must fix</span></p>
 <p><span class="file-ref">src/hooks/useAuth.ts:47</span> — unhandled promise rejection on token refresh <span class="confidence">[confidence: HIGH]</span></p>
 <blockquote>refreshToken() can throw if the network is down, but the caller has no try/catch. The user sees a white screen instead of the login page. Fix: Wrap in try/catch, redirect to /login on failure.</blockquote>
-<p><span class="severity-yellow">Should fix</span></p>
+<p><span class="severity-yellow">🟡 MEDIUM — Should fix</span></p>
 <p><span class="file-ref">src/lib/api.ts:12</span> — dead import <span class="confidence">[confidence: HIGH]</span></p>
 <blockquote><code>parseResponse</code> is imported but never used after the refactor in this diff.</blockquote>
 <p><strong>Verdict:</strong> Issues found — 1 thing that needs attention before shipping</p>
 </div>
-<p>Every finding has a severity (red/yellow/blue), a confidence level, a file and line number, and a specific fix. No "looks good" — if the reviewer finds nothing, it must explain exactly what it checked and why each check passed.</p>
+<p>Every finding has a severity (🔴 HIGH / 🟡 MEDIUM / 🔵 LOW), a confidence level, a file and line number, and a specific fix. No "looks good" — if the reviewer finds nothing, it must explain exactly what it checked and why each check passed.</p>
 
 <h3>You build a new feature (LARGE change)</h3>
 <p>You describe what you want. Pipeline routes you through:</p>

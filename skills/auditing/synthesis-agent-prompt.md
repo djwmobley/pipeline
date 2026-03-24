@@ -27,7 +27,7 @@ Task tool (general-purpose, model: {{MODEL}}):
 
     1. **Dead export verification** — For each symbol in any Potential dead exports
        section, grep the source dirs to confirm no importer exists.
-       Confirmed dead: 🔴 for functions >10 lines, 🟡 for small helpers.
+       Confirmed dead: 🔴 HIGH for functions >10 lines, 🟡 MEDIUM for small helpers.
 
     2. **Cross-sector crash path tracing** — Using all Cross-sector code paths:
        (a) Does the callee crash if passed null, empty string, or empty array?
@@ -37,10 +37,10 @@ Task tool (general-purpose, model: {{MODEL}}):
     3. **Unhandled rejection chain tracing** — For each cross-sector call:
        if the callee can throw or reject, does the caller have try/catch?
 
-    4. **Cross-sector duplication** — Logic implemented independently in 2+ sectors → 🟡.
+    4. **Cross-sector duplication** — Logic implemented independently in 2+ sectors → 🟡 MEDIUM.
 
     5. **Severity escalation** — If one sector flagged something suspicious AND another
-       confirmed the implementation is broken → escalate to 🔴.
+       confirmed the implementation is broken → escalate to 🔴 HIGH.
 
     6. **Confidence escalation** — If two or more sector agents flagged the same area
        independently, escalate confidence to HIGH. Multiple reviewers agreeing is strong
@@ -62,7 +62,7 @@ Task tool (general-purpose, model: {{MODEL}}):
     ## Unified Codebase Review
 
     ### Cross-Sector Issues
-    FINDING CROSS-001 | 🔴 | [HIGH/MEDIUM/LOW] | [files] | [category]
+    FINDING CROSS-001 | 🔴 HIGH | [HIGH/MEDIUM/LOW confidence] | [files] | [category]
     [description]
 
     ### Sector [ID] findings
@@ -71,6 +71,6 @@ Task tool (general-purpose, model: {{MODEL}}):
     [one section per sector]
 
     ### Verdict
-    [N findings total, M 🔴, P 🟡, Q 🔵]
+    [N findings total, M 🔴 HIGH, P 🟡 MEDIUM, Q 🔵 LOW]
     ```
 ```

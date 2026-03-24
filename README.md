@@ -45,7 +45,7 @@ src/lib/api.ts:12 — dead import [confidence: HIGH]
 Issues found — 1 thing that needs attention before shipping
 ```
 
-Every finding has a severity (red/yellow/blue), a confidence level, a file and line number, and a specific fix. No "looks good" — if the reviewer finds nothing, it must explain exactly what it checked and why each check passed.
+Every finding has a severity (🔴 HIGH / 🟡 MEDIUM / 🔵 LOW), a confidence level, a file and line number, and a specific fix. No "looks good" — if the reviewer finds nothing, it must explain exactly what it checked and why each check passed.
 
 ### You build a new feature (LARGE change)
 
@@ -59,7 +59,7 @@ You describe what you want. Pipeline routes you through:
 
 ### You finish a feature (MILESTONE)
 
-`/pipeline:audit` splits your codebase into sectors (configured per project) and dispatches parallel review agents — one per sector. A synthesis agent then traces crash paths across sectors, finds dead exports, flags duplication, and escalates severity. The output is a unified report across your entire codebase with red/yellow/blue findings and confidence levels.
+`/pipeline:audit` splits your codebase into sectors (configured per project) and dispatches parallel review agents — one per sector. A synthesis agent then traces crash paths across sectors, finds dead exports, flags duplication, and escalates severity. The output is a unified report across your entire codebase with 🔴 HIGH / 🟡 MEDIUM / 🔵 LOW findings and confidence levels.
 
 ### You security-test before release
 

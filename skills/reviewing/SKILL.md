@@ -30,27 +30,27 @@ If you catch yourself thinking "this looks fine" — that thought is a red flag.
 ## The Process
 
 1. Load non-negotiable decisions from `review.non_negotiable[]` in pipeline.yml
-2. Run static analysis (typecheck + lint) — tool findings are automatic 🔴
+2. Run static analysis (typecheck + lint) — tool findings are automatic 🔴 HIGH
 3. Get the diff — understand what changed
 4. Read each changed file in full — understand context
 5. Review against `review.criteria[]` — apply each configured criterion
-6. Report with severity tiers — 🔴/🟡/🔵 format
+6. Report with severity tiers — 🔴 HIGH / 🟡 MEDIUM / 🔵 LOW format
 
 ## Severity Calibration
 
-**🔴 Must fix** — Will cause bugs, security issues, crashes, or data loss in production.
+**🔴 HIGH — Must fix** — Will cause bugs, security issues, crashes, or data loss in production.
 Includes: type errors, unhandled rejections on user actions, security vulnerabilities,
 access control gaps, null dereferences on reachable paths.
-**Confidence requirement: HIGH only.** You MUST have verified the bug or vulnerability exists. If you cannot trace the execution path to confirm, downgrade to 🟡.
+**Confidence requirement: HIGH only.** You MUST have verified the bug or vulnerability exists. If you cannot trace the execution path to confirm, downgrade to 🟡 MEDIUM.
 
-**🟡 Should fix** — Quality issues that degrade maintainability or user experience.
+**🟡 MEDIUM — Should fix** — Quality issues that degrade maintainability or user experience.
 Includes: dead code, unused imports, UX clarity issues, premature abstractions,
 SOLID violations that manifest as real problems.
-**Confidence requirement: HIGH or MEDIUM.** You MUST have strong evidence. If your reasoning is "this might be a problem," downgrade to 🔵.
+**Confidence requirement: HIGH or MEDIUM.** You MUST have strong evidence. If your reasoning is "this might be a problem," downgrade to 🔵 LOW.
 
-**🔵 Consider** — Suggestions that would improve the code but are not problems.
+**🔵 LOW — Consider** — Suggestions that would improve the code but are not problems.
 Includes: alternative approaches, performance optimizations, readability improvements.
-**Any confidence level accepted, but you MUST state it.** A LOW confidence 🔵 is valid; an unstated confidence is not.
+**Any confidence level accepted, but you MUST state it.** A LOW confidence 🔵 LOW is valid; an unstated confidence is not.
 
 ## Non-Negotiable Filtering
 
@@ -70,8 +70,8 @@ Apply framework-specific correctness checks automatically based on detection.
 
 ## Key Principles
 
-- **Real problems only** — if you wouldn't block a PR for it, it's 🔵 at most
+- **Real problems only** — if you wouldn't block a PR for it, it's 🔵 LOW at most
 - **Full context** — read the whole file, not just the diff
 - **Non-negotiable respect** — never flag intentional patterns
-- **Actionable fixes** — every 🔴 finding includes a specific fix description
+- **Actionable fixes** — every 🔴 HIGH finding includes a specific fix description
 - **Simplify handoff** — collect simplicity/SOLID findings for /pipeline:simplify

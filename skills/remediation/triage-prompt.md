@@ -45,23 +45,23 @@ Task tool (general-purpose, model: {{MODEL}}):
     ### audit
     - **Native pattern:** `FINDING [ID] | [emoji] | [CONFIDENCE] | [location] | [category]`
     - **ID prefix:** `AUD-` + sequence number (e.g., `AUD-001`, `AUD-002`)
-    - **Severity:** 🔴 → HIGH, 🟡 → MEDIUM, 🔵 → LOW
+    - **Severity:** 🔴 HIGH → HIGH, 🟡 MEDIUM → MEDIUM, 🔵 LOW → LOW
     - **Confidence:** Direct from finding (HIGH, MEDIUM, LOW)
     - **Category:** Direct from finding's category field (e.g., `dead-code`, `naming`, `error-handling`)
     - **Impact:** Infer from the finding description (e.g., "dead export increases bundle size and confusion")
     - **Remediation:** Extract from description or synthesize from the finding
-    - **Effort:** 🔴 → `medium`, 🟡 → `quick`, 🔵 → `quick`
+    - **Effort:** 🔴 HIGH → `medium`, 🟡 MEDIUM → `quick`, 🔵 LOW → `quick`
     - **Verification domain:** Sector ID from report (e.g., `sector-api`, `sector-ui`)
 
     ### review
     - **Native pattern:** `### [emoji] [tier]\n**[file:line]** — [desc] [confidence]`
     - **ID prefix:** `REV-` + sequence number (e.g., `REV-001`, `REV-002`)
-    - **Severity:** 🔴 → HIGH, 🟡 → MEDIUM, 🔵 → LOW, ❓ → INFO
+    - **Severity:** 🔴 HIGH → HIGH, 🟡 MEDIUM → MEDIUM, 🔵 LOW → LOW, ❓ INFO → INFO
     - **Confidence:** Extract from `[confidence: X]` tag after description
     - **Category:** Infer from review criteria category (e.g., `type-safety`, `error-handling`, `simplicity`)
     - **Impact:** Infer from the explanation block under the finding
     - **Remediation:** Extract from "Fix:" line if present, otherwise synthesize from explanation
-    - **Effort:** 🔴 → `medium`, 🟡 → `quick`, 🔵 → `quick`
+    - **Effort:** 🔴 HIGH → `medium`, 🟡 MEDIUM → `quick`, 🔵 LOW → `quick`
     - **Verification domain:** `changed-files`
 
     ### ui-review

@@ -51,7 +51,7 @@ Task tool (general-purpose, model: {{MODEL}}):
     Review for: [list criteria names from config, e.g.: ux, dead-code, framework-correctness, security, simplicity, solid]
     </DATA>
 
-    Focus on findings that would block a PR (🔴) or degrade quality (🟡). For framework-specific checks, detect the framework from project dependencies.
+    Focus on findings that would block a PR (🔴 HIGH) or degrade quality (🟡 MEDIUM). For framework-specific checks, detect the framework from project dependencies.
 
     ## Phase 0 Hits for Your Sector
 
@@ -76,7 +76,7 @@ Task tool (general-purpose, model: {{MODEL}}):
 
     Every finding MUST use:
     ```
-    FINDING [SECTOR_ID]-[NNN] | [🔴/🟡/🔵] | [HIGH/MEDIUM/LOW] | [file:line] | [category]
+    FINDING [SECTOR_ID]-[NNN] | [🔴 HIGH/🟡 MEDIUM/🔵 LOW] | [HIGH/MEDIUM/LOW confidence] | [file:line] | [category]
     [One or two sentences describing the problem and its consequence]
     ```
 

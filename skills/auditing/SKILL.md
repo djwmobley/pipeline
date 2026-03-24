@@ -72,7 +72,7 @@ After Pass 2, rate your confidence in each finding. If you haven't read the rele
 
 Every finding uses:
 ```
-FINDING [SECTOR]-[NNN] | [🔴/🟡/🔵] | [HIGH/MEDIUM/LOW] | [file:line] | [category]
+FINDING [SECTOR]-[NNN] | [🔴 HIGH/🟡 MEDIUM/🔵 LOW] | [HIGH/MEDIUM/LOW confidence] | [file:line] | [category]
 [Description of problem and consequence]
 ```
 
@@ -92,7 +92,7 @@ The synthesis agent receives all sector reports and performs:
 1. Cross-sector crash path tracing
 2. Dead export verification (grep to confirm)
 3. Cross-sector duplication detection
-4. Severity escalation (sector A suspicious + sector B confirms = 🔴)
+4. Severity escalation (sector A suspicious + sector B confirms = 🔴 HIGH)
 5. Deduplication (keep most specific version)
 6. Simplify candidate collection
 

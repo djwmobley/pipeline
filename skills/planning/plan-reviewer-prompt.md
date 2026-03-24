@@ -31,10 +31,10 @@ Task tool (general-purpose, model: {{MODEL}}):
     ## Implementation Readiness Check
 
     Every requirement in the spec MUST map to at least one task. If any requirement is not covered,
-    this is a HIGH confidence 🔴 finding. No exceptions.
+    this is a HIGH confidence 🔴 HIGH finding. No exceptions.
 
     Every task MUST name specific files to create or modify. A task that says "update the API" without
-    naming files FAILS the readiness check — flag as 🟡 HIGH confidence.
+    naming files FAILS the readiness check — flag as 🟡 MEDIUM HIGH confidence.
 
     You MUST find at least one issue or identify the riskiest assumption in the plan. A review with
     zero findings is a FAILED review — start over and look harder.

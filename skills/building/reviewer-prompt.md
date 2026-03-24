@@ -77,9 +77,9 @@ Task tool (general-purpose, model: {{MODEL}}):
 
     ## Severity Tiers
 
-    - 🔴 Must fix — bugs, security, correctness
-    - 🟡 Should fix — quality, dead code, clarity
-    - 🔵 Consider — suggestions, not problems
+    - 🔴 HIGH Must fix — bugs, security, correctness
+    - 🟡 MEDIUM Should fix — quality, dead code, clarity
+    - 🔵 LOW Consider — suggestions, not problems
 
     Every finding MUST include confidence: [HIGH/MEDIUM/LOW]
     - HIGH — verified in code  - MEDIUM — strong inference  - LOW — possible but unverified
