@@ -161,3 +161,10 @@ docs:
   specs_dir: "docs/specs/"
   plans_dir: "docs/plans/"
   research_dir: "docs/research/"
+
+# Dashboard
+# Static HTML project status report — regenerated on state changes
+# Run /pipeline:dashboard to generate manually
+dashboard:
+  enabled: true
+  milestone: ""  # Current milestone label (e.g., "v1.0 — Feature Complete")
