@@ -44,16 +44,16 @@ For each visual need during brainstorming:
      key elements, interactions, and any style notes from the conversation
    - `deviceType`: from config (`integrations.stitch.device_type`)
 
-2. Present the generated screen to the user. If Stitch returns `output_components`
-   with suggestions, mention them as refinement options.
-
-3. Before presenting, evaluate the generated screen against the Big 4:
+2. Before presenting, evaluate the generated screen against the Big 4:
    - **Functionality:** Does this screen serve the stated goal? Flag anything that looks like feature creep.
    - **Usability:** Is this the shortest path for the user? Is the hierarchy clear? Would a first-time user know what to do? Are error and empty states considered?
    - **Performance:** Will this design be fast to load and render? Flag heavy patterns (large hero images, complex animations, unbounded lists without pagination).
    - **Security:** Does this screen handle sensitive data appropriately? No visible passwords, no unnecessary PII collection, clear consent language where needed.
 
    Note any tension between dimensions (e.g., "confirmation step improves security but adds usability friction") — surface these for the user to decide.
+
+3. Present the generated screen to the user along with any Big 4 concerns. If Stitch returns `output_components`
+   with suggestions, mention them as refinement options.
 
 4. Ask: "How does this look? I can refine it, try a different layout, or move on."
 

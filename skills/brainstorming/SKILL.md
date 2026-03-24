@@ -26,7 +26,7 @@ Complete these steps in order:
 3. **Ask clarifying questions** — one at a time, understand purpose/constraints/success criteria
 4. **Propose 2-3 approaches** — with trade-offs and your recommendation
 5. **Present design** — in sections scaled to their complexity, get user approval after each section
-6. **Evaluate security checklist** — apply `security[]` checks from pipeline.yml
+6. **Evaluate Big 4 dimensions** — functionality, usability, performance, security
 7. **Write spec** — save to config's `docs.specs_dir`
 8. **Spec review loop** — dispatch spec-reviewer subagent; fix issues; max 3 iterations
 9. **User reviews written spec** — ask user to review before proceeding
