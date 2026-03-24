@@ -141,7 +141,7 @@ You can open any security issue and see the complete story: what was found, what
 
 ---
 
-## 8. SBOM Generation
+## 7. SBOM Generation
 
 A Software Bill of Materials (SBOM) is a complete inventory of every software component in your project — not just the packages you listed in `package.json`, but every transitive dependency those packages pull in. This matters because 80%+ of your attack surface is in transitive dependencies you never explicitly chose.
 
@@ -153,7 +153,7 @@ Pipeline generates an SBOM during red team recon, before specialists launch. The
 
 The output file contains every component with:
 - **Name and version** — exact resolved version from the lockfile
-- **Scope** — `required` (runtime), `excluded` (dev-only), or transitive
+- **Scope** — `required` (runtime and transitive) or `excluded` (dev-only)
 - **Package URL (PURL)** — standard identifier like `pkg:npm/express@4.18.2`
 
 ### How Specialists Use It
@@ -188,7 +188,7 @@ If no lockfile is found, the SBOM falls back to direct dependencies only (from t
 
 ---
 
-## 9. When to Run Each Command
+## 8. When to Run Each Command
 
 | Situation | Command | When |
 |---|---|---|
