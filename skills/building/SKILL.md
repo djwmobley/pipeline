@@ -21,6 +21,12 @@ Execute plan by dispatching fresh subagent per task, with review after each.
 Read plan, extract all tasks
   │
   ▼
+Check .claude/build-state.json ──exists──▶ Resume from last incomplete task
+  │ fresh
+  ▼
+Initialize build-state.json (all tasks pending)
+  │
+  ▼
 Dispatch implementer subagent
   │
   ▼
@@ -33,11 +39,14 @@ Post-task review
 Review OK? ──issues──▶ (fix, re-dispatch)
   │ OK
   ▼
-Mark task complete
+Checkpoint: update build-state.json (task → done)
   │
   ▼
 More tasks? ──yes──▶ Dispatch implementer subagent
   │ no
+  ▼
+Delete build-state.json, persist to knowledge tier
+  │
   ▼
 Invoke /pipeline:finish
 ```

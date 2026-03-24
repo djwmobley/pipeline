@@ -241,6 +241,10 @@ Tracked items for future development. Checked items are shipped.
 
 ### Shipped
 
+- [x] Build crash recovery — `.claude/build-state.json` checkpoints after each task, resume on restart (GSD-2 inspired)
+- [x] Worktree lifecycle management — health check detects merged, stale, dirty, and orphaned worktrees (GSD-2 inspired)
+- [x] Pre-inlined context for subagent dispatch — decision register, prior task summaries, framework detection in implementer prompts (GSD-2 inspired)
+- [x] Cross-domain destructive operation guards
 - [x] Severity labels on all emoji indicators (terminal accessibility)
 - [x] DATA boundary tags on all prompt templates (prompt injection prevention)
 - [x] Dual entry points in docs (greenfield vs existing code)

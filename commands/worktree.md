@@ -9,6 +9,58 @@ Create an isolated git worktree for feature development.
 
 ---
 
+### Step 0 — Worktree health check
+
+Before creating a new worktree, check the health of all existing worktrees:
+
+```bash
+git worktree list --porcelain
+```
+
+For each worktree (skip the main working tree), check:
+
+1. **Merged?** — Is the branch already merged into main?
+   ```bash
+   git branch --merged main | grep -w "[branch_name]"
+   ```
+   If merged: report as cleanable.
+
+2. **Stale?** — Last commit older than 14 days?
+   ```bash
+   git -C "[worktree_path]" log -1 --format="%ci" 2>/dev/null
+   ```
+   If stale: flag with age.
+
+3. **Dirty?** — Uncommitted changes?
+   ```bash
+   git -C "[worktree_path]" status --porcelain 2>/dev/null
+   ```
+   If dirty: warn — do not auto-clean.
+
+4. **Orphaned?** — Branch deleted on remote but worktree still exists?
+   ```bash
+   git branch -vv | grep "[branch_name]" | grep ": gone]"
+   ```
+   If orphaned: flag for attention.
+
+**Report findings:**
+
+```
+Worktree health check:
+  ✓ feature/auth — clean, 2 days old
+  ⚠ feature/old-ui — stale (23 days), merged into main — safe to remove
+  ⚠ feature/wip — dirty (3 uncommitted files), 5 days old
+  ✗ feature/deleted-remote — orphaned (remote branch gone)
+```
+
+**Auto-cleanup:** Only for worktrees that are BOTH merged AND clean (no uncommitted changes). Per destructive operation guards: name the action, state what will be removed, get confirmation.
+
+**All other findings:** Report and let the user decide. Do not auto-clean dirty, stale-but-unmerged, or orphaned worktrees.
+
+If no existing worktrees are found, skip this step silently.
+
+---
+
 ### Step 1 — Directory selection
 
 Follow this priority order:

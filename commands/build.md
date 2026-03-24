@@ -9,6 +9,27 @@ Locate and read the building skill file:
 1. If `$PIPELINE_DIR` is set: read `$PIPELINE_DIR/skills/building/SKILL.md`
 2. Otherwise: use Glob `**/pipeline/skills/building/SKILL.md` to find it
 
+### Resume detection
+
+Check for an existing build state file at `.claude/build-state.json`:
+
+**If it exists:**
+1. Read it and parse the JSON
+2. Check if the `plan_file` matches the plan the user wants to build (or the most recent plan if none specified)
+3. **If plan matches:** Report what was completed and offer to resume:
+   ```
+   Found interrupted build from [started_at].
+   Plan: [plan_file]
+   Completed: [N] of [total] tasks
+   Last completed: "[title of last done task]"
+
+   Resume from task [next_task_id]? (Y/n)
+   ```
+   If user confirms: skip all tasks with `"status": "done"`, start from first `"pending"` or `"in_progress"` task. Use the stored `baseline_sha`.
+4. **If plan differs:** Warn — this is stale state from a different build. Ask user whether to discard it and start fresh, or resume the old build.
+
+**If it does not exist:** Proceed normally (fresh build).
+
 ### Load config
 
 Read `.claude/pipeline.yml` from the project root. Extract:
@@ -32,6 +53,22 @@ git rev-parse HEAD 2>/dev/null || echo "NO_COMMITS"
 
 Store this as `BASELINE_SHA`. After all tasks complete, include it in the completion message so `/pipeline:review` can diff against it.
 
+**Initialize build state file:** Write `.claude/build-state.json` with the initial state:
+
+```json
+{
+  "plan_file": "[path to plan being executed]",
+  "baseline_sha": "[BASELINE_SHA]",
+  "started_at": "[ISO 8601 timestamp]",
+  "tasks": [
+    { "id": 1, "title": "[task title from plan]", "status": "pending" },
+    { "id": 2, "title": "[task title from plan]", "status": "pending" }
+  ]
+}
+```
+
+If resuming an existing build, do NOT overwrite — use the existing state file.
+
 **Completion message:** When all tasks are done, present options:
 
 ```
@@ -49,13 +86,24 @@ Which option? (default: 1)
 
 **Default to the most complete option.** If the user says "finish it", "ship it", or similar — execute option 1 without further prompting.
 
+**Clean up state file:** After the user selects an option and the build is considered done, delete `.claude/build-state.json`. The knowledge tier persistence (below) is the permanent record — the state file is only for crash recovery.
+
 **Fresh context rule:** When dispatching sub-agents for LARGE tasks, each agent receives ONLY:
 1. The specific task description from the plan (paste the text — do not reference a file)
 2. Relevant file contents (paste — do not ask the sub-agent to read files)
 3. If Postgres tier: results from `pipeline-embed.js hybrid "<task description>"` for prior context
-4. The project's non-negotiable decisions from config
+4. The project's non-negotiable decisions from config (`review.non_negotiable[]`)
+5. Prior task summaries from `.claude/build-state.json` (title + status for each completed task)
+6. Project profile from `project.profile` in pipeline.yml
 
 Do NOT pass conversation history, prior task results, or accumulated context. Each sub-agent starts clean. This prevents context rot — quality degradation as context accumulates.
+
+**Checkpoint after each task:** After a task passes post-task review, update `.claude/build-state.json`:
+- Set the task's `status` to `"done"`
+- Add `"commit"` with the current HEAD SHA (if the task produced a commit)
+- Write the file immediately — do not batch updates
+
+This ensures that if the session is interrupted, the next `/pipeline:build` invocation can resume from the last completed task.
 
 **Fallback:** If subagents are unavailable, execute tasks sequentially in main context.
 

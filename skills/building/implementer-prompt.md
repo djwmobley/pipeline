@@ -10,6 +10,9 @@
 6. If task requires verification (most do), paste the core rule from `skills/verification/SKILL.md`: "NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION EVIDENCE — run the verification command, read full output, confirm success before reporting DONE."
 7. `[TASK_NUMBER]` → the task number from the plan (e.g., `1`, `2`, `3`)
 8. If task has `tdd: required`, replace `{{TDD_SECTION}}` with the content of skills/tdd/SKILL.md. If `tdd: optional` or absent, replace `{{TDD_SECTION}}` with an empty string (remove the placeholder line entirely).
+10. `{{DECISION_REGISTER}}` → Read `review.non_negotiable[]` from pipeline.yml. If non-empty, format as a bulleted list of intentional decisions. If empty, remove the `## Decision Register` section entirely.
+11. `{{PRIOR_TASKS}}` → If `.claude/build-state.json` exists and has tasks with `"status": "done"`, format as a numbered list: `1. [title] — done (commit [sha])`. If no prior tasks or no state file, remove the `## Prior Tasks in This Build` section entirely.
+12. `{{FRAMEWORK}}` → Read `project.profile` from pipeline.yml (e.g., `spa`, `fullstack`, `api`). If set, include it. If null, omit the line.
 9. `{{TICKET_CONTEXT}}` → (remediation only) Replace with ticket-reading instructions based on backend:
    - **GitHub:** `Read the GitHub issue for full requirements: gh issue view [N] --repo '[repo]' --json title,body,labels,comments`
    - **Postgres:** `Read the finding record: node scripts/pipeline-db.js get finding [ID]`
@@ -40,6 +43,22 @@ Task tool (general-purpose, model: {{MODEL}}):
     </DATA>
 
     {{TICKET_CONTEXT}}
+
+    ## Decision Register
+
+    These are intentional architectural decisions. Do not contradict them.
+
+    {{DECISION_REGISTER}}
+
+    ## Prior Tasks in This Build
+
+    These tasks have already been completed in this build. Your work should be consistent with them.
+
+    {{PRIOR_TASKS}}
+
+    ## Project Profile
+
+    Framework/profile: {{FRAMEWORK}}
 
     **Safety guard:** Never remove security controls (authentication checks,
     input validation, output encoding, CSRF tokens, rate limiting) unless the
