@@ -350,4 +350,19 @@ Edit `.claude/pipeline.yml` directly, or use `/pipeline:update` subcommands:
 /pipeline:update repo owner/repo # Set GitHub repo
 ```
 
+## Completion Options
+
+When a workflow reaches its "what next?" moment — after build, remediate, or finish — Pipeline presents tiered options from most to least complete:
+
+```
+1. Full workflow  (review + commit + merge + push)
+2. Partial        (commit + merge, no push)
+3. Minimal        (review only, or keep branch)
+4. Manual         (leave as-is, you handle it)
+```
+
+The most complete option is always the default. If you say "finish it", "ship it", "do it all", or similar, Pipeline executes the full workflow without further prompting. You only get asked to choose when intent is genuinely ambiguous.
+
+This applies to `/pipeline:build` (review + commit + finish), `/pipeline:remediate` (review + commit + push), and `/pipeline:finish` (merge + push + cleanup).
+
 Back to the [README](../README.md).

@@ -32,14 +32,22 @@ git rev-parse HEAD 2>/dev/null || echo "NO_COMMITS"
 
 Store this as `BASELINE_SHA`. After all tasks complete, include it in the completion message so `/pipeline:review` can diff against it.
 
-**Completion message:** When all tasks are done, report:
+**Completion message:** When all tasks are done, present options:
 
 ```
-Build complete. [N] tasks executed.
+Build complete. [N] tasks executed. Baseline: [BASELINE_SHA]
 
-Review with: /pipeline:review --since <BASELINE_SHA>
-Then commit with: /pipeline:commit reviewed:✓
+What next?
+
+1. Review + commit + finish  (full workflow — review, commit, merge/push)
+2. Review only  (/pipeline:review --since [BASELINE_SHA])
+3. Skip review, commit directly  (/pipeline:commit reviewed:✓)
+4. Leave as-is  (I'll handle it)
+
+Which option? (default: 1)
 ```
+
+**Default to the most complete option.** If the user says "finish it", "ship it", or similar — execute option 1 without further prompting.
 
 **Fresh context rule:** When dispatching sub-agents for LARGE tasks, each agent receives ONLY:
 1. The specific task description from the plan (paste the text — do not reference a file)

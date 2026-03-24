@@ -400,6 +400,14 @@ node scripts/pipeline-db.js update gotcha new '[ID]: [brief]' '[why unfixed or w
 ### New (from verification)
 [list with IDs — introduced by fixes]
 
-Review all changes: /pipeline:review --since [BASELINE_SHA]
-Then commit aggregate: /pipeline:commit reviewed:✓
+What next?
+
+1. Review + commit + push  (full workflow)
+2. Review only  (/pipeline:review --since [BASELINE_SHA])
+3. Commit without review  (/pipeline:commit reviewed:✓)
+4. Leave as-is  (I'll handle it)
+
+(default: 1)
 ```
+
+**Default to the most complete option.** If the user says "finish it", "ship it", or similar — execute option 1 without further prompting.

@@ -355,15 +355,16 @@ Creates an isolated git worktree on a new branch. Used before LARGE changes when
 
 ### `/pipeline:finish`
 
-Guides branch completion after implementation is done.
+Guides branch completion after implementation is done. Tests must pass before any merge/PR option is available.
 
-**Options:**
-1. Merge back to base branch locally
-2. Push and create a Pull Request (requires `integrations.github.enabled`)
-3. Keep the branch as-is
-4. Discard the work (requires typed confirmation)
+**Options (tiered from most to least complete):**
+1. Commit + merge + push (the full workflow — default)
+2. Commit + merge locally (no push)
+3. Push and create a Pull Request (requires `integrations.github.enabled`)
+4. Keep the branch as-is
+5. Discard the work (requires typed confirmation)
 
-Tests must pass before merge/PR options are available.
+If you say "finish it" or "do it all", option 1 executes without further prompting. Pipeline always defaults to the most complete option — you only get asked when intent is genuinely ambiguous.
 
 ---
 

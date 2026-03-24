@@ -49,21 +49,35 @@ If the current branch IS the base branch (e.g., `main`), report: "You are on the
 ### Step 3 — Present options
 
 ```
-Implementation complete. What would you like to do?
+Implementation complete. Tests passing. What would you like to do?
 
-1. Merge back to [base-branch] locally
-2. Push and create a Pull Request
-3. Keep the branch as-is (I'll handle it later)
-4. Discard this work
+1. Commit + merge to [base-branch] + push  (the full workflow)
+2. Commit + merge to [base-branch] locally  (no push)
+3. Push and create a Pull Request
+4. Keep the branch as-is  (I'll handle it later)
+5. Discard this work
 
-Which option?
+Which option? (default: 1)
 ```
+
+**Default to the most complete option.** If the user says "finish it", "do it all", "merge it", or similar — execute option 1 without further prompting. Only ask for clarification when the intent is genuinely ambiguous.
 
 ---
 
 ### Step 4 — Execute choice
 
-**Option 1: Merge locally**
+**Option 1: Commit + merge + push (full workflow)**
+```bash
+git checkout [base-branch]
+git pull
+git merge [feature-branch]
+# Run tests on merged result
+git push
+git branch -d [feature-branch]
+```
+Then cleanup worktree (Step 5).
+
+**Option 2: Commit + merge locally (no push)**
 ```bash
 git checkout [base-branch]
 git pull
@@ -73,7 +87,7 @@ git branch -d [feature-branch]
 ```
 Then cleanup worktree (Step 5).
 
-**Option 2: Push and create PR**
+**Option 3: Push and create PR**
 
 Only offer the Push+PR option if `integrations.github.enabled` is true in pipeline.yml. If false, offer: "Push branch and create PR manually in browser."
 
@@ -95,11 +109,11 @@ EOF
 ```
 Then cleanup worktree (Step 5).
 
-**Option 3: Keep as-is**
+**Option 4: Keep as-is**
 Report: "Keeping branch [name]. Worktree preserved at [path]."
 Don't cleanup.
 
-**Option 4: Discard**
+**Option 5: Discard**
 Confirm first:
 ```
 This will permanently delete:
@@ -122,7 +136,7 @@ Then cleanup worktree (Step 5).
 
 ### Step 5 — Cleanup worktree
 
-For Options 1, 2, 4: if in a worktree (git-dir path contains 'worktrees'), clean up after merge/discard.
+For Options 1, 2, 3, 5: if in a worktree (git-dir path contains 'worktrees'), clean up after merge/discard.
 
 Run as a single Bash call — variables are lost between calls:
 ```bash
@@ -134,7 +148,7 @@ WORKTREE_PATH=$(pwd)
 cd "$(git rev-parse --path-format=absolute --git-common-dir)/.."
 git worktree remove "$WORKTREE_PATH" --force
 ```
-For Option 3: keep worktree.
+For Option 4: keep worktree.
 
 ---
 
