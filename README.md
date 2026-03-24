@@ -266,6 +266,7 @@ These features don't trace to any prior work:
 - **Security lifecycle** — red team → remediate → purple team as a structured loop with per-finding state tracking and verification.
 - **Integration detection** — runtime probing for available tools (Postgres, Ollama, GitHub CLI, Chrome DevTools, Sentry) with graceful fallbacks and no silent installs.
 - **Cross-domain destructive operation guards** — hard stop before any data-destroying action across git (rebase, force-push, reset), databases (DROP TABLE, bulk deletes, TRUNCATE), and files (rm -rf, multi-file deletion). The agent must name the action, state intent, state what will be permanently lost, and get explicit confirmation. Other frameworks guard specific operations (branch deletion, internal state files). Pipeline applies a single consistent gate to everything the agent can destroy, with a rationalization prevention table because LLMs will talk themselves into "this is just cleanup" without it.
+- **Big 4 dimensional awareness** — every agent prompt evaluates functionality, usability, performance, and security as dimensions in tension. The weight varies by role: the PM agent explores tradeoffs, the engineer flags concerns, the reviewer verifies all four. See the [Big 4 framework](docs/big-4.md) for the concept and how Pipeline applies it.
 
 ## Acknowledgments
 
