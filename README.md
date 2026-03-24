@@ -254,9 +254,23 @@ Tracked items for future development. Checked items are shipped.
 - [x] `/pipeline:markdown-review` with three tiers
 - [x] Red team DEPS specialist with live audit
 
+## What's Original to Pipeline
+
+These features don't trace to any prior work:
+
+- **Size routing** — TINY/MEDIUM/LARGE/MILESTONE classification that determines how much process to apply. A one-line fix skips review. A new feature gets the full pipeline. None of the source projects adjust ceremony to change size.
+- **Model routing** — automatic haiku/sonnet/opus assignment by task complexity. Cheaper models for mechanical work, capable models for judgment.
+- **Config-driven architecture** — a single `pipeline.yml` replaces all hardcoded paths, commands, frameworks, and patterns. Move between projects by running init.
+- **Commit preflight gate chain** — typecheck → lint → test → review gate with a hard stop that resists LLM rationalization.
+- **Parallel sector audit** — codebase split into configured sectors, each reviewed by a parallel agent, then synthesized by a cross-sector agent that traces crash paths and finds dead exports.
+- **Severity tiers with confidence requirements** — 🔴 HIGH / 🟡 MEDIUM / 🔵 LOW findings where HIGH requires verified-in-code evidence, preventing false alarms from blocking commits.
+- **Knowledge tiers** — files (zero setup, markdown) or Postgres (semantic search, structured queries, cross-project transfer).
+- **Security lifecycle** — red team → remediate → purple team as a structured loop with per-finding state tracking and verification.
+- **Integration detection** — runtime probing for available tools (Postgres, Ollama, GitHub CLI, Chrome DevTools, Sentry) with graceful fallbacks and no silent installs.
+
 ## Acknowledgments
 
-Pipeline is a synthesis of ideas from three open-source projects, combined with original work on size routing, model routing, and config-driven architecture.
+Pipeline builds on ideas from three open-source projects. Credit where it's due:
 
 | Project | Author | License | What Pipeline Adopted |
 |---------|--------|---------|----------------------|
@@ -264,7 +278,7 @@ Pipeline is a synthesis of ideas from three open-source projects, combined with 
 | [GSD-2](https://github.com/gsd-build/gsd-2) | gsd-build | MIT | Research phase, confidence scoring, decision locks, fresh-context-per-task |
 | [BMAD Method](https://github.com/bmad-code-org/BMAD-METHOD) | BMad Code, LLC | MIT | Implementation readiness gates, scale-adaptive planning |
 
-See **[full attribution details](docs/attribution.md)** for what was adopted from each source and what Pipeline contributed originally.
+See **[full attribution details](docs/attribution.md)** for the complete breakdown — what was adopted, what was adapted, and what was rejected from each source.
 
 ## License
 

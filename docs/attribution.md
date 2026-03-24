@@ -31,7 +31,7 @@ The foundational influence. Pipeline's skill-based architecture, subagent-driven
 
 **Adapted (not direct copy):**
 - Superpowers runs full ceremony on every change. Pipeline added size routing to skip unnecessary process.
-- Superpowers' review is single-tier. Pipeline added severity tiers (red/yellow/blue) with confidence requirements.
+- Superpowers' review is single-tier. Pipeline added severity tiers (🔴 HIGH / 🟡 MEDIUM / 🔵 LOW) with confidence requirements.
 
 ### [GSD-2](https://github.com/gsd-build/gsd-2) by gsd-build
 
@@ -74,7 +74,7 @@ These features don't trace to any of the three source projects:
 - **Commit preflight gate chain** — typecheck → lint → test → review gate, with a hard stop that resists LLM rationalization. Configurable thresholds and nullable gates.
 - **Parallel sector audit** — codebase split into configured sectors, each reviewed by a parallel agent, then synthesized by a cross-sector agent that traces crash paths and finds dead exports.
 - **Phase 0 grep preprocessing** — configurable regex patterns scanned before review agents dispatch, focusing attention on known risk patterns.
-- **Severity tiers with confidence requirements** — red/yellow/blue findings where red requires HIGH confidence (verified in code), preventing false alarms from blocking commits.
+- **Severity tiers with confidence requirements** — 🔴 HIGH / 🟡 MEDIUM / 🔵 LOW findings where red requires HIGH confidence (verified in code), preventing false alarms from blocking commits.
 - **Knowledge tiers** — files tier (zero setup, markdown) or Postgres tier (semantic search, structured queries, cross-project transfer). Each project gets its own database.
 - **Project profile system** — auto-detection of project type (SPA, fullstack, mobile, API, CLI, library) with profile-specific review criteria and security checklists.
 - **Integration detection** — runtime probing for available tools (Postgres, Ollama, GitHub CLI, Chrome DevTools, Playwright, Sentry) with graceful fallbacks and no silent installs.
