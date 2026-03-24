@@ -2,6 +2,10 @@
 
 > **Alpha (v0.1.0-alpha)** — This plugin is under active development. Commands, config keys, and behavior may change between releases. [Feedback welcome.](https://github.com/djwmobley/pipeline/issues)
 
+<p align="center">
+  <img src="docs/assets/hero.png" alt="Pipeline — one plugin, full pipeline" width="700">
+</p>
+
 A [Claude Code](https://docs.anthropic.com/en/docs/claude-code) plugin that matches process to change size. A one-line fix gets committed in seconds. A new feature gets designed, planned, built by subagents, and reviewed — automatically.
 
 ## What Using It Looks Like
