@@ -84,6 +84,16 @@ Task tool (general-purpose, model: {{MODEL}}):
     Every finding MUST include confidence: [HIGH/MEDIUM/LOW]
     - HIGH — verified in code  - MEDIUM — strong inference  - LOW — possible but unverified
 
+    ## Big 4 Dimensions (if applicable to this task)
+
+    Not every task touches all four. Only flag findings where the task's scope intersects a dimension.
+
+    - **Usability:** Error messages user-friendly? API responses clear? Forms have actionable validation? Accessibility basics (keyboard nav, labels) present if UI is involved?
+    - **Performance:** N+1 query patterns? Unbounded data loading? Blocking async operations? Would this hold up at 10x scale?
+    - **Functionality & Security:** Already covered above — verify nothing was missed.
+
+    Usability/performance findings follow the same severity tiers: 🔴 HIGH if it will cause user confusion or measurable degradation, 🟡 MEDIUM if it's suboptimal, 🔵 LOW if it's a suggestion.
+
     ## Output
 
     **Spec Compliance:** ✅ Compliant | ❌ Issues found

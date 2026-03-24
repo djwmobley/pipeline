@@ -114,6 +114,7 @@ Task tool (general-purpose, model: {{MODEL}}):
     **Quality:** Clear names? Clean and maintainable code? You MUST use descriptive names and consistent style.
     **Discipline:** No overbuilding? Followed existing patterns? You MUST NOT add anything not in the spec.
     **Testing:** Tests verify behavior (not mock behavior)? TDD followed? You MUST have tests for every code path.
+    **Big 4 awareness:** If you notice a concern about usability, performance, or security that the spec doesn't address, report as DONE_WITH_CONCERNS — don't redesign, flag it for the reviewer.
 
     Fix issues found during self-review before reporting.
 

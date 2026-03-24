@@ -52,6 +52,16 @@ SOLID violations that manifest as real problems.
 Includes: alternative approaches, performance optimizations, readability improvements.
 **Any confidence level accepted, but you MUST state it.** A LOW confidence 🔵 LOW is valid; an unstated confidence is not.
 
+## Review Dimensions
+
+The Big 4 dimensions apply to code review, not just design:
+- **Functionality** — correctness, spec compliance (core of every review)
+- **Usability** — user-facing clarity, error messages, accessibility (when task touches UI/API)
+- **Performance** — scalability, resource usage, query efficiency (when task touches data/compute)
+- **Security** — already enforced via safety guards and non-negotiables
+
+Not every review touches all four. Apply the dimensions relevant to the changed files.
+
 ## Non-Negotiable Filtering
 
 Before flagging ANY finding, check it against `review.non_negotiable[]`.

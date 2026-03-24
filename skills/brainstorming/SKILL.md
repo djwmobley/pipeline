@@ -81,10 +81,16 @@ See `visual-companion.md` for the detailed dispatch logic for each path.
 - Include data flow diagram
 - Include build sequence (ordered, dependency-aware)
 
-**Security evaluation:**
-- Read `security[]` from pipeline.yml
-- For each check, answer whether this design is affected — each item MUST have a confidence level (HIGH/MEDIUM/LOW)
-- Flag any security concern in the design
+**Big 4 evaluation:**
+
+These four dimensions are in tension — improving one can hurt another. The PM's job is to find the best mix. Evaluate each and surface tradeoffs for the user to decide.
+
+- **Functionality:** Does this design deliver the intended value? Does it fit the bigger picture? Is anything here feature creep?
+- **Usability:** Is this the shortest path for the user? Will screens cause confusion or resolution? Are error states clear and actionable? Would a first-time user know what to do?
+- **Performance:** Will this design meet accepted norms for web/app responsiveness? Are there scalability concerns (unbounded lists, heavy client rendering, large payloads)?
+- **Security:** Read `security[]` from pipeline.yml. For each check, answer whether this design is affected — each item MUST have a confidence level (HIGH/MEDIUM/LOW). Are secrets kept secret? Is the user being asked to overshare?
+
+For each dimension, note whether this design is affected and at what confidence (HIGH/MEDIUM/LOW). If dimensions are in tension (e.g., "confirmation step improves security but adds usability friction"), surface the tradeoff explicitly.
 
 **Design for isolation and clarity:**
 - Break into smaller units with one clear purpose each

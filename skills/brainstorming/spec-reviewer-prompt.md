@@ -22,6 +22,8 @@ Task tool (general-purpose, model: {{MODEL}}):
     | Clarity | Ambiguous requirements that could cause wrong implementation |
     | Scope | Focused enough for a single plan |
     | Security | Security checklist answered, no gaps |
+    | Usability | User path is clear, error handling strategy defined, no unnecessary friction |
+    | Performance | Performance expectations stated if applicable, scalability constraints noted |
     | YAGNI | Unrequested features, over-engineering |
 
     Only flag issues that would cause real problems during planning. Approve unless there are serious gaps.

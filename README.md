@@ -231,7 +231,6 @@ Tracked items for future development. Checked items are shipped.
 
 ### Open
 
-- [ ] **Big 4 awareness for engineering agents** — What do code-generating agents know about functionality, usability, security, and performance at build time? How should this knowledge be structured? Security at build-time is a separate track from security agents.
 - [ ] **Full lifecycle visual diagram** — The pipeline flow crosses multiple context windows: PM → UX → orchestrator → engineer → QA → red team → orchestrator → engineer → QA → purple team → engineer → git. Needs a visual representation showing all agents, decision gates, loop-back points, and state handoffs.
 - [ ] **SBOM generation** — Add software bill of materials output to the DEPS security specialist.
 - [ ] **Research skill buildout** — Currently the weakest skill (~27 lines, no frontmatter, no prompt templates). Needs the same rigor as other skills.
@@ -257,6 +256,7 @@ Tracked items for future development. Checked items are shipped.
 - [x] `/pipeline:security` meta-command
 - [x] `/pipeline:markdown-review` with three tiers
 - [x] Red team DEPS specialist with live audit
+- [x] Big 4 awareness across all agent prompts — functionality, usability, performance, security as push-pull dimensions at build, review, and design time
 
 ## What's Original to Pipeline
 
