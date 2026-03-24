@@ -97,6 +97,8 @@ Then, in any project:
 
 Init detects your stack — language, framework, test runner, linter, type checker — and generates `.claude/pipeline.yml`. Takes about a minute.
 
+Want zero interaction? Use `/pipeline:init --quick` — it auto-detects everything, installs what it can, and prints a summary. Adjust later with `/pipeline:update`.
+
 ## Two Starting Points
 
 Pipeline works whether you're starting fresh or maintaining something.
@@ -224,7 +226,6 @@ Tracked items for future development. Checked items are shipped.
 - [ ] **Full lifecycle visual diagram** — The pipeline flow crosses multiple context windows: PM → UX → orchestrator → engineer → QA → red team → orchestrator → engineer → QA → purple team → engineer → git. Needs a visual representation showing all agents, decision gates, loop-back points, and state handoffs.
 - [ ] **Error handling guide** — What happens when gates fail, tools are missing, or Postgres is down? Users need to know recovery paths.
 - [ ] **Dashboard screenshot in README** — Visual proof of what the dashboard looks like.
-- [ ] **`--quick` mode for init** — Auto-detect everything, ask only what can't be detected.
 - [ ] **Compliance framework testing** — Test red team findings against FedRAMP, SOC 1/2, NIST CSF 2.0, GDPR, PCI DSS 4.0, HIPAA, ISO 27001 certification specifications. Map CWE findings to compliance controls and flag gaps.
 - [ ] **Workflow chaining** — Chain commands together for fire-and-forget execution. Example: `/pipeline:brainstorm` → `/pipeline:plan` → `/pipeline:build` → `/pipeline:review` → `/pipeline:commit` as a single invocation.
 - [ ] **Human-in-the-loop guidance** — Distinguish what SHOULD be checked by a human (recommended review points) from what MUST be checked (safety-critical decisions, destructive operations, security sign-offs).
@@ -250,6 +251,7 @@ Tracked items for future development. Checked items are shipped.
 - [x] Big 4 awareness across all agent prompts — functionality, usability, performance, security as push-pull dimensions at build, review, and design time
 - [x] SBOM generation — CycloneDX 1.6 with transitive dependencies from lockfile parsing, generated during red team recon
 - [x] Research folded into brainstorm — standalone `/pipeline:research` replaced with a verification gate (step 4) inside brainstorm that dispatches parallel agents when unfamiliar tech is detected
+- [x] `--quick` mode for init — `/pipeline:init --quick` auto-detects everything, makes all decisions, auto-installs Playwright/Postgres/Ollama models, prints decision log
 
 ## What's Original to Pipeline
 

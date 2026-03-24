@@ -500,6 +500,9 @@ If you say "finish it" or "do it all", option 1 executes without further prompti
 
 Interactive project setup. Detects your environment, asks questions, generates `.claude/pipeline.yml`.
 
+**Arguments:**
+- `--quick` or `quick` — Auto-detect everything, make all decisions automatically, auto-install dependencies (Playwright, Postgres, Ollama embedding model). Zero user interaction. Prints a decision log at the end. Use `/pipeline:update` to adjust anything afterward.
+
 See the [configuration guide](guide.md) for what gets generated.
 
 ---

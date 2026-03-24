@@ -1,11 +1,19 @@
 ---
 allowed-tools: Bash(*), Read(*), Write(*), Glob(*), Grep(*)
-description: Interactive project setup — detects tools, creates .claude/pipeline.yml
+description: Project setup — detects tools, creates .claude/pipeline.yml (use --quick for zero interaction)
 ---
 
 ## Pipeline Init
 
 You are the pipeline setup agent. Your job is to detect the project environment and generate a `.claude/pipeline.yml` config file.
+
+### Argument parsing
+
+Check if the user's arguments contain `--quick` or `quick`. If so, set **quick mode = true**.
+
+**Quick mode** runs the same detection scripts but makes every decision autonomously — zero user interaction. It uses sensible defaults for anything it can't detect, auto-installs dependencies (Playwright, Postgres `pg` package, Ollama embedding model), and prints a full decision log at the end. The user can adjust anything afterward with `/pipeline:update`.
+
+Throughout this command, each decision point has a **"If quick mode:"** block. When quick mode is active, follow those blocks and skip all user prompts.
 
 ---
 
@@ -30,9 +38,13 @@ Check if `.claude/pipeline.yml` already exists in the project root.
 If ALL sections are complete:
 > "Pipeline is already configured for this project. Config looks complete.
 > Run `/pipeline:commit` to use it, or delete `.claude/pipeline.yml` and re-run `/pipeline:init` to start fresh."
-Stop.
+Stop. **This applies in both interactive and quick mode** — quick mode does not overwrite a complete config.
 
-If SOME sections are incomplete, report what's done and what's missing:
+If SOME sections are incomplete:
+
+**If quick mode:** Silently fill in the incomplete sections using quick-mode defaults (same defaults as a fresh quick-mode run). Do not show the "resuming setup" message — just detect, decide, fill gaps, and print the final summary. Skip to the first incomplete section's corresponding step, applying quick-mode logic at each.
+
+**If interactive mode:** Report what's done and what's missing:
 > "Found existing `.claude/pipeline.yml` — resuming setup.
 >
 > Already configured: [list complete sections]
@@ -103,6 +115,8 @@ echo "=== DONE ==="
 
 ### Step 1b — Fill in gaps
 
+**If quick mode:** Use the directory name for `project.name` if no `name` field found in package.json/Cargo.toml/etc. Set `project.repo: null` if no git remote detected. Log both decisions. Skip to Step 2.
+
 **Git remote:** If `git remote get-url origin` returned nothing (no remote configured), ask:
 > "No git remote detected. What's the GitHub repo for this project? (e.g., `owner/repo`, or press Enter to skip)"
 
@@ -113,6 +127,8 @@ If the user provides a value, use it for `project.repo`. If skipped, set `projec
 ---
 
 ### Step 2 — Project profile
+
+**If quick mode:** Use the inferred profile directly without asking for confirmation. If established project, apply the signal table below and pick the best match. If greenfield (no signals), default to `fullstack`. Skip stack recommendations entirely. Log the chosen profile and evidence (e.g., "Profile: fullstack — detected next.config.ts"). Skip to Step 2b.
 
 **If established project** (detected in Step 1), infer the profile from what was detected:
 
@@ -279,6 +295,8 @@ Note: Figma detection is MCP-only. The `FIGMA_API_KEY` env var is used internall
 
 **Design tool decision matrix:**
 
+**If quick mode:** Enable every detected design tool. If Stitch is enabled, default `device_type: DESKTOP`. If both are detected, enable both. Skip all design tool questions. Log decisions.
+
 | Figma MCP | Stitch MCP | Action |
 |----------|-----------|--------|
 | connected | connected | Ask: "Both Figma and Stitch are available. Figma imports existing designs for comparison. Stitch generates new mockups from text prompts. Which do you want for this project? (figma / stitch / both)" |
@@ -298,6 +316,8 @@ Set `integrations.stitch.device_type` to the corresponding enum value (e.g., `DE
 ---
 
 **Interpret Postgres results:**
+
+**If quick mode:** Only enable Postgres if it's clearly running (accepting connections on a known port). For ambiguous states (installed but not running, alt port open without pg_isready), skip Postgres and default to files tier. Log the detection result and decision. Do not attempt to start Postgres or ask about alternate ports.
 
 | pg_isready | Install found | Port 5432 | Alt port open | Interpretation |
 |-----------|--------------|-----------|---------------|----------------|
@@ -319,6 +339,8 @@ Set `integrations.stitch.device_type` to the corresponding enum value (e.g., `DE
 
 **For each missing integration, clearly state whether it's required or optional and what the fallback is:**
 
+**If quick mode:** Enable every detected integration without asking. For Playwright specifically: if not detected, auto-install it (`[pkg_manager] add -D @playwright/test && npx playwright install chromium`), then enable. **If Playwright install fails:** disable Playwright, log the error ("Playwright install failed — skipped. Install manually later."), and continue. For all other missing integrations, disable them and log the skip. Do not show "how to install" messages for missing tools — the summary at the end covers everything.
+
 | Integration | Required? | What it enables | Fallback without it | If missing |
 |------------|-----------|----------------|--------------------|----|
 | **Stitch** | Optional | AI-generated design mockups in `/pipeline:brainstorm` and `/pipeline:ui-review` | HTML wireframes via visual companion subagent | Show: "See `docs/prerequisites.md` for Stitch setup (free, generates AI mockups from text)." |
@@ -330,11 +352,29 @@ Set `integrations.stitch.device_type` to the corresponding enum value (e.g., `DE
 | **Chrome DevTools** | Optional | Screenshot capture for `/pipeline:ui-review` | Playwright, or provide screenshots manually | Show: "Launch Chrome with `--remote-debugging-port=9222` for automatic screenshots. See `docs/prerequisites.md` for details." |
 | **Sentry** | Optional | Auto-pull recent errors in `/pipeline:debug` | Reproduce errors manually | Show: "Set `SENTRY_AUTH_TOKEN` env var. See `docs/prerequisites.md` for setup." |
 
-**Key rule:** Always ask before installing anything. If the user declines, show the manual install command so they can do it later. Never silently install packages.
+**Key rule (interactive mode):** Always ask before installing anything. If the user declines, show the manual install command so they can do it later. Never silently install packages.
+
+**Key rule (quick mode):** Auto-install Playwright without asking. All other missing integrations are skipped (they require system-level setup like installing Postgres or configuring MCP servers, which can't be automated).
 
 ---
 
 ### Step 4 — Knowledge tier decision
+
+**If quick mode and Postgres is detected+running (accepting connections):**
+1. Choose `postgres` tier automatically.
+2. Locate the pipeline plugin's `scripts/` directory (same resolution as interactive mode below).
+3. Auto-install dependencies: `cd <scripts_path> && pnpm install`. **If install fails:** fall back to `files` tier, log the error, continue.
+4. Generate project-scoped DB name, run `pipeline-db.js setup`, verify with `pipeline-db.js status`. **If setup fails:** fall back to `files` tier, log the error, continue.
+5. If Ollama is available, use `mxbai-embed-large` as the embedding model. Auto-pull if not present: `ollama pull mxbai-embed-large`. **If pull fails or times out:** skip embedding model, log "Ollama pull failed — FTS keyword search only. Pull manually later: `ollama pull mxbai-embed-large`". Continue with Postgres tier (FTS still works without embeddings).
+6. Set `knowledge.tier: "postgres"` with `database`, `host`, `port`, `user`, `embedding_model` (if pulled successfully).
+7. Add `"node $SCRIPTS_DIR/pipeline-embed.js index"` to `commit.post_commit_hooks` (keeps embeddings current after each commit). Skip this if no embedding model was configured.
+8. Log everything: tier chosen, DB name, deps installed, embedding model (or "none — FTS only").
+
+**If quick mode and Postgres is NOT running:**
+1. Choose `files` tier.
+2. Create directories: `mkdir -p docs/sessions docs/specs docs/plans`
+3. Log: "Postgres not detected — using files tier. Run `/pipeline:update knowledge` to switch later."
+4. Skip to Step 5.
 
 Present both options:
 
@@ -382,7 +422,17 @@ Set `project.pkg_manager` to the detected package manager from Step 1 (pnpm, npm
 
 Set `routing.source_dirs` from the directories detected in Step 1 (the "SOURCE DIRS" section). Include only directories that exist and contain source code (e.g., `["src/"]`, `["src/", "lib/"]`, `["cmd/", "internal/", "pkg/"]`). If only `src/` was detected, use `["src/"]`.
 
-**If no source directories were detected** (greenfield or non-standard layout), do NOT use `["."]` — it poisons triage, commit gates, and audit by counting non-source files (config, docs, lockfiles). Instead, ask:
+**If no source directories were detected** (greenfield or non-standard layout), do NOT use `["."]` — it poisons triage, commit gates, and audit by counting non-source files (config, docs, lockfiles).
+
+**If quick mode:** Use a profile-based default:
+- SPA/Full-stack/API/Library: `["src/"]`
+- CLI (Go): `["cmd/", "internal/"]`
+- CLI (other): `["src/"]`
+- Mobile/Mobile+Web: `["src/"]`
+
+Log: "No source directories detected — defaulting to [chosen dirs] based on [profile] profile. Run `/pipeline:update` to change."
+
+**If interactive mode:** Ask:
 
 > "I didn't detect a standard source directory (src/, lib/, app/, etc.). Where will your source code live?"
 >
@@ -418,7 +468,36 @@ Then use the Write tool to create `.claude/pipeline.yml`.
 
 ### Step 6 — Confirm and guide
 
-Report what was detected and configured:
+**If quick mode:** Print a decision log instead of the interactive summary. Skip the getting-started guide and the offer to open docs. Quick users know what they're doing.
+
+```
+## Pipeline configured (quick mode)
+
+**Project:** [name] ([profile]) — [evidence, e.g., "inferred from next.config.ts"]
+**Repo:** [owner/repo or "none — no git remote"]
+**Branch:** [branch]
+**Package manager:** [detected]
+
+**Commands:**
+- Typecheck: [command or disabled]
+- Lint: [command or disabled]
+- Test: [command or disabled]
+
+**Integrations enabled:** [list each with evidence, e.g., "GitHub CLI (gh detected)", "Playwright (auto-installed)"]
+**Integrations skipped:** [list each with reason, e.g., "Sentry (SENTRY_AUTH_TOKEN not set)", "Stitch (MCP not connected)"]
+
+**Knowledge:** [tier] [if postgres: "DB: pipeline_<name>, embedding: mxbai-embed-large"]
+
+**Auto-installed:**
+- [list everything installed, e.g., "Playwright (@playwright/test + chromium)", "Pipeline DB deps (pg via pnpm)", "Ollama model (mxbai-embed-large)"]
+- [or "nothing" if nothing was installed]
+
+**Adjust anything:** `/pipeline:update`
+```
+
+Stop after printing the summary. Do not show the getting-started guide or offer to open docs.
+
+**If interactive mode:** Report what was detected and configured:
 
 ```
 ## Pipeline configured
