@@ -59,12 +59,19 @@ redteam:
     - { pattern: "cors\\(\\)", label: "permissive-cors" }
     - { pattern: "disable.*csrf|csrf.*false", label: "csrf-disabled" }
 
-# Red team remediation
-# Run /pipeline:remediate after /pipeline:redteam to fix findings
+# Remediation
+# Run /pipeline:remediate after any finding-producing command to fix issues
+# Accepts findings from: redteam, audit, review, ui-review, external reports
+# All sources produce identical artifacts — only source and category differ
 remediate:
   auto_issue_threshold: "medium-high"  # "all", "medium-high", "high" — controls which findings get GitHub issues
-  verification_rerun: true             # Re-run affected specialists after fixes to verify
   batch_strategy: "effort"             # "effort" (quick→medium→arch) or "severity" (critical first)
+  verification:                        # Per-source verification strategy after fixes
+    redteam: "specialist-rerun"        # Re-run affected security specialists
+    audit: "sector-rerun"              # Re-run affected audit sectors
+    review: "review-rerun"             # Re-run review on changed files
+    ui-review: "screenshot"            # Re-capture and analyze screenshot
+    external: "none"                   # Skip — run appropriate command manually
 
 # Git
 commit:

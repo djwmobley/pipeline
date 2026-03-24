@@ -65,13 +65,15 @@ You describe what you want. Pipeline routes you through:
 
 `/pipeline:redteam` dispatches a recon agent to map your attack surface, then launches parallel security specialists — one per domain (injection, auth, XSS, etc.). Each specialist gets framework-specific checklists (a Next.js injection specialist checks different things than a Django one). A lead analyst chains findings into exploit scenarios and produces a risk matrix with a remediation roadmap.
 
-The assessment saves to `docs/security/` — with an optional HTML report you can share with stakeholders who don't use the terminal.
+The assessment saves to `docs/findings/` — with an optional HTML report you can share with stakeholders who don't use the terminal.
 
 ### You fix the findings
 
-`/pipeline:remediate` reads the red team report, creates GitHub issues for each finding above your configured threshold, and batches fixes by effort level. Quick wins get a single implementer agent. Medium-effort fixes get an implementer plus a reviewer. Architectural changes get an opus planner first, then step-by-step implementation with review at each step.
+`/pipeline:remediate` accepts findings from any workflow — red team, audit, review, UI review, or external reports (QA, UX designers). It creates GitHub issues for each finding above your threshold, stores structured records in Postgres, and batches fixes by effort. Quick wins get a single implementer agent. Medium-effort fixes get an implementer plus a reviewer. Architectural changes get an opus planner first, then step-by-step implementation with review at each step.
 
-After all fixes land, it re-runs the affected security specialists to verify the vulnerabilities are actually closed — not just that the tests still pass.
+Agents are stateless — they read their own context from GitHub issues or the database, fix the code, and write results back. The orchestrator carries only IDs and status, keeping token overhead low.
+
+After all fixes land, it runs source-appropriate verification — specialist re-runs for security findings, sector re-runs for audit findings, review re-runs for code review findings, screenshot re-analysis for UI findings.
 
 ## Getting Started
 
@@ -153,7 +155,7 @@ See the **[command reference](docs/reference.md)** for the full list with detail
 | `/pipeline:build` | Execute a plan with subagents |
 | `/pipeline:audit` | Full codebase review (parallel sectors) |
 | `/pipeline:redteam` | Security red team assessment |
-| `/pipeline:remediate` | Fix red team findings with tracked issues |
+| `/pipeline:remediate` | Fix findings from any workflow with tracked issues |
 | `/pipeline:debug` | Systematic root-cause diagnosis |
 | `/pipeline:simplify` | Targeted code simplification |
 | `/pipeline:release` | Changelog + version bump + tag |

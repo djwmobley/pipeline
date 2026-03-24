@@ -7,7 +7,7 @@ description: Security red team assessment — recon + parallel specialist agents
 
 Security assessment with parallel domain specialists. Probes your codebase from an attacker's perspective — injection, auth bypass, XSS, data exposure, and more.
 
-**Read-only assessment.** No source code is modified. Findings saved to `docs/security/`.
+**Read-only assessment.** No source code is modified. Findings saved to `docs/findings/`.
 
 ---
 
@@ -295,10 +295,10 @@ Dispatch the lead analyst agent. Store its output as `FINAL_REPORT`.
 
 Create the output directory if needed:
 ```bash
-mkdir -p docs/security
+mkdir -p docs/findings
 ```
 
-Format the lead analyst's output into the final markdown report. Save to `docs/security/redteam-[YYYY-MM-DD].md`.
+Format the lead analyst's output into the final markdown report. Save to `docs/findings/redteam-[YYYY-MM-DD].md`.
 
 Present the executive summary, risk matrix, and critical/high findings to the user inline. Full report is in the file.
 
@@ -317,9 +317,9 @@ Read the HTML report prompt template from `skills/redteam/html-report-prompt.md`
 4. `[DATE]` → today's date
 5. `[SPECIALIST_COUNT]` → number of specialists run
 
-Dispatch haiku agent to generate a self-contained HTML file. Save to `docs/security/redteam-[YYYY-MM-DD].html`.
+Dispatch haiku agent to generate a self-contained HTML file. Save to `docs/findings/redteam-[YYYY-MM-DD].html`.
 
-Report: "HTML report saved to `docs/security/redteam-[date].html` — open in any browser to share with stakeholders."
+Report: "HTML report saved to `docs/findings/redteam-[date].html` — open in any browser to share with stakeholders."
 
 ---
 
@@ -413,3 +413,5 @@ The final markdown report follows this structure:
 - **Total findings:** [N] ([C] critical, [H] high, [M] medium, [L] low, [I] info)
 - **Token usage:** ~[N]K estimated
 ```
+
+End with: "Run `/pipeline:remediate --source redteam` to batch-fix findings, or `/pipeline:remediate` to auto-detect the latest report."

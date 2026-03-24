@@ -73,6 +73,48 @@ CREATE TABLE IF NOT EXISTS research (
 );
 
 -- ═══════════════════════════════════════════════════════════════════════════════
+-- FINDINGS — unified finding records from all pipeline workflows
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+CREATE TABLE IF NOT EXISTS findings (
+  id TEXT PRIMARY KEY,                    -- Source-prefixed ID: RT-INJ-001, AUD-003, REV-012, UI-002, EXT-001
+  source TEXT NOT NULL,                   -- redteam, audit, review, ui-review, external
+  severity TEXT NOT NULL,                 -- CRITICAL, HIGH, MEDIUM, LOW, INFO
+  confidence TEXT NOT NULL,               -- HIGH, MEDIUM, LOW
+  location TEXT NOT NULL,                 -- file:line or descriptive path
+  category TEXT NOT NULL,                 -- security/CWE-89, dead-code, naming, ux/hit-target, custom
+  description TEXT NOT NULL,              -- One-line summary
+  impact TEXT NOT NULL,                   -- What happens if unfixed
+  remediation TEXT NOT NULL,              -- Fix steps
+  effort TEXT NOT NULL,                   -- quick, medium, architectural, none
+  verification_domain TEXT,               -- INJ, sector-api, changed-files, screenshot, manual
+  status TEXT DEFAULT 'triaged',          -- triaged, in_progress, fixed, verified, wontfix
+  github_issue INTEGER,                   -- Linked GitHub issue number
+  commit_sha TEXT,                        -- Fix commit SHA
+  task_id INTEGER REFERENCES tasks(id),   -- Linked pipeline task
+  report_path TEXT,                       -- Original report file path
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Add vector column for semantic search if pgvector is available
+DO $$ BEGIN
+  ALTER TABLE findings ADD COLUMN IF NOT EXISTS embedding vector(1024);
+EXCEPTION WHEN OTHERS THEN
+  RAISE NOTICE 'Skipping vector column on findings — pgvector not installed.';
+END $$;
+
+-- FTS on description + impact + remediation
+ALTER TABLE findings ADD COLUMN IF NOT EXISTS fts_vec TSVECTOR
+  GENERATED ALWAYS AS (
+    to_tsvector('english', description || ' ' || impact || ' ' || remediation)
+  ) STORED;
+
+CREATE INDEX IF NOT EXISTS findings_fts_idx ON findings USING gin(fts_vec);
+CREATE INDEX IF NOT EXISTS findings_status_idx ON findings (status);
+CREATE INDEX IF NOT EXISTS findings_source_idx ON findings (source);
+
+-- ═══════════════════════════════════════════════════════════════════════════════
 -- CODE INDEX — file descriptions with FTS + optional vector embeddings
 -- ═══════════════════════════════════════════════════════════════════════════════
 
@@ -129,3 +171,12 @@ CREATE OR REPLACE VIEW active_gotchas AS
   FROM gotchas
   WHERE active = TRUE
   ORDER BY created_at DESC;
+
+CREATE OR REPLACE VIEW open_findings AS
+  SELECT id, source, severity, confidence, location, category,
+         description, effort, status, github_issue, commit_sha
+  FROM findings
+  WHERE status NOT IN ('verified', 'wontfix')
+  ORDER BY
+    CASE severity WHEN 'CRITICAL' THEN 0 WHEN 'HIGH' THEN 1 WHEN 'MEDIUM' THEN 2 WHEN 'LOW' THEN 3 ELSE 4 END,
+    created_at;

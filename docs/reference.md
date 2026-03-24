@@ -244,7 +244,7 @@ Security red team assessment with parallel domain specialists.
 
 **Framework-aware:** A Next.js injection specialist checks Server Actions. A Django one checks ORM escape hatches. Framework detection runs automatically.
 
-**Output:** `docs/security/redteam-[date].md` (+ `.html` if `redteam.html_report` is true)
+**Output:** `docs/findings/redteam-[date].md` (+ `.html` if `redteam.html_report` is true)
 
 **Token cost:** ~240-320K for a 10-specialist run. The command shows you the estimate before launching.
 
@@ -252,25 +252,37 @@ Security red team assessment with parallel domain specialists.
 
 ### `/pipeline:remediate`
 
-Fixes security findings from a red team report. Parses findings, creates GitHub issues, batches fixes through the build/review/commit pipeline, and verifies with specialist re-runs.
+Fixes findings from any pipeline workflow. Parses reports from red team, audit, review, UI review, or external sources, creates tickets (GitHub Issues / Postgres / files), batches fixes through the build/review/commit pipeline, and verifies with source-appropriate re-runs.
+
+All finding sources produce identical artifacts — same issue format, same commit format, same tracking. Only the `source` and `category` fields differ.
 
 **What it does:**
-1. Locates the most recent red team report (or one you specify)
-2. Dispatches haiku triage agent to parse all findings into structured data
-3. Presents remediation plan — finding count, batches, issues to create — you approve before work starts
-4. Creates GitHub issues for findings above your configured threshold
-5. Creates knowledge tier tasks for tracking
-6. Executes fixes in batches:
-   - **Quick wins** — single implementer agent, no reviewer
-   - **Medium effort** — implementer + reviewer with fix loop
+1. Locates the most recent findings report from `docs/findings/` (or one you specify)
+2. Detects source type from filename prefix (redteam, audit, review, ui-review, external)
+3. Dispatches haiku triage agent to parse any native format into uniform finding records
+4. Writes tickets — GitHub issues (primary), Postgres findings table, or files (fallback)
+5. Presents remediation plan — you approve before work starts
+6. Executes fixes in batches with stateless agent dispatch:
+   - **Quick wins** — single implementer agent (reads context from ticket, not inline)
+   - **Medium effort** — implementer + reviewer (max 1 retry)
    - **Architectural** — opus planner breaks the fix into safe steps, then implementer + reviewer per step
-7. Reports progress between batches with commit SHAs
-8. Re-runs affected specialist domains to verify fixes
-9. Persists summary to knowledge tier
+7. Writes results back to tickets (comments on GitHub issues, status updates in DB)
+8. Runs source-appropriate verification
+9. Persists summary and closes tickets
 
 **Arguments:**
-- No arguments — uses most recent `docs/security/redteam-*.md`
-- `[path]` — use a specific report file
+- No arguments — auto-detects latest `docs/findings/*.md`
+- `--source redteam` — latest `docs/findings/redteam-*.md`
+- `--source audit` — latest `docs/findings/audit-*.md`
+- `--source review` — latest `docs/findings/review-*.md`
+- `--source ui-review` — latest `docs/findings/ui-review-*.md`
+- `--source all` — merge all unremediated findings
+- `--file path/to/file.md` — external report (QA, UX designer, etc.)
+
+**Ticket backends (checked in priority order):**
+1. **GitHub Issues** — when `integrations.github.enabled`. The issue body IS the ticket. Agents read with `gh issue view`.
+2. **Postgres** — when `knowledge.tier == "postgres"`. Finding records in the `findings` table. Agents read with `pipeline-db.js get finding`.
+3. **Files** — always available as fallback. Inline context in prompts (only case where this is necessary).
 
 **Batch strategies:**
 - `"effort"` (default) — quick wins first, then medium, then architectural. Maximizes early progress.
@@ -281,9 +293,14 @@ Fixes security findings from a red team report. Parses findings, creates GitHub 
 - `"medium-high"` (default) — CRITICAL and HIGH always, MEDIUM only if confidence HIGH
 - `"high"` — CRITICAL and HIGH only
 
-**Verification:** After all fixes, re-runs the specialist domains that had findings. Compares original count vs remaining vs new findings introduced by fixes.
+**Verification strategies** (configured per source in `remediate.verification`):
+- `specialist-rerun` (redteam) — re-runs affected security specialists on modified files
+- `sector-rerun` (audit) — re-runs affected audit sectors on modified files
+- `review-rerun` (review) — re-runs review on changed files since baseline
+- `screenshot` (ui-review) — re-captures and analyzes screenshot
+- `none` (external) — skips verification
 
-**Output:** Commits per finding (or per step for architectural), tracking in `docs/security/remediation-[date].md` or Postgres tasks, closed GitHub issues with commit SHAs.
+**Output:** One commit per finding (`fix: [ID] — [desc]`), tracking in `docs/findings/remediation-[date].md`, closed GitHub issues with commit SHAs, updated Postgres finding records.
 
 ---
 

@@ -107,4 +107,24 @@ LOW confidence findings from sector agents that are not corroborated by another 
 
 If synthesis produced a Simplify candidates block, display it after the verdict.
 
-After fixing all 🔴 findings: `/pipeline:commit reviewed:✓`
+---
+
+### Step 6b — Persist findings
+
+If findings were reported (not a clean audit), write the full synthesis report to `docs/findings/audit-YYYY-MM-DD.md` with a header:
+
+```bash
+mkdir -p docs/findings
+```
+
+```markdown
+# Audit Findings — [date]
+
+**Source:** audit
+**Sectors:** [list of sector names]
+**Finding count:** [N] ([M] 🔴 / [P] 🟡 / [Q] 🔵)
+
+[full synthesis report content — all FINDING lines and descriptions as output in Step 6]
+```
+
+Then inform user: "Findings saved to `docs/findings/audit-YYYY-MM-DD.md`. Run `/pipeline:remediate --source audit` to batch-fix."

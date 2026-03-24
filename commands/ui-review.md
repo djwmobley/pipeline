@@ -131,3 +131,25 @@ Task(general-purpose, model: "haiku"):
 ```
 
 Report the agent's full analysis back to the user.
+
+---
+
+### Step 3 — Persist findings
+
+If the analysis found issues (hit targets flagged, text issues, visual issues, or fidelity gaps), write to `docs/findings/ui-review-YYYY-MM-DD.md`:
+
+```bash
+mkdir -p docs/findings
+```
+
+```markdown
+# UI Review Findings — [date]
+
+**Source:** ui-review
+**Screenshot:** [path to screenshot]
+**Design reference:** [path or "none"]
+
+[full analysis output — all sections]
+```
+
+Then: "Run `/pipeline:remediate --source ui-review` to fix, or address manually."

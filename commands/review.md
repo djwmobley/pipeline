@@ -156,4 +156,24 @@ Run `/pipeline:simplify` on:
 
 If no simplicity/SOLID findings exist, omit this block.
 
-After applying all 🔴 fixes, commit with: `/pipeline:commit reviewed:✓`
+---
+
+### Step 8b — Persist findings
+
+If any 🔴 or 🟡 findings exist, write to `docs/findings/review-YYYY-MM-DD.md`:
+
+```bash
+mkdir -p docs/findings
+```
+
+```markdown
+# Review Findings — [date]
+
+**Source:** review
+**Files reviewed:** [list of files from diff]
+**Finding count:** [N] ([M] 🔴 / [P] 🟡 / [Q] 🔵)
+
+[all findings in their native format — tier headings + file:line descriptions]
+```
+
+Then: "Run `/pipeline:remediate --source review` to batch-fix 🔴 findings, or fix manually and commit with `/pipeline:commit reviewed:✓`."

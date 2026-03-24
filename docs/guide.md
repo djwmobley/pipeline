@@ -192,21 +192,40 @@ Controls the `/pipeline:redteam` security assessment.
 
 ### remediate
 
-Controls the `/pipeline:remediate` security finding remediation.
+Controls `/pipeline:remediate` — multi-source finding remediation. Accepts findings from red team, audit, review, UI review, and external reports. All sources produce identical artifacts.
 
 | Field | Default | What It Does |
 |-------|---------|-------------|
 | `auto_issue_threshold` | `"medium-high"` | Which findings get GitHub issues. `"all"`: every finding. `"medium-high"`: CRITICAL/HIGH always, MEDIUM only if confidence HIGH. `"high"`: CRITICAL and HIGH only. |
-| `verification_rerun` | `true` | Re-run affected specialist domains after fixes to verify vulnerabilities are closed |
 | `batch_strategy` | `"effort"` | Execution order. `"effort"`: quick wins → medium → architectural. `"severity"`: CRITICAL first regardless of effort. |
+| `verification` | (object) | Per-source verification strategy after fixes. See table below. |
+
+**Verification strategies:**
+
+| Source | Default Strategy | What It Does |
+|--------|-----------------|-------------|
+| `redteam` | `"specialist-rerun"` | Re-runs affected security specialists on modified files |
+| `audit` | `"sector-rerun"` | Re-runs affected audit sectors on modified files |
+| `review` | `"review-rerun"` | Re-runs code review on changed files since baseline |
+| `ui-review` | `"screenshot"` | Re-captures and analyzes screenshot |
+| `external` | `"none"` | Skips — run appropriate command manually |
+
+**Migration:** The old `verification_rerun: true` boolean is no longer supported. Replace with the `verification` object above.
+
+**Ticket backends (checked in priority order):**
+1. GitHub Issues — when `integrations.github.enabled`. The issue body IS the finding data. Agents read with `gh issue view`.
+2. Postgres findings table — when `knowledge.tier == "postgres"`. Agents read with `pipeline-db.js get finding`.
+3. Files — always available as fallback.
+
+**Finding persistence:** All finding-producing commands (`/pipeline:redteam`, `/pipeline:audit`, `/pipeline:review`, `/pipeline:ui-review`) write to `docs/findings/[source]-YYYY-MM-DD.md`. Remediate reads from this directory.
 
 **Batch effort tiers:**
 
 | Tier | Description | Agent Strategy |
 |------|-------------|---------------|
-| Quick win (< 1 hour) | Single-file fix | Sonnet implementer only |
-| Medium (1-4 hours) | Multi-file or pattern change | Sonnet implementer + sonnet reviewer |
-| Architectural (> 4 hours) | Structural change | Opus planner → sonnet implementer + sonnet reviewer per step |
+| Quick win | Single-file fix | Sonnet implementer only |
+| Medium | Multi-file or pattern change | Sonnet implementer + sonnet reviewer (max 1 retry) |
+| Architectural | Structural change | Opus planner → sonnet implementer + sonnet reviewer per step |
 
 **Model routing:** Triage uses `models.cheap` (haiku). Implementation uses `models.implement` (sonnet). Review uses `models.review` (sonnet). Architectural planning uses `models.architecture` (opus). Verification re-runs use `models.review` (sonnet).
 

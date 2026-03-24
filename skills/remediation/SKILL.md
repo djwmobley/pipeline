@@ -1,15 +1,50 @@
 ---
 name: remediation
-description: Security finding remediation — parse red team report, create issues, batch fixes through build/review/commit pipeline, verify with specialist re-runs
+description: Multi-source remediation — parse findings from any pipeline workflow, create tickets, batch fixes through build/review/commit pipeline, verify with source-appropriate re-runs
 ---
 
-# Red Team Remediation
+# Remediation
 
 ## Overview
 
-Bridges the gap between security assessment and implementation. Takes a red team report, creates tracked issues, dispatches implementer/reviewer agents to fix findings, and verifies fixes with specialist re-runs.
+Bridges the gap between finding discovery and implementation. Takes findings from any pipeline workflow (red team, audit, review, UI review, or external reports), creates tracked tickets, dispatches stateless implementer/reviewer agents, and verifies fixes.
 
 **Core principle:** Every finding gets tracked. Every fix gets reviewed. Every fix gets verified.
+
+## Uniform Artifact Model
+
+All finding sources produce identical records. The `source` and `category` fields carry the type — nothing else changes.
+
+| Field | Description | Examples |
+|-------|-------------|----------|
+| ID | Source-prefixed, unique | `RT-INJ-001`, `AUD-003`, `REV-012`, `UI-002`, `EXT-001` |
+| SEVERITY | CRITICAL / HIGH / MEDIUM / LOW / INFO | Same scale for all sources |
+| CONFIDENCE | HIGH / MEDIUM / LOW | Same scale for all sources |
+| LOCATION | file:line or descriptive path | `src/auth.ts:42`, `screenshot:nav-bar` |
+| CATEGORY | Domain-specific classifier | `security/CWE-89`, `dead-code`, `naming`, `ux/hit-target`, `custom` |
+| DESCRIPTION | One-line summary | Same field for all sources |
+| IMPACT | What happens if unfixed | Extracted per source type |
+| REMEDIATION | Fix steps | Same field for all sources |
+| EFFORT | quick / medium / architectural / none | Same tiers for all sources |
+| VERIFICATION_DOMAIN | What to re-run | `INJ`, `sector-api`, `changed-files`, `screenshot`, `manual` |
+
+**ID prefix mapping:** `RT-` (redteam), `AUD-` (audit), `REV-` (review), `UI-` (ui-review), `EXT-` (external)
+
+## Ticket-Driven Context Store
+
+Agents are stateless — they receive a ticket reference, read their own context, do work, write results back. The orchestrator carries only IDs and status, never finding text.
+
+| Priority | Backend | When Available | Ticket Reference | How Agents Read |
+|----------|---------|---------------|-----------------|----------------|
+| 1 | **GitHub Issues** | `integrations.github.enabled` | Issue number (`#42`) | `gh issue view 42 --json title,body,labels,comments` |
+| 2 | **Postgres** | `knowledge.tier == "postgres"` AND `integrations.postgres.enabled` (runs alongside GitHub when both are available) | Finding ID (`RT-INJ-001`) | `node scripts/pipeline-db.js get finding RT-INJ-001` |
+| 3 | **Files** | Always (fallback) | Finding ID in tracking file | Inline context in prompt (only fallback) |
+
+**Critical rules:**
+1. After triage, the raw report is never read again.
+2. After ticket creation, triage output is never read again — tickets are the source of truth.
+3. The orchestrator carries only: finding IDs, issue numbers, commit SHAs, and status.
+4. Each agent dispatch is one message with references. One result back. Max 1 retry.
 
 ## The Process
 
@@ -18,23 +53,21 @@ digraph remediation {
     rankdir=TB;
     node [shape=box, style=rounded];
 
-    load [label="Load config +\nlocate report"];
-    triage [label="Triage (haiku)\nParse + prioritize"];
+    source [label="Detect source\nfrom docs/findings/"];
+    triage [label="Triage (haiku)\nParse any format\n→ uniform records"];
+    tickets [label="Write tickets\nGitHub / DB / files"];
     present [label="Present plan\nUser approves"];
-    issues [label="Create GitHub\nissues"];
-    tasks [label="Create knowledge\ntier tasks"];
     quick [label="Quick wins\n(implementer only)"];
     medium [label="Medium effort\n(impl + reviewer)"];
     arch [label="Architectural\n(opus plan + build)"];
-    progress [label="Progress\ntracking"];
-    verify [label="Verification\nre-run"];
-    persist [label="Persist\nsummary"];
+    verify [label="Verification\nper-source strategy"];
+    persist [label="Persist summary\nclose tickets"];
 
-    load -> triage -> present -> issues -> tasks;
-    tasks -> quick -> progress;
-    tasks -> medium -> progress;
-    tasks -> arch -> progress;
-    progress -> verify -> persist;
+    source -> triage -> tickets -> present;
+    present -> quick -> verify;
+    present -> medium -> verify;
+    present -> arch -> verify;
+    verify -> persist;
 
     {rank=same; quick; medium; arch;}
 }
@@ -42,8 +75,8 @@ digraph remediation {
 
 ## Severity → Priority Mapping
 
-| Report Severity | Remediation Priority | Action |
-|----------------|---------------------|--------|
+| Severity | Priority | Action |
+|----------|----------|--------|
 | CRITICAL | critical | Fix immediately. Implementer + reviewer. |
 | HIGH | high | Fix in current batch. Implementer + reviewer. |
 | MEDIUM | medium | Fix if confidence HIGH. Implementer + reviewer for medium effort; implementer only for quick wins. |
@@ -60,39 +93,48 @@ The `remediate.auto_issue_threshold` config controls which findings get GitHub i
 | `"medium-high"` (default) | CRITICAL always, HIGH always, MEDIUM only if confidence HIGH |
 | `"high"` | CRITICAL and HIGH only |
 
-LOW and INFO findings are always tracked in the knowledge tier but never get auto-created issues.
-
 ## Batch Strategy
-
-The `remediate.batch_strategy` config controls execution order:
 
 | Strategy | Order | Best For |
 |----------|-------|----------|
-| `"effort"` (default) | Quick wins → Medium → Architectural | Maximize early progress, build confidence |
-| `"severity"` | CRITICAL → HIGH → MEDIUM (within each: quick → medium → arch) | Address highest risk first |
+| `"effort"` (default) | Quick wins → Medium → Architectural | Maximize early progress |
+| `"severity"` | CRITICAL → HIGH → MEDIUM | Address highest risk first |
 
 ## Effort Classification
 
-Effort tiers come from the red team report's remediation roadmap:
-
 | Tier | Description | Agent Strategy |
 |------|-------------|---------------|
-| Quick win (< 1 hour) | Single-file fix, clear remediation | Sonnet implementer only |
-| Medium (1-4 hours) | Multi-file or pattern change | Sonnet implementer + sonnet reviewer |
-| Architectural (> 4 hours) | Structural change, new abstractions | Opus planner → sonnet implementer + sonnet reviewer per step |
+| Quick win | Single-file fix, clear remediation | Sonnet implementer only |
+| Medium | Multi-file or pattern change | Sonnet implementer + sonnet reviewer |
+| Architectural | Structural change, new abstractions | Opus planner → sonnet implementer + reviewer per step |
+
+## Verification Strategies
+
+Each source type has a verification strategy configured in `remediate.verification`:
+
+| Strategy | Source Default | Dispatch | Scope |
+|----------|--------------|----------|-------|
+| `specialist-rerun` | redteam | Specialist agents from `skills/redteam/specialist-agent-prompt.md` | Modified files, scoped to VERIFICATION_DOMAIN |
+| `sector-rerun` | audit | Sector agents from `skills/auditing/sector-agent-prompt.md` | Modified files, scoped to sector |
+| `review-rerun` | review | Review logic with `--since BASELINE_SHA` | Changed files |
+| `screenshot` | ui-review | Chrome DevTools + haiku analysis | Full page |
+| `none` | external | Skip | Print "Run the appropriate review command manually." |
+
+All verification outputs the same table:
+```
+| Domain | Original | Remaining | New | Status |
+```
 
 ## Model Routing
 
 | Phase | Model | Config Key | Rationale |
 |-------|-------|-----------|-----------|
-| Triage/parse | haiku | `models.cheap` | Mechanical extraction — no judgment |
-| Quick win fix | sonnet | `models.implement` | Code writing with security context |
+| Triage/parse | haiku | `models.cheap` | Mechanical extraction |
+| Quick win fix | sonnet | `models.implement` | Code writing |
 | Medium fix (implement) | sonnet | `models.implement` | Multi-file implementation |
-| Medium fix (review) | sonnet | `models.review` | Adversarial review of security fix |
+| Medium fix (review) | sonnet | `models.review` | Adversarial review |
 | Arch planning | opus | `models.architecture` | High-stakes structural decisions |
-| Arch fix (implement) | sonnet | `models.implement` | Step-by-step implementation |
-| Arch fix (review) | sonnet | `models.review` | Step-by-step review |
-| Verification | sonnet | `models.review` | Specialist re-run for affected domains |
+| Verification | sonnet | `models.review` | Re-run for affected domains |
 
 ## Prompt Templates
 
@@ -106,38 +148,63 @@ For implementer/reviewer agents, reuse the building skill templates:
 
 **Placeholder syntax convention:**
 - `{{DOUBLE_BRACES}}` — Model name for the Agent tool's `model:` parameter. Not inside prompt text.
-- `[BRACKET_CAPS]` — Content substitution inside prompt text. Replaced with actual data (findings, config values, file contents).
+- `[BRACKET_CAPS]` — Content substitution inside prompt text. Replaced with actual data.
 
-## Integration Points
+## Uniform Outputs
 
-| System | How Remediation Uses It |
-|--------|------------------------|
-| Build workflow | Implementer + reviewer agent patterns, fresh-context-per-task |
-| Red team specialists | Verification re-run uses same specialist prompts |
-| Knowledge tier (Postgres) | Task creation with github_issue linking, decision recording |
-| Knowledge tier (files) | Tracking table in docs/security/, gotchas append |
-| GitHub CLI | Issue creation, issue closing with commit SHA |
-| Commit preflight | Typecheck → lint → test after every fix |
+**Commit format:** `fix: [ID] — [one-line description]`
+
+The ID prefix carries the source type. No source-specific commit formatting.
+
+**GitHub issue body template (same for all sources):**
+```markdown
+## Finding
+
+**ID:** [ID]
+**Source:** [SOURCE_TYPE]
+**Category:** [CATEGORY]
+**Severity:** [SEVERITY]
+**Confidence:** [CONFIDENCE]
+**Location:** [LOCATION]
+
+### Description
+[description]
+
+### Impact
+[impact]
+
+### Remediation
+[remediation]
+
+### Source Report
+`[report path]`
+```
+
+Labels: `[source-type]`, `[severity-lowercase]`. Always two labels, same pattern.
 
 ## Red Flags — Rationalization Prevention
 
 | Thought | Reality |
 |---------|---------|
-| "This finding is a false positive" | The lead analyst already filtered false positives. If you disagree, flag as INTENTIONAL with evidence — do not silently skip. |
+| "This finding is a false positive" | The triage agent already parsed what was reported. If you disagree, flag as INTENTIONAL with evidence — do not silently skip. |
 | "The fix is obvious, no reviewer needed" | Medium and architectural fixes always get reviewed. Quick wins can skip review only because the fix scope is small. |
-| "Let me fix multiple findings at once" | One commit per finding (or per step for architectural). Mixing fixes makes rollback impossible. |
-| "The tests still pass, it's fine" | Passing tests don't prove a security fix is correct. The reviewer must verify the vulnerability is actually closed. |
-| "This architectural change is too risky" | That's what the opus planner is for. It breaks the change into safe steps. |
+| "Let me fix multiple findings at once" | One commit per finding. Mixing fixes makes rollback impossible. |
+| "The tests still pass, it's fine" | Passing tests don't prove a fix is correct. The reviewer must verify the issue is actually closed. |
 | "I'll skip verification, the fixes are correct" | Verification catches regressions and incomplete fixes. Skip only if explicitly configured off. |
-| "The preflight failed but the security fix is correct" | A fix that breaks the build is not a fix. Resolve the preflight failure first. |
-| "This LOW finding should be fixed too" | Stick to the threshold. LOW/INFO findings are tracked, not auto-fixed. The user can override with threshold: "all". |
+| "The preflight failed but the fix is correct" | A fix that breaks the build is not a fix. Resolve the preflight failure first. |
+| "This LOW finding should be fixed too" | Stick to the threshold. LOW/INFO findings are tracked, not auto-fixed. |
+| "This source doesn't need remediation" | All finding sources feed the same pipeline. If findings exist, they need tracking. |
+| "Security findings need a different issue format" | All sources use the same issue template. The category field carries the type. |
+| "UI findings don't need GitHub issues" | Same threshold logic applies to all sources. The issue template is the same. |
 
 ## Key Principles
 
-- **Tracked** — every finding gets a knowledge tier task and optionally a GitHub issue
+- **Uniform** — every source produces identical artifacts. Only `source` and `category` differ.
+- **Ticket-driven** — agents read from tickets (GitHub/DB), not pasted context. Low token overhead.
+- **Stateless** — each agent receives a reference, reads its own context, writes results back.
+- **Tracked** — every finding gets a DB record and optionally a GitHub issue
 - **Batched** — fixes grouped by effort to maximize early progress
 - **Reviewed** — medium and architectural fixes get adversarial review
-- **Verified** — specialist re-runs confirm fixes actually close vulnerabilities
+- **Verified** — source-appropriate re-runs confirm fixes close issues
 - **Atomic** — one commit per finding, rollback-friendly
-- **Transparent** — progress reported between batches with commit SHAs
 - **Config-driven** — thresholds, strategy, and verification from pipeline.yml

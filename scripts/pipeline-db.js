@@ -13,6 +13,12 @@
  *   node pipeline-db.js update task <id> <status>                # Update task status
  *   node pipeline-db.js update gotcha new "<issue>" "<rule>"     # Add a gotcha
  *   node pipeline-db.js update decision "<topic>" "<decision>" "<reason>"  # Record a decision
+ *   node pipeline-db.js update finding new '<json>'              # Insert finding record
+ *   node pipeline-db.js update finding <id> status <status>      # Update finding status
+ *   node pipeline-db.js update finding <id> github_issue <N>     # Link to GitHub issue
+ *   node pipeline-db.js update finding <id> commit <SHA>         # Record fix commit
+ *   node pipeline-db.js get finding <id>                         # Get single finding as JSON
+ *   node pipeline-db.js query findings [--status X] [--source Y] [--severity Z]  # Filter findings
  *   node pipeline-db.js query "<SQL>"                            # Run raw SQL
  *   node pipeline-db.js export [file]                            # Export gotchas + decisions to JSON
  *   node pipeline-db.js import <file_or_db> [--all]              # Import from JSON file or another project DB
@@ -209,8 +215,83 @@ async function cmdUpdate(args) {
       await client.query('INSERT INTO decisions (topic, decision, reason) VALUES ($1, $2, $3)', [topic, decision, reason]);
       console.log(c.green(`Decision "${topic}" saved.`));
 
+    } else if (entity === 'finding') {
+      const [idOrNew, ...findingRest] = rest;
+
+      if (idOrNew === 'new') {
+        // update finding new '<json>'
+        const jsonStr = findingRest.join(' ');
+        if (!jsonStr) {
+          console.error('Usage: update finding new \'<json>\'');
+          console.error('JSON fields: id, source, severity, confidence, location, category, description, impact, remediation, effort, verification_domain, report_path');
+          process.exit(1);
+        }
+        let f;
+        try { f = JSON.parse(jsonStr); } catch (e) {
+          console.error('Invalid JSON: ' + e.message);
+          process.exit(1);
+        }
+        const required = ['id', 'source', 'severity', 'confidence', 'location', 'category', 'description', 'impact', 'remediation', 'effort'];
+        const missing = required.filter(k => !f[k]);
+        if (missing.length > 0) {
+          console.error(`Missing required fields: ${missing.join(', ')}`);
+          process.exit(1);
+        }
+        await client.query(
+          `INSERT INTO findings (id, source, severity, confidence, location, category, description, impact, remediation, effort, verification_domain, report_path)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+           ON CONFLICT (id) DO UPDATE SET
+             severity=$3, confidence=$4, location=$5, category=$6, description=$7,
+             impact=$8, remediation=$9, effort=$10, verification_domain=$11,
+             report_path=$12, updated_at=NOW()`,
+          [f.id, f.source, f.severity, f.confidence, f.location, f.category,
+           f.description, f.impact, f.remediation, f.effort,
+           f.verification_domain || null, f.report_path || null]
+        );
+        console.log(c.green(`Finding ${f.id} saved.`));
+
+      } else {
+        // update finding <id> <field> <value>
+        const [field, ...valueParts] = findingRest;
+        const value = valueParts.join(' ');
+
+        if (field === 'status') {
+          const valid = ['triaged', 'in_progress', 'fixed', 'verified', 'wontfix'];
+          if (!valid.includes(value)) {
+            console.error(`Status must be one of: ${valid.join(', ')}`);
+            process.exit(1);
+          }
+          const r = await client.query(
+            'UPDATE findings SET status=$1, updated_at=NOW() WHERE id=$2 RETURNING id',
+            [value, idOrNew]
+          );
+          if (r.rowCount === 0) { console.error(`Finding ${idOrNew} not found.`); process.exit(1); }
+          console.log(c.green(`Finding ${idOrNew} → ${value}`));
+
+        } else if (field === 'github_issue') {
+          const r = await client.query(
+            'UPDATE findings SET github_issue=$1, updated_at=NOW() WHERE id=$2 RETURNING id',
+            [parseInt(value), idOrNew]
+          );
+          if (r.rowCount === 0) { console.error(`Finding ${idOrNew} not found.`); process.exit(1); }
+          console.log(c.green(`Finding ${idOrNew} linked to issue #${value}`));
+
+        } else if (field === 'commit') {
+          const r = await client.query(
+            'UPDATE findings SET commit_sha=$1, updated_at=NOW() WHERE id=$2 RETURNING id',
+            [value, idOrNew]
+          );
+          if (r.rowCount === 0) { console.error(`Finding ${idOrNew} not found.`); process.exit(1); }
+          console.log(c.green(`Finding ${idOrNew} commit → ${value.substring(0, 8)}`));
+
+        } else {
+          console.error(`Unknown finding field "${field}". Use: status | github_issue | commit`);
+          process.exit(1);
+        }
+      }
+
     } else {
-      console.error(`Unknown entity "${entity}". Use: session | task | gotcha | decision`);
+      console.error(`Unknown entity "${entity}". Use: session | task | gotcha | decision | finding`);
       process.exit(1);
     }
   } finally {
@@ -228,6 +309,60 @@ async function cmdQuery(sql) {
       console.table(r.rows);
     } else {
       console.log(c.dim(`Query OK (${r.rowCount ?? 0} rows affected).`));
+    }
+  } finally {
+    await client.end();
+  }
+}
+
+// ─── GET FINDING ────────────────────────────────────────────────────────────
+
+async function cmdGetFinding(id) {
+  if (!id) {
+    console.error('Usage: get finding <id>');
+    process.exit(1);
+  }
+  const client = await connect(CONFIG);
+  try {
+    const r = await client.query('SELECT * FROM findings WHERE id = $1', [id]);
+    if (r.rows.length === 0) {
+      console.error(`Finding ${id} not found.`);
+      process.exit(1);
+    }
+    console.log(JSON.stringify(r.rows[0], null, 2));
+  } finally {
+    await client.end();
+  }
+}
+
+// ─── QUERY FINDINGS ─────────────────────────────────────────────────────────
+
+async function cmdQueryFindings(args) {
+  const filters = {};
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--status' && args[i + 1]) filters.status = args[++i];
+    else if (args[i] === '--source' && args[i + 1]) filters.source = args[++i];
+    else if (args[i] === '--severity' && args[i + 1]) filters.severity = args[++i];
+  }
+
+  const conditions = [];
+  const params = [];
+  if (filters.status) { params.push(filters.status); conditions.push(`status = $${params.length}`); }
+  if (filters.source) { params.push(filters.source); conditions.push(`source = $${params.length}`); }
+  if (filters.severity) { params.push(filters.severity.toUpperCase()); conditions.push(`severity = $${params.length}`); }
+
+  const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+  const sql = `SELECT id, source, severity, confidence, location, category, description, effort, status, github_issue, commit_sha
+               FROM findings ${where}
+               ORDER BY CASE severity WHEN 'CRITICAL' THEN 0 WHEN 'HIGH' THEN 1 WHEN 'MEDIUM' THEN 2 WHEN 'LOW' THEN 3 ELSE 4 END, created_at`;
+
+  const client = await connect(CONFIG);
+  try {
+    const r = await client.query(sql, params);
+    if (r.rows.length === 0) {
+      console.log(c.dim('No findings match the given filters.'));
+    } else {
+      console.table(r.rows);
     }
   } finally {
     await client.end();
@@ -384,6 +519,26 @@ ${c.dim(`Database: ${CONFIG.database} @ ${CONFIG.host}:${CONFIG.port}`)}
   ${c.cyan('update decision')} "<topic>" "<decision>" "<reason>"
       Record an architectural decision
 
+  ${c.cyan('update finding new')} '<json>'
+      Insert a finding record (JSON with id, source, severity, confidence,
+      location, category, description, impact, remediation, effort,
+      verification_domain, report_path)
+
+  ${c.cyan('update finding')} <id> status <status>
+      Update finding status (triaged | in_progress | fixed | verified | wontfix)
+
+  ${c.cyan('update finding')} <id> github_issue <N>
+      Link finding to a GitHub issue
+
+  ${c.cyan('update finding')} <id> commit <SHA>
+      Record the fix commit for a finding
+
+  ${c.cyan('get finding')} <id>
+      Get a single finding as JSON
+
+  ${c.cyan('query findings')} [--status X] [--source Y] [--severity Z]
+      List findings with optional filters
+
   ${c.cyan('query')} "<SQL>"
       Run raw SQL and print results
 
@@ -410,6 +565,10 @@ const [, , cmd, ...rest] = process.argv;
       await cmdStatus();
     } else if (cmd === 'update') {
       await cmdUpdate(rest);
+    } else if (cmd === 'get' && rest[0] === 'finding') {
+      await cmdGetFinding(rest[1]);
+    } else if (cmd === 'query' && rest[0] === 'findings') {
+      await cmdQueryFindings(rest.slice(1));
     } else if (cmd === 'query') {
       await cmdQuery(rest.join(' '));
     } else if (cmd === 'export') {

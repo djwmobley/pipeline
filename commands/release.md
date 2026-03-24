@@ -64,7 +64,7 @@ Present the recommendation:
 Check for existing red team reports:
 
 ```bash
-ls docs/security/redteam-*.md 2>/dev/null
+ls docs/findings/redteam-*.md 2>/dev/null
 ```
 
 **If no red team report exists AND this is a minor or major release:**
