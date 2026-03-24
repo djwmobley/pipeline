@@ -145,6 +145,15 @@ PROJECT_ROOT=$(pwd) node <resolved_scripts_dir>/pipeline-embed.js index
 
 ---
 
+### Step 6 — Handoff
+
+Present the research brief and suggest next step:
+> "Research complete. [N] findings ([X] HIGH, [Y] MEDIUM, [Z] LOW confidence).
+>
+> Ready to lock [N] decisions. Proceed to `/pipeline:brainstorm` or `/pipeline:plan`?"
+
+---
+
 ### Dashboard Regeneration
 
 If `dashboard.enabled` is true in pipeline.yml (or `docs/dashboard.html` already exists):
@@ -154,12 +163,3 @@ Locate and read the dashboard skill:
 2. Otherwise: use Glob `**/pipeline/skills/dashboard/SKILL.md` to find it
 
 Follow the dashboard skill to regenerate `docs/dashboard.html` with current project state.
-
----
-
-### Step 6 — Handoff
-
-Present the research brief and suggest next step:
-> "Research complete. [N] findings ([X] HIGH, [Y] MEDIUM, [Z] LOW confidence).
->
-> Ready to lock [N] decisions. Proceed to `/pipeline:brainstorm` or `/pipeline:plan`?"
