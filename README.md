@@ -83,39 +83,87 @@ GitHub issues are updated with verification evidence — verified findings close
 
 For a full explanation of the security workflow, see [Security Overview](docs/security.md).
 
-## Getting Started
-
-### Install
+## Install
 
 ```bash
-claude plugin install pipeline --scope user
+claude plugin install --scope user https://github.com/djwmobley/pipeline
 ```
 
-### Set up a project
+Then, in any project:
 
-```bash
+```
 /pipeline:init
 ```
 
-Init takes about a minute. It will:
-- Detect your language and framework from your project files
-- Find your test runner, linter, and type checker
-- Probe for optional tools (Postgres, GitHub CLI, Ollama, etc.)
-- Ask what type of project this is (web app, API, CLI, etc.)
-- Ask about session persistence (markdown files or Postgres)
-- Generate `.claude/pipeline.yml` with everything it found
+Init detects your stack — language, framework, test runner, linter, type checker — and generates `.claude/pipeline.yml`. Takes about a minute.
 
-If you already have a config, init detects what's complete and resumes from where it left off.
+## Two Starting Points
 
-### Start using it
+Pipeline works whether you're starting fresh or maintaining something.
 
-**Already have code?** Make a change, then `/pipeline:commit`. That's it. The preflight gates run automatically.
+### Building something new?
 
-**Starting from scratch?** `/pipeline:brainstorm` to design your first feature, then `/pipeline:plan` and `/pipeline:build` to implement it.
+```
+/pipeline:brainstorm → /pipeline:plan → /pipeline:build → /pipeline:commit
+```
 
-**Not sure how much process to use?** `/pipeline:triage` looks at your changes and tells you.
+Brainstorm asks clarifying questions, proposes approaches, and writes a spec. Plan turns the spec into bite-sized tasks with specific files and functions. Build dispatches a fresh subagent per task with automatic review after each. Commit runs preflight gates and ships it.
 
-Use `/pipeline:dashboard` to generate a static HTML nerve center showing project phase, task progress, findings, and recommended next steps. The dashboard auto-regenerates when state-changing commands run.
+| Command | What It Does |
+|---------|-------------|
+| `/pipeline:brainstorm` | Design before building — clarifying questions, 2-3 approaches, writes a spec |
+| `/pipeline:plan` | Turns a spec into bite-sized tasks with specific files and functions |
+| `/pipeline:build` | Dispatches a fresh subagent per task with automatic review after each |
+| `/pipeline:finish` | Merge, PR, keep, or discard the branch |
+
+You can enter at any point — skip brainstorm if you already know the design, skip plan if you want to build ad hoc.
+
+### Working on existing code?
+
+```
+# make your changes, then:
+/pipeline:commit
+```
+
+That's it. Commit runs your type checker, linter, and tests, then commits and pushes. If you change 3+ source files, it blocks until you run `/pipeline:review`:
+
+| Command | What It Does |
+|---------|-------------|
+| `/pipeline:commit` | Preflight gates + commit + push |
+| `/pipeline:review` | Code review with severity tiers and confidence levels |
+| `/pipeline:triage` | Classifies your change size and recommends a workflow |
+
+The review gate is automatic. You can't talk your way past it. The gate is absolute.
+
+### Layer 3 — Security (pre-release)
+
+A full security lifecycle with structured verification:
+
+| Command | What It Does |
+|---------|-------------|
+| `/pipeline:redteam` | Parallel security specialists with framework-specific checklists |
+| `/pipeline:remediate` | Triage findings, create tickets, fix with verification |
+| `/pipeline:purpleteam` | Verify fixes actually closed attack vectors |
+| `/pipeline:security` | All three in sequence with human review gates |
+
+### Layer 4 — Everything else
+
+| Command | What It Does |
+|---------|-------------|
+| `/pipeline:audit` | Full codebase review with parallel sector agents |
+| `/pipeline:debug` | Systematic 4-phase root-cause diagnosis |
+| `/pipeline:test` | Structured test report |
+| `/pipeline:research` | Investigate unknowns before planning |
+| `/pipeline:simplify` | Targeted simplification of flagged files |
+| `/pipeline:release` | Changelog + version bump + tag |
+| `/pipeline:ui-review` | Screenshot capture + visual analysis |
+| `/pipeline:markdown-review` | Markdown health check — file hygiene, info architecture |
+| `/pipeline:worktree` | Isolated git worktree for feature isolation |
+| `/pipeline:dashboard` | Static HTML project status report (auto-regenerates) |
+| `/pipeline:update` | Change config after setup |
+| `/pipeline:knowledge` | Direct access to session history and search |
+
+You don't need to learn these upfront. They'll surface naturally — `/pipeline:review` suggests `/pipeline:simplify` when it finds candidates, `/pipeline:commit` tells you when to run `/pipeline:review`, and so on.
 
 ## Requirements
 
@@ -148,36 +196,9 @@ Any language, any framework. Init auto-detects from your project files:
 
 It also detects your project profile — SPA, fullstack, mobile, API, CLI, or library — and sets review criteria and security checklists to match. You can override anything in the config.
 
-## All Commands
+## Full Command Reference
 
-See the **[command reference](docs/reference.md)** for the full list with details.
-
-| Command | One-liner |
-|---------|-----------|
-| `/pipeline:init` | Set up a project |
-| `/pipeline:commit` | Preflight gates + commit + push |
-| `/pipeline:review` | Code review with severity tiers |
-| `/pipeline:triage` | What size is this change? |
-| `/pipeline:test` | Structured test report |
-| `/pipeline:research` | Investigate unknowns before planning |
-| `/pipeline:brainstorm` | Design before building |
-| `/pipeline:plan` | Turn a spec into implementation tasks |
-| `/pipeline:build` | Execute a plan with subagents |
-| `/pipeline:audit` | Full codebase review (parallel sectors) |
-| `/pipeline:redteam` | Security red team assessment |
-| `/pipeline:remediate` | Fix findings from any workflow with tracked issues |
-| `/pipeline:purpleteam` | Verify aggregate security posture after remediation |
-| `/pipeline:security` | Full security loop — red team, remediate, purple team |
-| `/pipeline:markdown-review` | Markdown health check — file hygiene, info architecture, A2A protocol |
-| `/pipeline:debug` | Systematic root-cause diagnosis |
-| `/pipeline:simplify` | Targeted code simplification |
-| `/pipeline:release` | Changelog + version bump + tag |
-| `/pipeline:ui-review` | Screenshot + visual analysis |
-| `/pipeline:worktree` | Isolated git worktree |
-| `/pipeline:finish` | Merge, PR, keep, or discard a branch |
-| `/pipeline:update` | Change config after setup |
-| `/pipeline:dashboard` | Generate static HTML project status report |
-| `/pipeline:knowledge` | Session tracking + search |
+See the **[command reference](docs/reference.md)** for all 24 commands with arguments, output formats, and token cost estimates.
 
 ## Configuration
 

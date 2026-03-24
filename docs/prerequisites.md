@@ -1,5 +1,21 @@
 # Pipeline Prerequisites
 
+## Fast Track
+
+Already have Git and Claude Code? You're ready:
+
+```bash
+claude plugin install --scope user https://github.com/djwmobley/pipeline
+```
+
+Then open Claude Code in any project and run `/pipeline:init`. Pipeline detects your stack, generates config, and works immediately. Everything below is optional and adds capabilities — Postgres adds searchable history, Ollama adds semantic search, browser tools add UI review, etc.
+
+**Only Git and Claude Code are required.** Read on for the full setup if you want the extras.
+
+---
+
+## Full Setup
+
 Install these tools before running the pipeline. Each one takes a few minutes. Go in order — some later steps depend on earlier ones.
 
 ---

@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pipeline — Documentation</title>
+<style>
+:root {
+  --bg: #0a0a0a;
+  --surface: #141414;
+  --surface-2: #1c1c1c;
+  --border: #2a2a2a;
+  --text: #e5e5e5;
+  --text-muted: #a3a3a3;
+  --text-dim: #737373;
+  --accent: #3b82f6;
+  --accent-dim: #1d4ed8;
+  --green: #22c55e;
+  --yellow: #eab308;
+  --red: #ef4444;
+  --mono: 'SF Mono', 'Cascadia Code', 'Fira Code', 'JetBrains Mono', Consolas, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+.container {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+}
+
+/* Navigation */
+nav {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  padding: 0.75rem 0;
+  margin-bottom: 2rem;
+}
+nav .inner {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  overflow-x: auto;
+}
+nav a {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-family: var(--mono);
+  white-space: nowrap;
+  transition: color 0.15s;
+}
+nav a:hover, nav a.active { color: var(--accent); }
+nav .brand {
+  color: var(--text);
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-right: 0.5rem;
+}
+
+/* Typography */
+h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.5rem;
+}
+h2 {
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-top: 3rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+  color: var(--text);
+}
+p { margin-bottom: 1rem; color: var(--text-muted); }
+strong { color: var(--text); font-weight: 600; }
+.subtitle {
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  margin-bottom: 2rem;
+}
+
+/* Code */
+code {
+  font-family: var(--mono);
+  font-size: 0.85em;
+  background: var(--surface-2);
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  color: var(--accent);
+}
+pre {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.25rem;
+  overflow-x: auto;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  line-height: 1.7;
+  color: var(--text);
+}
+pre code {
+  background: none;
+  padding: 0;
+  color: inherit;
+}
+
+/* Tables */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1.25rem;
+  font-size: 0.9rem;
+}
+th {
+  text-align: left;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 2px solid var(--border);
+  color: var(--text-dim);
+  font-weight: 500;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+td {
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-muted);
+}
+td code {
+  font-size: 0.85em;
+  white-space: nowrap;
+}
+tr:last-child td { border-bottom: none; }
+
+/* Cards */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1rem;
+}
+.card h3 { margin-top: 0; }
+
+/* Quickstart hero */
+.hero {
+  background: linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 2rem 2rem 1.5rem;
+  margin-bottom: 2rem;
+}
+.hero h2 {
+  margin-top: 0;
+  border: none;
+  padding-bottom: 0;
+  font-size: 1.5rem;
+}
+.hero p { color: var(--text-muted); margin-bottom: 0.75rem; }
+.hero pre { border-color: var(--accent-dim); }
+
+/* Layer badges */
+.layer-tag {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  font-family: var(--mono);
+  padding: 0.15em 0.5em;
+  border-radius: 4px;
+  margin-right: 0.5rem;
+  vertical-align: middle;
+}
+.layer-1 { background: #14532d; color: var(--green); }
+.layer-2 { background: #1e3a5f; color: var(--accent); }
+.layer-3 { background: #4c1d1d; color: var(--red); }
+.layer-4 { background: #3f3f00; color: var(--yellow); }
+
+/* Sections */
+section { scroll-margin-top: 4rem; }
+
+/* Lists */
+ul, ol { margin-bottom: 1rem; padding-left: 1.5rem; color: var(--text-muted); }
+li { margin-bottom: 0.35rem; }
+
+/* Divider */
+hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 2rem 0;
+}
+
+/* Review output example */
+.review-example {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.25rem;
+  font-size: 0.9rem;
+}
+.review-example .severity-red { color: var(--red); font-weight: 600; }
+.review-example .severity-yellow { color: var(--yellow); font-weight: 600; }
+.review-example .file-ref { color: var(--accent); font-family: var(--mono); font-size: 0.85em; }
+.review-example .confidence { color: var(--text-dim); font-family: var(--mono); font-size: 0.8em; }
+.review-example blockquote {
+  border-left: 2px solid var(--border);
+  padding-left: 0.75rem;
+  margin: 0.5rem 0;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  h1 { font-size: 1.5rem; }
+  .hero { padding: 1.25rem; }
+  nav .inner { gap: 1rem; }
+  pre { font-size: 0.8rem; padding: 0.75rem; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+<div class="inner">
+  <a href="#top" class="brand">Pipeline</a>
+  <a href="#start">Start</a>
+  <a href="#deeper">Deeper</a>
+  <a href="#scenarios">Scenarios</a>
+  <a href="#security">Security</a>
+  <a href="#config">Config</a>
+  <a href="#requirements">Requirements</a>
+</div>
+</nav>
+
+<div class="container">
+
+<!-- Header -->
+<section id="top">
+<h1>Pipeline</h1>
+<p class="subtitle">A Claude Code plugin that matches process to change size. A one-line fix gets committed in seconds. A new feature gets designed, planned, built by subagents, and reviewed — automatically.</p>
+</section>
+
+<!-- Install -->
+<section id="start">
+<div class="hero">
+<h2>Install</h2>
+<pre><code>claude plugin install --scope user https://github.com/djwmobley/pipeline</code></pre>
+<p>Then, in any project:</p>
+<pre><code>/pipeline:init</code></pre>
+<p>Init detects your stack — language, framework, test runner, linter, type checker — and generates <code>.claude/pipeline.yml</code>. Takes about a minute.</p>
+</div>
+
+<h2>Two Starting Points</h2>
+<p>Pipeline works whether you're starting fresh or maintaining something.</p>
+
+<h3><span class="layer-tag layer-2">NEW</span> Building something new?</h3>
+<pre><code>/pipeline:brainstorm → /pipeline:plan → /pipeline:build → /pipeline:commit</code></pre>
+<p>Brainstorm asks clarifying questions, proposes approaches, and writes a spec. Plan turns the spec into bite-sized tasks. Build dispatches a fresh subagent per task with automatic review after each. Commit runs preflight gates and ships it.</p>
+<table>
+<thead><tr><th>Command</th><th>What It Does</th></tr></thead>
+<tbody>
+<tr><td><code>/pipeline:brainstorm</code></td><td>Design before building — clarifying questions, 2-3 approaches, writes a spec</td></tr>
+<tr><td><code>/pipeline:plan</code></td><td>Turns a spec into bite-sized tasks with specific files and functions</td></tr>
+<tr><td><code>/pipeline:build</code></td><td>Dispatches a fresh subagent per task with automatic review after each</td></tr>
+<tr><td><code>/pipeline:finish</code></td><td>Merge, PR, keep, or discard the branch</td></tr>
+</tbody>
+</table>
+<p>You can enter at any point — skip brainstorm if you already know the design, skip plan if you want to build ad hoc.</p>
+
+<h3><span class="layer-tag layer-1">EXISTING</span> Working on existing code?</h3>
+<pre><code># make your changes, then:
+/pipeline:commit</code></pre>
+<p>That's it. Commit runs your type checker, linter, and tests, then commits and pushes. If you change 3+ source files, it blocks until you run <code>/pipeline:review</code>.</p>
+<table>
+<thead><tr><th>Command</th><th>What It Does</th></tr></thead>
+<tbody>
+<tr><td><code>/pipeline:commit</code></td><td>Preflight gates + commit + push</td></tr>
+<tr><td><code>/pipeline:review</code></td><td>Code review with severity tiers and confidence levels</td></tr>
+<tr><td><code>/pipeline:triage</code></td><td>Classifies your change size and recommends a workflow</td></tr>
+</tbody>
+</table>
+<p>The review gate is automatic. You can't talk your way past it. The gate is absolute.</p>
+</section>
+
+<!-- Deeper -->
+<section id="deeper">
+<h2>Going Deeper</h2>
+<p>Both paths above converge into the same ecosystem. Here's what else is available.</p>
+
+<h3><span class="layer-tag layer-3">L3</span> Security — pre-release</h3>
+<p>A full security lifecycle with structured verification:</p>
+<table>
+<thead><tr><th>Command</th><th>What It Does</th></tr></thead>
+<tbody>
+<tr><td><code>/pipeline:redteam</code></td><td>Parallel security specialists with framework-specific checklists</td></tr>
+<tr><td><code>/pipeline:remediate</code></td><td>Triage findings, create tickets, fix with verification</td></tr>
+<tr><td><code>/pipeline:purpleteam</code></td><td>Verify fixes actually closed attack vectors</td></tr>
+<tr><td><code>/pipeline:security</code></td><td>All three in sequence with human review gates</td></tr>
+</tbody>
+</table>
+
+<h3><span class="layer-tag layer-4">L4</span> Everything Else</h3>
+<table>
+<thead><tr><th>Command</th><th>What It Does</th></tr></thead>
+<tbody>
+<tr><td><code>/pipeline:audit</code></td><td>Full codebase review with parallel sector agents</td></tr>
+<tr><td><code>/pipeline:debug</code></td><td>Systematic 4-phase root-cause diagnosis</td></tr>
+<tr><td><code>/pipeline:test</code></td><td>Structured test report</td></tr>
+<tr><td><code>/pipeline:research</code></td><td>Investigate unknowns before planning</td></tr>
+<tr><td><code>/pipeline:simplify</code></td><td>Targeted simplification of flagged files</td></tr>
+<tr><td><code>/pipeline:release</code></td><td>Changelog + version bump + tag</td></tr>
+<tr><td><code>/pipeline:ui-review</code></td><td>Screenshot capture + visual analysis</td></tr>
+<tr><td><code>/pipeline:markdown-review</code></td><td>Markdown health check — file hygiene, info architecture</td></tr>
+<tr><td><code>/pipeline:worktree</code></td><td>Isolated git worktree for feature isolation</td></tr>
+<tr><td><code>/pipeline:dashboard</code></td><td>Static HTML project status report (auto-regenerates)</td></tr>
+<tr><td><code>/pipeline:update</code></td><td>Change config after setup</td></tr>
+<tr><td><code>/pipeline:knowledge</code></td><td>Direct access to session history and search</td></tr>
+</tbody>
+</table>
+<p>You don't need to learn these upfront. They'll surface naturally — <code>/pipeline:review</code> suggests <code>/pipeline:simplify</code> when it finds candidates, <code>/pipeline:commit</code> tells you when to run <code>/pipeline:review</code>, and so on.</p>
+</section>
+
+<hr>
+
+<!-- Scenarios -->
+<section id="scenarios">
+<h2>What Using It Looks Like</h2>
+
+<h3>You fix a typo (TINY change)</h3>
+<p>You edit a string in one file. You type <code>/pipeline:commit</code>. Pipeline runs your type checker, linter, and tests. Everything passes. It commits and pushes. No decisions to make — it just works.</p>
+
+<h3>You add a feature to 2 files (MEDIUM change)</h3>
+<p>You implement the change. You type <code>/pipeline:commit</code>. Pipeline counts the source files you touched — it's under the review threshold, so it runs preflight gates and commits. If you'd touched 3 or more files (the default threshold), it would have blocked you:</p>
+<pre><code>BLOCKED — 3 source files changed. /pipeline:review is required before committing.
+Run /pipeline:review, apply all fixes, then /pipeline:commit reviewed:✓</code></pre>
+
+<h3>You run <code>/pipeline:review</code> on your changes</h3>
+<p>Pipeline reads every changed file in full, runs your linter on just those files, and reviews against your configured criteria:</p>
+<div class="review-example">
+<p><strong>Files reviewed</strong></p>
+<p><span class="file-ref">src/hooks/useAuth.ts</span>, <span class="file-ref">src/pages/Login.tsx</span>, <span class="file-ref">src/lib/api.ts</span></p>
+<p><span class="severity-red">Must fix</span></p>
+<p><span class="file-ref">src/hooks/useAuth.ts:47</span> — unhandled promise rejection on token refresh <span class="confidence">[confidence: HIGH]</span></p>
+<blockquote>refreshToken() can throw if the network is down, but the caller has no try/catch. The user sees a white screen instead of the login page. Fix: Wrap in try/catch, redirect to /login on failure.</blockquote>
+<p><span class="severity-yellow">Should fix</span></p>
+<p><span class="file-ref">src/lib/api.ts:12</span> — dead import <span class="confidence">[confidence: HIGH]</span></p>
+<blockquote><code>parseResponse</code> is imported but never used after the refactor in this diff.</blockquote>
+<p><strong>Verdict:</strong> Issues found — 1 thing that needs attention before shipping</p>
+</div>
+<p>Every finding has a severity (red/yellow/blue), a confidence level, a file and line number, and a specific fix. No "looks good" — if the reviewer finds nothing, it must explain exactly what it checked and why each check passed.</p>
+
+<h3>You build a new feature (LARGE change)</h3>
+<p>You describe what you want. Pipeline routes you through:</p>
+<ol>
+<li><code>/pipeline:brainstorm</code> — asks clarifying questions one at a time, proposes 2-3 approaches, writes a spec</li>
+<li><code>/pipeline:plan</code> — turns the spec into bite-sized tasks with specific files, functions, and types</li>
+<li><code>/pipeline:build</code> — dispatches a fresh subagent for each task. Each agent gets only its task and relevant files — no accumulated context, so quality doesn't degrade over a 15-task build.</li>
+<li><code>/pipeline:review --since abc123</code> — reviews everything built since the baseline commit</li>
+<li><code>/pipeline:commit reviewed:✓</code> — preflight gates, commit, push</li>
+</ol>
+
+<h3>You finish a feature (MILESTONE)</h3>
+<p><code>/pipeline:audit</code> splits your codebase into sectors (configured per project) and dispatches parallel review agents — one per sector. A synthesis agent then traces crash paths across sectors, finds dead exports, flags duplication, and escalates severity.</p>
+</section>
+
+<hr>
+
+<!-- Security -->
+<section id="security">
+<h2>Security Lifecycle</h2>
+<p>Pipeline's strongest differentiator. Most developers have no security testing at all. Pipeline gives you a structured loop:</p>
+
+<div class="card">
+<h3>1. Red Team Assessment</h3>
+<p><code>/pipeline:redteam</code> dispatches up to 12 specialist agents — each expert in a different attack domain:</p>
+<table>
+<thead><tr><th>Specialist</th><th>What It Looks For</th></tr></thead>
+<tbody>
+<tr><td>Injection</td><td>SQL injection, command injection, template injection</td></tr>
+<tr><td>Authentication</td><td>Weak passwords, session hijacking, broken login flows</td></tr>
+<tr><td>XSS</td><td>Scripts that run in users' browsers without permission</td></tr>
+<tr><td>CSRF</td><td>Tricking users into performing actions they didn't intend</td></tr>
+<tr><td>Cryptography</td><td>Weak encryption, hardcoded keys, insecure random numbers</td></tr>
+<tr><td>Configuration</td><td>Debug mode left on, verbose error messages, missing headers</td></tr>
+<tr><td>Dependencies</td><td>Live vulnerability audit, known CVEs, lockfile integrity</td></tr>
+<tr><td>Access Control</td><td>Users accessing data they shouldn't, privilege escalation</td></tr>
+<tr><td>Rate Limiting</td><td>No limits on login attempts, denial-of-service vectors</td></tr>
+<tr><td>Data Exposure</td><td>Sensitive data in logs, URLs, or API responses</td></tr>
+<tr><td>File Safety</td><td>Path traversal, unrestricted uploads, unsafe temp files</td></tr>
+<tr><td>Transport</td><td>Missing HTTPS, weak TLS, certificate validation issues</td></tr>
+</tbody>
+</table>
+<p>Specialists are selected based on your project type — a CLI tool skips XSS and CSRF. Framework-specific checklists are applied automatically (Next.js checks Server Actions, Django checks ORM escape hatches).</p>
+</div>
+
+<div class="card">
+<h3>2. Remediation</h3>
+<p><code>/pipeline:remediate --source redteam</code> parses findings, creates GitHub issues, and batches fixes by effort:</p>
+<ul>
+<li><strong>Quick wins</strong> — single implementer agent</li>
+<li><strong>Medium effort</strong> — implementer + reviewer (max 1 retry)</li>
+<li><strong>Architectural</strong> — opus planner first, then step-by-step implementation</li>
+</ul>
+<p>Agents are stateless — they read context from GitHub issues, not accumulated conversation. The orchestrator carries only IDs and status.</p>
+</div>
+
+<div class="card">
+<h3>3. Purple Team Verification</h3>
+<p><code>/pipeline:purpleteam</code> verifies each fix actually closed the attack vector — not just that code changed, but that the specific exploitation scenario no longer works.</p>
+<table>
+<thead><tr><th>Verdict</th><th>Meaning</th></tr></thead>
+<tbody>
+<tr><td><span style="color: var(--green)">VERIFIED</span></td><td>Attack vector confirmed closed with code-level evidence</td></tr>
+<tr><td><span style="color: var(--yellow)">INCOMPLETE</span></td><td>Code changed but the attack still works</td></tr>
+<tr><td><span style="color: var(--red)">REGRESSION</span></td><td>Fix introduced a new vulnerability — issue reopened</td></tr>
+</tbody>
+</table>
+<p>GitHub issues are updated with verification evidence. Verified findings close. Regressions reopen.</p>
+</div>
+
+<p>Or run the full loop in one command: <code>/pipeline:security</code> orchestrates all three with human review gates between each phase.</p>
+</section>
+
+<hr>
+
+<!-- Config -->
+<section id="config">
+<h2>Configuration</h2>
+<p>Everything lives in <code>.claude/pipeline.yml</code>, generated by <code>/pipeline:init</code>. You can edit it directly anytime.</p>
+
+<h3>Key Sections</h3>
+<table>
+<thead><tr><th>Section</th><th>What It Controls</th></tr></thead>
+<tbody>
+<tr><td><code>commands</code></td><td>Your typecheck, lint, and test commands (null to disable any gate)</td></tr>
+<tr><td><code>routing</code></td><td>Source directories and size thresholds for change classification</td></tr>
+<tr><td><code>review</code></td><td>Non-negotiable decisions, grep patterns, sectors, review criteria</td></tr>
+<tr><td><code>models</code></td><td>Which Claude model handles which job (haiku/sonnet/opus)</td></tr>
+<tr><td><code>knowledge</code></td><td>Markdown files or Postgres for session history</td></tr>
+<tr><td><code>integrations</code></td><td>What tools are available (auto-detected by init)</td></tr>
+<tr><td><code>redteam</code></td><td>Security assessment mode, specialists, recon patterns</td></tr>
+<tr><td><code>remediate</code></td><td>Issue thresholds, verification strategies, batch order</td></tr>
+<tr><td><code>dashboard</code></td><td>Auto-regeneration toggle, current milestone label</td></tr>
+</tbody>
+</table>
+
+<h3>Model Routing</h3>
+<p>Pipeline routes tasks to the right model for the job:</p>
+<table>
+<thead><tr><th>Model</th><th>Used For</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td><code>haiku</code></td><td>Screenshots, doc reviews, recon, triage</td><td>Fast and cheap for mechanical work</td></tr>
+<tr><td><code>sonnet</code></td><td>Code writing, reviews, security specialists</td><td>Best balance of quality and cost for reasoning</td></tr>
+<tr><td><code>opus</code></td><td>Architecture, exploit chain analysis, design</td><td>Highest quality for hard-to-reverse decisions</td></tr>
+</tbody>
+</table>
+
+<h3>Knowledge Tiers</h3>
+<table>
+<thead><tr><th>Tier</th><th>Setup</th><th>What You Get</th></tr></thead>
+<tbody>
+<tr><td><strong>Files</strong> (default)</td><td>Zero setup</td><td>Markdown-based sessions, decisions, gotchas. Size-bounded. No search.</td></tr>
+<tr><td><strong>Postgres</strong></td><td>Local PostgreSQL</td><td>Full history, keyword search, structured queries, cross-project import/export</td></tr>
+<tr><td><strong>Postgres + Ollama</strong></td><td>PostgreSQL + Ollama</td><td>Everything above plus semantic vector search — no API keys, no cloud</td></tr>
+</tbody>
+</table>
+
+<h3>Auto-Persistence</h3>
+<p>Every state-changing command silently persists its outputs — sessions, decisions, findings, gotchas, task statuses. You never need to call <code>/pipeline:knowledge</code> manually. Data flows as commands run.</p>
+</section>
+
+<hr>
+
+<!-- Requirements -->
+<section id="requirements">
+<h2>Requirements</h2>
+<p><strong>Must have:</strong> Claude Code, Git. That's it.</p>
+<p><strong>Everything else is optional.</strong> Init detects what's available and configures accordingly. Nothing is installed without asking.</p>
+<table>
+<thead><tr><th>Tool</th><th>What It Adds</th><th>Without It</th></tr></thead>
+<tbody>
+<tr><td>PostgreSQL</td><td>Searchable session history, structured task tracking</td><td>Markdown files (works fine, no search)</td></tr>
+<tr><td>Ollama</td><td>Vector similarity search (local, no API keys)</td><td>Keyword search only</td></tr>
+<tr><td>GitHub CLI</td><td>PR creation from the terminal</td><td>Push and use the browser</td></tr>
+<tr><td>Chrome / Playwright</td><td>Automatic screenshots for UI review</td><td>Provide screenshots yourself</td></tr>
+<tr><td>Sentry</td><td>Auto-pull recent errors during debug</td><td>Describe the error yourself</td></tr>
+<tr><td>Google Stitch</td><td>AI-generated design mockups during brainstorming</td><td>Simple HTML wireframes</td></tr>
+<tr><td>Figma</td><td>Import existing designs for UI review comparison</td><td>Standalone UI analysis</td></tr>
+</tbody>
+</table>
+<p>Pipeline's core workflow (commit, review, triage, test) uses no optional tools.</p>
+
+<h3>Works With</h3>
+<p>Any language, any framework. Init auto-detects from your project files:</p>
+<table>
+<thead><tr><th>If It Finds</th><th>It Configures</th></tr></thead>
+<tbody>
+<tr><td><code>package.json</code> + TypeScript</td><td><code>tsc --noEmit</code>, <code>eslint</code>, <code>vitest</code> or <code>jest</code></td></tr>
+<tr><td><code>Cargo.toml</code></td><td><code>cargo test</code>, <code>clippy</code></td></tr>
+<tr><td><code>go.mod</code></td><td><code>go test ./...</code>, <code>golangci-lint</code></td></tr>
+<tr><td><code>pyproject.toml</code></td><td><code>pytest</code>, <code>ruff</code></td></tr>
+</tbody>
+</table>
+<p>It also detects your project profile — SPA, fullstack, mobile, API, CLI, or library — and sets review criteria and security checklists to match.</p>
+</section>
+
+<hr>
+
+<!-- Footer -->
+<section>
+<h2>Learn More</h2>
+<table>
+<thead><tr><th>Resource</th><th>What It Covers</th></tr></thead>
+<tbody>
+<tr><td><a href="https://github.com/djwmobley/pipeline" style="color: var(--accent)">GitHub Repository</a></td><td>Source code, README, issues</td></tr>
+<tr><td><a href="https://github.com/djwmobley/pipeline/blob/main/docs/reference.md" style="color: var(--accent)">Command Reference</a></td><td>All 24 commands with arguments, output formats, token costs</td></tr>
+<tr><td><a href="https://github.com/djwmobley/pipeline/blob/main/docs/guide.md" style="color: var(--accent)">Configuration Guide</a></td><td>Every config option with examples</td></tr>
+<tr><td><a href="https://github.com/djwmobley/pipeline/blob/main/docs/security.md" style="color: var(--accent)">Security Overview</a></td><td>Security agents explained for non-engineers</td></tr>
+<tr><td><a href="https://github.com/djwmobley/pipeline/blob/main/docs/prerequisites.md" style="color: var(--accent)">Full Prerequisites</a></td><td>Step-by-step setup for all optional tools</td></tr>
+</tbody>
+</table>
+<p style="margin-top: 2rem; color: var(--text-dim); font-size: 0.85rem;">Pipeline is MIT licensed. Built by <a href="https://github.com/djwmobley" style="color: var(--text-dim)">DJ Mobley</a>.</p>
+</section>
+
+</div>
+</body>
+</html>

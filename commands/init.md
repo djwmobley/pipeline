@@ -475,4 +475,14 @@ Once you have code:
 **Adjust anything later:** `/pipeline:update`
 
 **All commands:** `/pipeline:` then tab-complete to see options
+
+**Full documentation:** Open docs/index.html in your browser for the complete guide with examples.
 ```
+
+After presenting the summary, offer to open the documentation page:
+
+```
+Would you like me to open the Pipeline documentation in your browser?
+```
+
+If yes, resolve the plugin's install location by finding the directory containing this command file (init.md), then open `docs/index.html` relative to the plugin root. Use the platform-appropriate command: `start "" "<path>"` (Windows), `open "<path>"` (Mac), or `xdg-open "<path>"` (Linux). The file is a self-contained HTML page with no external dependencies.
