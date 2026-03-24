@@ -180,16 +180,16 @@ Applications rely on hundreds of third-party packages, any of which can introduc
 ### Checklist
 
 0. **Live dependency audit** — Run the project's configured audit command (`commands.security_audit` from pipeline.yml) to query real-time vulnerability databases. Parse JSON output for CRITICAL and HIGH severity advisories. This provides ground truth that training data cannot.
-0.5. **Read SBOM artifact** — If `docs/findings/sbom-*.cdx.json` exists from recon, read it for the complete dependency inventory including transitive dependencies. Use the SBOM as your primary package list — it contains every component with version, scope (direct/dev/transitive), and Package URL. Cross-reference with audit findings to ensure no packages were missed.
-1. Known CVEs in direct dependencies (via advisory databases)
-2. Known CVEs in transitive dependencies (deep dependency tree)
-3. Lockfile integrity (lockfile exists, matches manifest, committed to repo)
-4. Typosquatting risk assessment (packages with names similar to popular libraries)
-5. Postinstall scripts in dependencies (arbitrary code execution on install)
-6. Version pinning strategy (pinned vs floating, caret vs tilde vs exact)
-7. Abandoned or unmaintained packages (no updates in 2+ years, archived repos)
-8. Dependency confusion risk (private package names that could collide with public registry)
-9. Cross-reference audit output with source code — verify vulnerable packages are actually imported and used (transitive-only exposure is lower severity)
+1. **Read SBOM artifact** — If `sbom-*.cdx.json` exists in the SBOM output directory (`redteam.sbom.output_dir` from pipeline.yml), read it for the complete dependency inventory including transitive dependencies. Use the SBOM as your primary package list — it contains every component with version, scope (direct/dev/transitive), and Package URL. Cross-reference with audit findings to ensure no packages were missed.
+2. Known CVEs in direct dependencies (via advisory databases)
+3. Known CVEs in transitive dependencies (deep dependency tree)
+4. Lockfile integrity (lockfile exists, matches manifest, committed to repo)
+5. Typosquatting risk assessment (packages with names similar to popular libraries)
+6. Postinstall scripts in dependencies (arbitrary code execution on install)
+7. Version pinning strategy (pinned vs floating, caret vs tilde vs exact)
+8. Abandoned or unmaintained packages (no updates in 2+ years, archived repos)
+9. Dependency confusion risk (private package names that could collide with public registry)
+10. Cross-reference audit output with source code — verify vulnerable packages are actually imported and used (transitive-only exposure is lower severity)
 
 ---
 

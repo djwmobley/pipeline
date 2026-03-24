@@ -21,7 +21,7 @@ Task tool (general-purpose, model: {{MODEL}}):
     Do not analyze, judge, or suggest fixes. Map the attack surface and report what you find.
 
     **You are read-only except for SBOM output.** Use Grep, Glob, and Read tools for enumeration.
-    The only file you may write is the SBOM artifact (if enabled).
+    The only file you may create is `sbom-YYYY-MM-DD.cdx.json` in the configured SBOM output directory. Do not write, modify, or delete any other file.
 
     ## Framework Detection
 
@@ -132,12 +132,12 @@ Task tool (general-purpose, model: {{MODEL}}):
 
     For each package in the lockfile:
     - If it appears in manifest `dependencies` → scope: `required`
-    - If it appears in manifest `devDependencies` (or equivalent) → scope: `optional`
-    - If it is only in the lockfile → scope: `required` (transitive, mark as transitive in description)
+    - If it appears in manifest `devDependencies` (or equivalent) → scope: `excluded` (not in runtime artifact)
+    - If it is only in the lockfile → scope: `required` (transitive dependency, note "transitive" in description field)
 
     ### Step 3 — Write CycloneDX 1.6 JSON
 
-    Write the file to `[SBOM_OUTPUT_DIR]/sbom-YYYY-MM-DD.cdx.json` using today's date.
+    Write the file to the output directory from the sbom-config block above, named `sbom-YYYY-MM-DD.cdx.json` using today's date.
 
     Structure:
     ```json
@@ -149,32 +149,36 @@ Task tool (general-purpose, model: {{MODEL}}):
         "timestamp": "YYYY-MM-DDTHH:MM:SSZ",
         "component": {
           "type": "application",
-          "name": "[PROJECT_NAME]",
-          "version": "[from manifest]"
+          "name": "project name from sbom-config above",
+          "version": "version from manifest"
         },
-        "tools": [{ "name": "pipeline-redteam-recon", "version": "1.0" }]
+        "tools": {
+          "components": [
+            { "type": "application", "name": "pipeline-redteam-recon", "version": "1.0" }
+          ]
+        }
       },
       "components": [
         {
           "type": "library",
           "name": "package-name",
           "version": "1.2.3",
-          "scope": "required",
+          "scope": "required|excluded",
           "purl": "pkg:ecosystem/name@version",
-          "description": "transitive"
+          "description": "direct|dev|transitive"
         }
       ]
     }
     ```
 
     **PURL format by ecosystem:**
-    - npm: `pkg:npm/name@version` (scoped: `pkg:npm/%40scope/name@version`)
+    - npm/yarn/pnpm/bun: `pkg:npm/name@version` (scoped: `pkg:npm/%40scope/name@version`)
     - PyPI: `pkg:pypi/name@version`
     - Cargo: `pkg:cargo/name@version`
     - Go: `pkg:golang/module@version`
     - Ruby: `pkg:gem/name@version`
 
-    **Important:** For large lockfiles (500+ packages), do not attempt to read the entire lockfile output into the prompt. Read the file, parse it, and write the SBOM JSON directly. The SBOM file may be large — that is expected.
+    **Important:** For large lockfiles (500+ packages), read the file in chunks if needed and write the SBOM JSON incrementally. The SBOM file may be large — that is expected. If the lockfile exceeds your context capacity, generate the SBOM for as many packages as you can process and add a top-level property `"properties": [{ "name": "pipeline:truncated", "value": "true" }]` to indicate the inventory is incomplete.
 
     ## Output Format
 
