@@ -82,6 +82,16 @@ purpleteam:
   chain_verification: true       # Verify exploit chains (uses opus)
   posture_report: true           # Generate before/after posture comparison
 
+# Markdown review
+# Run /pipeline:markdown-review for full markdown health check
+# Reviews plugin instruction files AND user-generated markdown
+markdown_review:
+  line_limit: 200               # Max lines per file before flagging
+  fix_mode: "approve"           # "approve" (present findings, ask), "auto" (fix HIGH+MEDIUM), "report" (no fixes)
+  tiers: [hygiene, architecture, a2a]  # Which tiers to run
+  exclude: []                   # Glob patterns to skip (e.g., "docs/findings/*")
+  inline_checklist: true        # Whether generating agents should validate against inline checklist
+
 # Git
 commit:
   co_author: "Claude <noreply@anthropic.com>"  # Generic — works regardless of which model is active

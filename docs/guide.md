@@ -246,6 +246,31 @@ Controls `/pipeline:purpleteam` — aggregate security verification after remedi
 
 **Dependency audit:** Uses `commands.security_audit` (see commands section above). Null to skip.
 
+### markdown_review
+
+Controls `/pipeline:markdown-review` — full markdown health check with automated fixes.
+
+```yaml
+markdown_review:
+  line_limit: 200
+  fix_mode: "approve"
+  tiers: [hygiene, architecture, a2a]
+  exclude: []
+  inline_checklist: true
+```
+
+| Field | Default | What It Does |
+|-------|---------|-------------|
+| `line_limit` | `200` | Max lines per file before flagging |
+| `fix_mode` | `"approve"` | `"approve"` presents options, `"auto"` fixes HIGH+MEDIUM, `"report"` skips fixes |
+| `tiers` | `[hygiene, architecture, a2a]` | Which review tiers to run |
+| `exclude` | `[]` | Glob patterns to skip (e.g., `["docs/findings/*"]`) |
+| `inline_checklist` | `true` | Whether generating agents should validate against the inline checklist |
+
+**Model routing:** Scanner uses `models.cheap` (haiku). Analyst uses `models.architecture` (opus). Fixer uses `models.implement` (sonnet).
+
+**Inline checklist:** When `inline_checklist` is true, skills that generate markdown can reference `skills/markdown-review/inline-checklist.md` for a 6-item validation checklist covering line count, frontmatter, DATA tags, cross-references, output contracts, and context budget.
+
 ### dashboard
 
 ```yaml
@@ -259,7 +284,7 @@ dashboard:
 | `enabled` | boolean | `true` | Enable auto-regeneration after state-changing commands |
 | `milestone` | string | `""` | Current milestone label shown on dashboard header |
 
-When `dashboard.enabled` is true, Pipeline commands that change project state (build, review, commit, remediate, audit, redteam, ui-review, release, brainstorm, plan, research) regenerate `docs/dashboard.html` as a final step. Set to `false` to disable auto-regeneration; you can still generate manually with `/pipeline:dashboard`.
+When `dashboard.enabled` is true, Pipeline commands that change project state (build, review, commit, remediate, audit, redteam, ui-review, release, brainstorm, plan, research, markdown-review) regenerate `docs/dashboard.html` as a final step. Set to `false` to disable auto-regeneration; you can still generate manually with `/pipeline:dashboard`.
 
 The dashboard reads from existing data — no new database tables or schema changes required. On Postgres tier, it queries the `tasks`, `findings`, and `decisions` tables. On files tier, it parses markdown files and git log.
 

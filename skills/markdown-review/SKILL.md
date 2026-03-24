@@ -89,7 +89,7 @@ Example: `MR-A2A-001 | HIGH | HIGH | skills/building/builder-prompt.md:12 | miss
 |----------|----------|
 | HIGH | Dead cross-refs, missing DATA tags, handoff mismatches, output contract drift |
 | MEDIUM | Files >300 lines, duplicate blocks >20 lines, undocumented placeholders, overloaded interfaces |
-| LOW | Files 200-300 lines, frontmatter inconsistencies, postgres migration candidates, context budget warnings |
+| LOW | Files 200-300 lines, frontmatter inconsistencies, config key drift, postgres migration candidates, context budget warnings |
 
 ## Model Routing
 

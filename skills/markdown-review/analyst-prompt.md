@@ -6,7 +6,7 @@ Before dispatching this prompt, confirm every substitution is complete:
 
 1. `{{MODEL}}` → value of `models.architecture` from pipeline.yml (e.g., `claude-opus-4-5`)
 2. `[SCANNER_MANIFEST]` → full scanner output (all MANIFEST/XREF/PLACEHOLDER/DUPLICATE/CONFIG_KEY/OUTPUT_CONTRACT lines)
-3. `[KNOWLEDGE_TIER]` → value of `knowledge.tier` from pipeline.yml (e.g., `postgres` or `pinecone`)
+3. `[KNOWLEDGE_TIER]` → value of `knowledge.tier` from pipeline.yml (e.g., `files` or `postgres`)
 4. `[TIERS_TO_RUN]` → value of `markdown_review.tiers` from pipeline.yml (e.g., `hygiene, architecture, a2a`)
 5. `[LINE_LIMIT]` → value of `markdown_review.line_limit` from pipeline.yml (e.g., `200`)
 
@@ -44,7 +44,7 @@ Apply this tier if `hygiene` appears in TIERS_TO_RUN.
 
 Check every MANIFEST entry for:
 
-- **Line count over limit**: Flag files where line count exceeds LINE_LIMIT. Severity HIGH if over 300, MEDIUM if over LINE_LIMIT.
+- **Line count over limit**: Flag files where line count exceeds LINE_LIMIT. Severity MEDIUM if over 300, LOW if over LINE_LIMIT but under 300.
 - **Mixed concerns**: Flag files where process instructions and reference data coexist in the same file (e.g., a skill file that embeds a full data table that could live elsewhere).
 - **Frontmatter violations**: Commands must have `allowed-tools` and `description`. Skills must have `name` and `description`. Prompt templates must have a substitution checklist. Any missing required field is a violation.
 - **Duplicate text blocks**: Flag any DUPLICATE entries from the scanner. Over 20 lines is HIGH severity. 10-20 lines is MEDIUM.

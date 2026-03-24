@@ -7,7 +7,7 @@ Before dispatching this prompt, confirm every substitution is complete:
 1. `{{MODEL}}` → value of `models.cheap` from pipeline.yml (e.g., `claude-haiku-4-5`)
 2. `[FILE_LIST]` → output of file inventory with line counts for all markdown files in scope
 3. `[LINE_LIMIT]` → value of `markdown_review.line_limit` from pipeline.yml (e.g., `200`)
-4. `[KNOWLEDGE_TIER]` → value of `knowledge.tier` from pipeline.yml (e.g., `postgres` or `pinecone`)
+4. `[KNOWLEDGE_TIER]` → value of `knowledge.tier` from pipeline.yml (e.g., `files` or `postgres`)
 
 ---
 

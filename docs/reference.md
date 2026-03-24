@@ -129,7 +129,7 @@ Generates a self-contained HTML project status report at `docs/dashboard.html`.
 **Arguments:**
 - No arguments — generates dashboard from current state
 
-**Auto-regeneration:** State-changing commands (`/pipeline:build`, `/pipeline:review`, `/pipeline:commit`, `/pipeline:remediate`, `/pipeline:audit`, `/pipeline:redteam`, `/pipeline:ui-review`, `/pipeline:release`, `/pipeline:brainstorm`, `/pipeline:plan`, `/pipeline:research`) regenerate the dashboard as a final step when `dashboard.enabled` is true.
+**Auto-regeneration:** State-changing commands (`/pipeline:build`, `/pipeline:review`, `/pipeline:commit`, `/pipeline:remediate`, `/pipeline:audit`, `/pipeline:redteam`, `/pipeline:ui-review`, `/pipeline:release`, `/pipeline:brainstorm`, `/pipeline:plan`, `/pipeline:research`, `/pipeline:markdown-review`) regenerate the dashboard as a final step when `dashboard.enabled` is true.
 
 **Dashboard sections:**
 - **Health summary** — one-line status for executive glance
@@ -399,6 +399,34 @@ Full security assessment loop. Orchestrates red team → remediate → purple te
 **When to use:** Before beta or production releases. Replaces running the three commands separately.
 
 **Output:** All three reports in `docs/findings/` plus GitHub issue updates.
+
+---
+
+### `/pipeline:markdown-review`
+
+Full markdown health check across three tiers: file hygiene, information architecture, and A2A protocol. Scans plugin instruction files and user-generated markdown, then fixes what it finds.
+
+**Process:**
+1. Scanner (haiku) — mechanical data collection: line counts, cross-references, placeholder inventory, duplicate detection
+2. Analyst (opus) — applies all three tiers to the scanner manifest, produces structured findings
+3. User review — findings presented with fix options (auto, HIGH-only, individual, report-only)
+4. Fixer (sonnet) — applies approved fixes batched by effort tier (quick, then medium)
+5. Architectural findings are report-only — they require manual design decisions
+
+**Three tiers:**
+- **MR-HYG** (File Hygiene) — line counts, mixed concerns, frontmatter violations, duplicates, dead cross-references
+- **MR-ARCH** (Information Architecture) — context budget analysis, reference data placement, embedding utilization
+- **MR-A2A** (Agent Communication) — DATA tag compliance, output contract drift, config key coverage, handoff mismatches
+
+**Finding format:** `MR-[TIER]-[NNN] | [SEVERITY] | [CONFIDENCE] | [file:line] | [category]`
+
+**Severity:** HIGH (broken contracts, missing safety tags), MEDIUM (bloat, undocumented interfaces), LOW (improvement opportunities)
+
+**Config:** `markdown_review.*` in pipeline.yml — `line_limit`, `fix_mode`, `tiers`, `exclude`, `inline_checklist`
+
+**Token cost:** ~80-100K total (scanner at haiku rates, analyst at opus, fixer at sonnet per batch)
+
+**Output:** Report saved to `docs/findings/markdown-review-YYYY-MM-DD.md` regardless of fix mode.
 
 ---
 
