@@ -48,3 +48,49 @@ Then follow the debugging skill's 4-phase protocol. **Critical: if 3+ fix attemp
 
 If confidence in the root cause is LOW, do NOT implement a fix. Report the uncertainty and gather more evidence.
 ```
+
+---
+
+### Persist to knowledge tier
+
+**Resolve `$SCRIPTS_DIR`:** Locate the pipeline plugin's `scripts/` directory:
+1. If `$PIPELINE_DIR` is set: `$PIPELINE_DIR/scripts/`
+2. Check `${HOME:-$USERPROFILE}/dev/pipeline/scripts/`
+3. Search: find `pipeline-db.js` under `${HOME:-$USERPROFILE}/.claude/`
+
+**If `knowledge.tier` is `"postgres"` AND `integrations.postgres.enabled`:**
+
+Store the root cause and fix as a gotcha:
+```bash
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update gotcha new "$(cat <<'TITLE'
+[error class]: [root cause in one line]
+TITLE
+)" "$(cat <<'RULE'
+[fix applied — what to do if this recurs]
+RULE
+)"
+```
+
+Record the debug decision:
+```bash
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update decision 'debug-resolution' "$(cat <<'SUMMARY'
+[date]: [error class] — [root cause]. Confidence: [HIGH/MEDIUM/LOW]
+SUMMARY
+)" "$(cat <<'DETAIL'
+Fix: [file:line — what changed]. Verified: [verification result]
+DETAIL
+)"
+```
+
+**If `knowledge.tier` is `"files"`:**
+
+Store the root cause (debug gotchas are always worth recording):
+```bash
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-files.js gotcha "$(cat <<'TITLE'
+[error class]: [root cause in one line]
+TITLE
+)" "$(cat <<'RULE'
+[fix applied — what to do if this recurs]
+RULE
+)"
+```

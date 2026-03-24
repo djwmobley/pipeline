@@ -158,6 +158,38 @@ If fixes were applied, stage all modified files and commit. Use the co-author fr
 
 ---
 
+### Step 5b — Persist to knowledge tier
+
+**Resolve `$SCRIPTS_DIR`:** Locate the pipeline plugin's `scripts/` directory:
+1. If `$PIPELINE_DIR` is set: `$PIPELINE_DIR/scripts/`
+2. Check `${HOME:-$USERPROFILE}/dev/pipeline/scripts/`
+3. Search: find `pipeline-db.js` under `${HOME:-$USERPROFILE}/.claude/`
+
+**If `knowledge.tier` is `"postgres"` AND `integrations.postgres.enabled`:**
+
+For each HIGH or MEDIUM finding:
+```bash
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update finding new "$(cat <<'EOF'
+{"id":"[MR-XXX-NNN]","source":"markdown-review","severity":"[high|medium|low]","confidence":"[HIGH|MEDIUM|LOW]","location":"[file:line]","category":"[HYG|ARCH|A2A]","description":"[one-line description]","impact":"[effect on agent behavior or maintainability]","remediation":"[fix description]","effort":"[quick|medium|architectural]"}
+EOF
+)"
+```
+
+Record the review outcome:
+```bash
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update decision 'markdown-review' "$(cat <<'SUMMARY'
+MR [date]: [N] findings ([H] HIGH / [M] MEDIUM / [L] LOW). Fixed: [F]
+SUMMARY
+)" "$(cat <<'DETAIL'
+Scope: [N] files ([total] lines). Tiers: [tiers]. [remaining] architectural findings unfixed.
+DETAIL
+)"
+```
+
+**If `knowledge.tier` is `"files"`:** No writes — findings already saved to `docs/findings/markdown-review-*.md` in Step 7.
+
+---
+
 ### Step 6 — Dashboard regeneration
 
 If `dashboard.enabled` is true (or `docs/dashboard.html` already exists): locate the dashboard skill (`$PIPELINE_DIR/skills/dashboard/SKILL.md` or Glob `**/pipeline/skills/dashboard/SKILL.md`) and follow it to regenerate `docs/dashboard.html`.

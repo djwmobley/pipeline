@@ -346,7 +346,7 @@ All strategies output the same table:
 
 Write verification results back to tickets:
 - **GitHub:** Comment on each affected issue
-- **Postgres:** `node scripts/pipeline-db.js update finding [ID] status verified`
+- **Postgres:** `PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update finding [ID] status verified`
 
 If new findings are introduced: flag prominently. These may need another remediation pass.
 
@@ -369,14 +369,48 @@ If new findings are introduced: flag prominently. These may need another remedia
 | [ID] | [SEV] | [CAT] | [EFFORT] | [fixed/verified/remaining] | [#N/ID/—] | [SHA] |
 ```
 
-**If Postgres enabled:**
+**Resolve `$SCRIPTS_DIR`:** Locate the pipeline plugin's `scripts/` directory:
+1. If `$PIPELINE_DIR` is set: `$PIPELINE_DIR/scripts/`
+2. Check `${HOME:-$USERPROFILE}/dev/pipeline/scripts/`
+3. Search: find `pipeline-db.js` under `${HOME:-$USERPROFILE}/.claude/`
+
+**If `knowledge.tier` is `"postgres"` AND `integrations.postgres.enabled`:**
+
 ```bash
-node scripts/pipeline-db.js update decision '[SOURCE_TYPE]-remediation' 'Remediation [date]: [N] fixed, [M] verified, [P] remaining' '[summary]'
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update decision "$(cat <<'TOPIC'
+[SOURCE_TYPE]-remediation
+TOPIC
+)" "$(cat <<'SUMMARY'
+Remediation [date]: [N] fixed, [M] verified, [P] remaining
+SUMMARY
+)" "$(cat <<'DETAIL'
+[summary]
+DETAIL
+)"
 ```
 
-For remaining or new findings, store as gotchas:
+For remaining or new HIGH/CRITICAL findings, store as gotchas:
 ```bash
-node scripts/pipeline-db.js update gotcha new '[ID]: [brief]' '[why unfixed or what to watch for]'
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update gotcha new "$(cat <<'TITLE'
+[ID]: [brief]
+TITLE
+)" "$(cat <<'RULE'
+[why unfixed or what to watch for]
+RULE
+)"
+```
+
+**If `knowledge.tier` is `"files"`:**
+
+For remaining or new HIGH/CRITICAL findings only:
+```bash
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-files.js gotcha "$(cat <<'TITLE'
+[ID]: [brief]
+TITLE
+)" "$(cat <<'RULE'
+[why unfixed or what to watch for]
+RULE
+)"
 ```
 
 ---

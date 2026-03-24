@@ -35,6 +35,41 @@ If the spec is too vague to produce this level of detail, stop and report: "Spec
 
 ---
 
+### Persist to knowledge tier
+
+**Resolve `$SCRIPTS_DIR`:** Locate the pipeline plugin's `scripts/` directory:
+1. If `$PIPELINE_DIR` is set: `$PIPELINE_DIR/scripts/`
+2. Check `${HOME:-$USERPROFILE}/dev/pipeline/scripts/`
+3. Search: find `pipeline-db.js` under `${HOME:-$USERPROFILE}/.claude/`
+
+**If `knowledge.tier` is `"postgres"` AND `integrations.postgres.enabled`:**
+
+For each task in the plan, create a task record:
+```bash
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update task new "$(cat <<'TITLE'
+[task title from plan]
+TITLE
+)" 'build'
+```
+
+Record the planning decision:
+```bash
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update decision "$(cat <<'TOPIC'
+plan-[feature-name]
+TOPIC
+)" "$(cat <<'SUMMARY'
+Plan [date]: [N] tasks from spec [spec-name]
+SUMMARY
+)" "$(cat <<'DETAIL'
+Saved to [plan file path]
+DETAIL
+)"
+```
+
+**If `knowledge.tier` is `"files"`:** No writes — tasks are in the plan file, decisions would bloat DECISIONS.md.
+
+---
+
 ### Dashboard Regeneration
 
 If `dashboard.enabled` is true in pipeline.yml (or `docs/dashboard.html` already exists):

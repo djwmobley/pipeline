@@ -152,6 +152,62 @@ For Option 4: keep worktree.
 
 ---
 
+### Persist to knowledge tier
+
+**Resolve `$SCRIPTS_DIR`:** Locate the pipeline plugin's `scripts/` directory:
+1. If `$PIPELINE_DIR` is set: `$PIPELINE_DIR/scripts/`
+2. Check `${HOME:-$USERPROFILE}/dev/pipeline/scripts/`
+3. Search: find `pipeline-db.js` under `${HOME:-$USERPROFILE}/.claude/`
+
+**If `knowledge.tier` is `"postgres"` AND `integrations.postgres.enabled`:**
+
+Record the session (use `query "SELECT COALESCE(MAX(number),0)+1 FROM sessions"` to get next session number):
+```bash
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update session [next_number] [test_count] "$(cat <<'EOF'
+Finish: merged [feature-branch] to [base-branch]. [option chosen]
+EOF
+)"
+```
+
+Record the decision:
+```bash
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update decision 'branch-completion' "$(cat <<'SUMMARY'
+Merged [feature-branch] to [base-branch] [date]
+SUMMARY
+)" "$(cat <<'DETAIL'
+[1-sentence summary of what the branch accomplished]
+DETAIL
+)"
+```
+
+**If `knowledge.tier` is `"files"`:**
+
+Record session (auto-rotates to keep 5 most recent):
+```bash
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-files.js session [next_number] [test_count] "$(cat <<'EOF'
+Finish: merged [feature-branch] to [base-branch]
+EOF
+)"
+```
+
+Record the decision:
+```bash
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-files.js decision 'branch-completion' "$(cat <<'SUMMARY'
+Merged [feature-branch] to [base-branch] [date]
+SUMMARY
+)" "$(cat <<'DETAIL'
+[1-sentence summary of what the branch accomplished]
+DETAIL
+)"
+```
+
+Prune stale decisions:
+```bash
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-files.js prune
+```
+
+---
+
 ### Safety rules
 
 - Never proceed with failing tests

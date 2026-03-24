@@ -47,6 +47,49 @@ The brainstorming skill includes a hard gate against premature implementation. E
 
 ---
 
+### Persist to knowledge tier
+
+**If `knowledge.tier` is `"postgres"` AND `integrations.postgres.enabled`:**
+
+Using the same `SCRIPTS_DIR` resolved earlier for the locked-decisions query:
+
+Record the design decision:
+```bash
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update decision "$(cat <<'TOPIC'
+design-[feature-name]
+TOPIC
+)" "$(cat <<'SUMMARY'
+[date]: [chosen approach name/summary]
+SUMMARY
+)" "$(cat <<'DETAIL'
+[1-2 sentences: what was decided and key trade-offs considered]
+DETAIL
+)"
+```
+
+If any decisions should be locked (user said "lock this" or the decision is a hard constraint):
+```bash
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js query "UPDATE decisions SET status = 'locked' WHERE topic = '[topic]'"
+```
+
+**If `knowledge.tier` is `"files"`:**
+
+Only record if the decision is locked — unlocked design decisions go to postgres only to avoid bloating DECISIONS.md:
+```bash
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-files.js decision "$(cat <<'TOPIC'
+[LOCKED] design-[feature-name]
+TOPIC
+)" "$(cat <<'SUMMARY'
+[chosen approach]
+SUMMARY
+)" "$(cat <<'DETAIL'
+[key trade-offs]
+DETAIL
+)"
+```
+
+---
+
 ### Dashboard Regeneration
 
 If `dashboard.enabled` is true in pipeline.yml (or `docs/dashboard.html` already exists):

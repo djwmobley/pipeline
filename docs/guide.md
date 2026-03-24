@@ -305,9 +305,9 @@ The generated HTML is a self-contained file with no external dependencies. It in
 |-------|---------|-------------|
 | `tier` | `"files"` or `"postgres"` | Where session history, decisions, and gotchas are stored |
 
-**Files tier** (default) — zero setup. Creates `docs/sessions/*.md`, `DECISIONS.md`, `docs/gotchas.md`. No search capability. Good for small projects or quick setups.
+**Files tier** (default) — zero setup. Creates `docs/sessions/*.md`, `DECISIONS.md`, `docs/gotchas.md`. No search capability. Size-bounded to prevent context bloat (see [auto-persistence](#auto-persistence) below). Good for small projects or quick setups.
 
-**Postgres tier** — requires local PostgreSQL. Each project gets its own database (`pipeline_<project_name>`). Gives you:
+**Postgres tier** — requires local PostgreSQL. Each project gets its own database (`pipeline_<project_name>`). Full history, semantically searchable. Gives you:
 - Semantic search across all past sessions (requires [Ollama](https://ollama.com) running locally with any embedding model — no API keys, no cloud)
 - Keyword search across code index (works without Ollama)
 - Structured task tracking with status (pending/in_progress/done/deferred)
@@ -396,6 +396,32 @@ All profiles get the base checks (database access control, input sanitization, n
 | Mobile, Mobile + Web | Secure storage — never store tokens in plain storage |
 | API | Rate limiting, authentication, input schema validation |
 | Library | Boundary type validation — never trust caller input |
+
+---
+
+## Auto-Persistence
+
+Knowledge tier persistence is automatic. Every state-changing command silently persists its outputs — sessions, decisions, findings, gotchas, and task statuses — to whichever tier is configured. You never need to call `/pipeline:knowledge` manually.
+
+### Postgres tier — full history
+
+All data is persisted: sessions, decisions, gotchas, findings (structured JSON), and task statuses. Everything is queryable via `/pipeline:knowledge search` and semantically searchable via `/pipeline:knowledge hybrid` (requires Ollama).
+
+### Files tier — size-bounded active working set
+
+Markdown files get loaded into agent context wholesale, so the files tier is selective to prevent context bloat:
+
+| Data Type | Limit | Mechanism |
+|-----------|-------|-----------|
+| **Sessions** | Last 5 only | `pipeline-files.js` auto-rotates `docs/sessions/`, deleting older files |
+| **Decisions** | Locked + last 7 days | `pipeline-files.js prune` archives stale unlocked decisions to `docs/archive/` |
+| **Gotchas** | HIGH/CRITICAL only | Commands only write high-severity gotchas to files tier |
+| **Findings** | Already in `docs/findings/` | No additional files-tier write — findings files are read on-demand |
+| **Tasks** | Already in plan files | No additional files-tier write — plan files are the canonical task list |
+
+**Key principle:** The files tier is the active working set, not the full history. Locked decisions are constraints. Recent decisions are context. Everything else is either in postgres or derivable from git log.
+
+See the [command reference](reference.md#auto-persistence) for exactly what each command persists per tier.
 
 ---
 

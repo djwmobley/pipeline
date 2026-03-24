@@ -61,6 +61,45 @@ Do NOT pass conversation history, prior task results, or accumulated context. Ea
 
 ---
 
+### Persist to knowledge tier
+
+**Resolve `$SCRIPTS_DIR`:** Locate the pipeline plugin's `scripts/` directory:
+1. If `$PIPELINE_DIR` is set: `$PIPELINE_DIR/scripts/`
+2. Check `${HOME:-$USERPROFILE}/dev/pipeline/scripts/`
+3. Search: find `pipeline-db.js` under `${HOME:-$USERPROFILE}/.claude/`
+
+**If `knowledge.tier` is `"postgres"` AND `integrations.postgres.enabled`:**
+
+Record the build session (use `query "SELECT COALESCE(MAX(number),0)+1 FROM sessions"` to get next session number):
+```bash
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update session [next_number] [test_count] "$(cat <<'EOF'
+Build: [N] tasks executed from plan [plan-name]
+EOF
+)"
+```
+
+For each completed task, update its status:
+```bash
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update task [task_id] done
+```
+
+For any deferred tasks:
+```bash
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update task [task_id] deferred
+```
+
+**If `knowledge.tier` is `"files"`:**
+
+Record session only (auto-rotates to keep 5 most recent):
+```bash
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-files.js session [next_number] [test_count] "$(cat <<'EOF'
+Build: [N] tasks executed from plan [plan-name]
+EOF
+)"
+```
+
+---
+
 ### Dashboard Regeneration
 
 If `dashboard.enabled` is true in pipeline.yml (or `docs/dashboard.html` already exists):
