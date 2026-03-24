@@ -38,7 +38,7 @@ Read `.claude/pipeline.yml`. Extract:
 - `knowledge.tier`
 - `integrations.github.enabled`
 - `integrations.postgres.enabled`
-- `docs.specs_dir`, `docs.plans_dir`, `docs.research_dir`
+- `docs.specs_dir`, `docs.plans_dir`
 - `models.cheap` (for haiku recommendations)
 
 ## Step 2 — Derive Phase
@@ -53,7 +53,6 @@ Check artifacts in order (first match wins):
 | Commits exist after plan creation date | Building | Plan file name |
 | Plan file exists in `docs.plans_dir` | Planned | Plan file name |
 | Spec file exists in `docs.specs_dir` | Designed | Spec file name |
-| Research files exist in `docs.research_dir` | Researching | Research file name |
 | None | Not Started | — |
 
 **Phase check commands:**
@@ -64,9 +63,6 @@ ls -t [docs.specs_dir]*.md 2>/dev/null | head -1
 
 # Check for plans
 ls -t [docs.plans_dir]*.md 2>/dev/null | head -1
-
-# Check for research
-ls -t [docs.research_dir]*.md 2>/dev/null | head -1
 
 # Check for findings (excluding remediation files)
 ls docs/findings/*.md 2>/dev/null | grep -v 'remediation-' | grep -v 'triage-' | head -1
@@ -216,8 +212,7 @@ On files tier (no task counts): `[Phase] — [finding count] open findings ([cri
 
 | Phase | Recommendation |
 |---|---|
-| Not Started | `/pipeline:research` or `/pipeline:brainstorm` to begin |
-| Researching | `/pipeline:brainstorm` to design from research |
+| Not Started | `/pipeline:brainstorm` to begin |
 | Designed | `/pipeline:plan` to create implementation plan |
 | Planned | `/pipeline:build` to start implementation |
 | Building | Continue building. If stuck: `/pipeline:debug` |

@@ -118,7 +118,7 @@ It will ask you a few questions. Choose:
 
 ## 5. PostgreSQL
 
-**What it does:** Local database that stores your sessions, tasks, decisions, and research. The pgvector extension adds semantic search so the AI can find relevant context across all your past work — this reduces hallucinations and lost context.
+**What it does:** Local database that stores your sessions, tasks, and decisions. The pgvector extension adds semantic search so the AI can find relevant context across all your past work — this reduces hallucinations and lost context.
 
 **Required?** Optional. Without it, pipeline uses the "files" tier — markdown-based session tracking that works but lacks search.
 

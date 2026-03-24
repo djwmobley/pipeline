@@ -20,7 +20,7 @@ Read `.claude/pipeline.yml` from the project root. Extract:
 - `dashboard.*` — enabled, milestone
 - `knowledge.tier` — files or postgres
 - `integrations.github.enabled`, `integrations.postgres.enabled`
-- `docs.*` — specs_dir, plans_dir, research_dir
+- `docs.*` — specs_dir, plans_dir
 - `models.cheap` — for recommendations agent
 
 If no config file exists, report: "No `.claude/pipeline.yml` found. Run `/pipeline:init` first." and stop.

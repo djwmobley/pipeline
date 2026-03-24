@@ -24,13 +24,14 @@ Complete these steps in order:
 1. **Explore project context** — check files, docs, recent commits
 2. **Offer visual companion**
 3. **Ask clarifying questions** — one at a time, understand purpose/constraints/success criteria
-4. **Propose 2-3 approaches** — with trade-offs and your recommendation
-5. **Present design** — in sections scaled to their complexity, get user approval after each section
-6. **Evaluate Big 4 dimensions** — functionality, usability, performance, security
-7. **Write spec** — save to config's `docs.specs_dir`
-8. **Spec review loop** — dispatch spec-reviewer subagent; fix issues; max 3 iterations
-9. **User reviews written spec** — ask user to review before proceeding
-10. **Transition to implementation** — invoke /pipeline:plan
+4. **Verify technical assumptions** — if unfamiliar tech is involved, dispatch research agents before proposing approaches
+5. **Propose 2-3 approaches** — with trade-offs and your recommendation
+6. **Present design** — in sections scaled to their complexity, get user approval after each section
+7. **Evaluate Big 4 dimensions** — functionality, usability, performance, security
+8. **Write spec** — save to config's `docs.specs_dir`
+9. **Spec review loop** — dispatch spec-reviewer subagent; fix issues; max 3 iterations
+10. **User reviews written spec** — ask user to review before proceeding
+11. **Transition to implementation** — invoke /pipeline:plan
 
 ## The Process
 
@@ -68,9 +69,48 @@ See `visual-companion.md` for the detailed dispatch logic for each path.
 - Only one question per message
 - Focus on understanding: purpose, constraints, success criteria
 
+**Verify technical assumptions (step 4):**
+
+After clarifying questions, assess whether the task involves ANY of:
+- A library/framework not already used in the project
+- An API integration with an external service
+- A technology choice between 2+ unfamiliar options
+- Anything where confidence in the approach depends on version-specific behavior
+
+If none apply, skip silently and proceed to exploring approaches.
+
+If triggered:
+1. Formulate 1-3 specific verification questions — targeted facts, not open-ended research
+2. Dispatch parallel agents (model: `models.research` from config) using the `researcher-prompt.md` template in this skill's directory. Substitute all placeholders per its checklist before dispatching.
+3. Present findings to user before proceeding to approaches
+4. HIGH-confidence findings become constraints for approach proposals (same weight as locked decisions — do NOT propose alternatives that contradict them)
+5. If a finding changes the viability of an approach, say so explicitly
+
+Research findings are consumed inline to inform approach proposals. They are NOT persisted separately — the spec document captures the conclusions. If a finding should be locked as a project constraint, persist it as a locked decision through the knowledge tier (same as any other locked decision).
+
+**Skip triggers** (research gate is NOT needed):
+- The task uses only libraries/frameworks already in the project's dependencies
+- The user has already provided verified documentation or links
+- The change is purely within well-understood internal code (refactor, bug fix in known code)
+
+<RESEARCH-RATIONALIZATION-PREVENTION>
+
+| Thought | Reality |
+|---------|---------|
+| "My training data is recent enough" | It is not. Verify or mark LOW. |
+| "The docs probably haven't changed" | APIs break monthly. Check Context7. |
+| "One source is enough" | One source = LOW confidence. Period. |
+| "This is well-known, skip verification" | Well-known to whom? The codebase has the answer or it doesn't. |
+| "I'll just note it might be wrong" | Hedging is not a confidence score. Pick HIGH/MEDIUM/LOW. |
+| "Quick lookup, skip the format" | The format exists so findings are actionable. No shortcuts. |
+
+</RESEARCH-RATIONALIZATION-PREVENTION>
+
 **Exploring approaches:**
 - Propose 2-3 different approaches with trade-offs
 - Each approach MUST include a confidence assessment: how confident are you that this approach will work? HIGH/MEDIUM/LOW with reasoning
+- If a research gate ran, cite which findings informed each approach's confidence level
+- Do NOT propose approaches that contradict HIGH-confidence research findings
 - Lead with your recommended option and explain why
 
 **Presenting the design:**
@@ -125,3 +165,5 @@ Wait for approval. Then invoke /pipeline:plan.
 - **Explore alternatives** — always propose 2-3 approaches
 - **Incremental validation** — present design, get approval
 - **Non-negotiable respect** — load config, never flag intentional patterns
+- **Training data is hypothesis** — assume 6-18 months stale; verify version-specific claims via Context7/WebSearch before committing to an approach
+- **Prescriptive over exploratory** — research answers questions ("Use X because Y"), it doesn't generate reading lists ("Consider X or Y")

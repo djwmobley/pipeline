@@ -97,7 +97,6 @@ integrations:
 docs:
   specs_dir: "docs/specs/"
   plans_dir: "docs/plans/"
-  research_dir: "docs/research/"
 ```
 
 ## Section by Section
@@ -158,7 +157,7 @@ Which Claude model handles which job. Model names: `haiku`, `sonnet`, `opus`.
 |-------|---------|---------|
 | `cheap` | `haiku` | Screenshot analysis, doc reviews, mechanical tasks |
 | `explore` | `haiku` | Codebase search, file scanning |
-| `research` | `haiku` | `/pipeline:research` agents |
+| `research` | `haiku` | Technical verification agents in `/pipeline:brainstorm` |
 | `implement` | `sonnet` | Writing code, integration tasks |
 | `review` | `sonnet` | Code review, audit sector agents |
 | `plan` | `sonnet` | Planning |
@@ -298,7 +297,7 @@ dashboard:
 | `enabled` | boolean | `true` | Enable auto-regeneration after state-changing commands |
 | `milestone` | string | `""` | Current milestone label shown on dashboard header |
 
-When `dashboard.enabled` is true, Pipeline commands that change project state (build, review, commit, remediate, audit, redteam, ui-review, release, brainstorm, plan, research, markdown-review) regenerate `docs/dashboard.html` as a final step. Set to `false` to disable auto-regeneration; you can still generate manually with `/pipeline:dashboard`.
+When `dashboard.enabled` is true, Pipeline commands that change project state (build, review, commit, remediate, audit, redteam, ui-review, release, brainstorm, plan, markdown-review) regenerate `docs/dashboard.html` as a final step. Set to `false` to disable auto-regeneration; you can still generate manually with `/pipeline:dashboard`.
 
 The dashboard reads from existing data — no new database tables or schema changes required. On Postgres tier, it queries the `tasks`, `findings`, and `decisions` tables. On files tier, it parses markdown files and git log.
 

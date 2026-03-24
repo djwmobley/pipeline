@@ -40,8 +40,8 @@ The foundational influence. Pipeline's skill-based architecture, subagent-driven
 The research and confidence scoring system.
 
 **Adopted directly:**
-- **Research phase** — dispatching parallel agents to investigate technical unknowns before planning. The `/pipeline:research` command is directly inspired by GSD's approach.
-- **Confidence levels on all assertions** — HIGH (verified in code), MEDIUM (strong inference), LOW (speculation). Applied throughout review, research, and build output.
+- **Research phase** — dispatching parallel agents to investigate technical unknowns before planning. Originally a standalone `/pipeline:research` command inspired by GSD's approach, now folded into `/pipeline:brainstorm` as a verification gate (step 4) that triggers when unfamiliar technology is involved.
+- **Confidence levels on all assertions** — HIGH (verified in code), MEDIUM (strong inference), LOW (speculation). Applied throughout review, brainstorm research gate, and build output.
 - **Decision locks** — constraints captured during research/planning that cannot be overridden during implementation without explicit unlocking.
 - **Fresh context per task** — each subagent starts clean with only its task description and relevant files, preventing quality degradation as context accumulates. GSD calls this "context engineering."
 

@@ -108,7 +108,7 @@ commit:
 models:
   cheap: "haiku"           # Doc reviews, screenshot analysis, mechanical tasks
   explore: "haiku"         # Codebase search, file scanning
-  research: "haiku"        # Technical research, parallel investigation
+  research: "haiku"        # Brainstorm verification agents
   implement: "sonnet"      # Write code, integration tasks
   review: "sonnet"         # Code review, sector agents
   plan: "sonnet"           # Planning
@@ -183,7 +183,6 @@ integrations:
 docs:
   specs_dir: "docs/specs/"
   plans_dir: "docs/plans/"
-  research_dir: "docs/research/"
 
 # Dashboard
 # Static HTML project status report — regenerated on state changes

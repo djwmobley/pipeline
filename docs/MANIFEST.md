@@ -97,7 +97,6 @@ These directories contain generated output, not maintained documentation:
 | `docs/plans/` | `/pipeline:plan` | Implementation plans with task breakdowns |
 | `docs/findings/` | `/pipeline:redteam`, `/pipeline:audit`, `/pipeline:review`, `/pipeline:remediate`, `/pipeline:purpleteam` | Security reports, audit findings, SBOM artifacts, remediation summaries |
 | `docs/sessions/` | Auto-persistence | Session logs (files tier only, rotated to last 5) |
-| `docs/research/` | `/pipeline:research` | Research agent findings |
 
 ## Other Tracked Files
 

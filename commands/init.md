@@ -369,7 +369,7 @@ If declined: "No problem. Run these yourself when you're ready:
 2. `/pipeline:knowledge setup`"
 
 If files chosen (default):
-1. Create directories: `mkdir -p docs/sessions docs/specs docs/plans docs/research`
+1. Create directories: `mkdir -p docs/sessions docs/specs docs/plans`
 2. Set `knowledge.tier: "files"` in config
 
 ---

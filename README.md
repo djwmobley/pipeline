@@ -153,7 +153,6 @@ A full security lifecycle with structured verification:
 | `/pipeline:audit` | Full codebase review with parallel sector agents |
 | `/pipeline:debug` | Systematic 4-phase root-cause diagnosis |
 | `/pipeline:test` | Structured test report |
-| `/pipeline:research` | Investigate unknowns before planning |
 | `/pipeline:simplify` | Targeted simplification of flagged files |
 | `/pipeline:release` | Changelog + version bump + tag |
 | `/pipeline:ui-review` | Screenshot capture + visual analysis |
@@ -223,7 +222,6 @@ Tracked items for future development. Checked items are shipped.
 ### Open
 
 - [ ] **Full lifecycle visual diagram** — The pipeline flow crosses multiple context windows: PM → UX → orchestrator → engineer → QA → red team → orchestrator → engineer → QA → purple team → engineer → git. Needs a visual representation showing all agents, decision gates, loop-back points, and state handoffs.
-- [ ] **Research skill buildout** — Currently the weakest skill (~27 lines, no frontmatter, no prompt templates). Needs the same rigor as other skills.
 - [ ] **Error handling guide** — What happens when gates fail, tools are missing, or Postgres is down? Users need to know recovery paths.
 - [ ] **Dashboard screenshot in README** — Visual proof of what the dashboard looks like.
 - [ ] **`--quick` mode for init** — Auto-detect everything, ask only what can't be detected.
@@ -251,6 +249,7 @@ Tracked items for future development. Checked items are shipped.
 - [x] Red team DEPS specialist with live audit
 - [x] Big 4 awareness across all agent prompts — functionality, usability, performance, security as push-pull dimensions at build, review, and design time
 - [x] SBOM generation — CycloneDX 1.6 with transitive dependencies from lockfile parsing, generated during red team recon
+- [x] Research folded into brainstorm — standalone `/pipeline:research` replaced with a verification gate (step 4) inside brainstorm that dispatches parallel agents when unfamiliar tech is detected
 
 ## What's Original to Pipeline
 

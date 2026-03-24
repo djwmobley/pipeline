@@ -15,6 +15,8 @@ Read `.claude/pipeline.yml` from the project root. Extract:
 - `docs.specs_dir` — where to save spec documents
 - `review.non_negotiable` — intentional decisions to respect
 - `security` — security checklist to evaluate against
+- `models.research` — model for research verification agents (default: haiku)
+- `routing.source_dirs` — where to look for existing patterns
 - `integrations.stitch.enabled` — whether Stitch MCP is available for design mockups
 - `integrations.stitch.project_id` — existing Stitch project for this pipeline project (may be null)
 - `integrations.stitch.device_type` — target device for generated screens
@@ -42,6 +44,8 @@ PROJECT_ROOT=$(pwd) node <resolved_scripts_dir>/pipeline-db.js query "SELECT top
 
 Locked decisions are constraints, not suggestions. You MUST NOT propose alternatives to locked decisions. If a locked decision conflicts with the current task, flag it explicitly:
 > "Warning: Locked decision [topic] constrains this design: [decision]. Working within this constraint."
+
+**Research gate:** The brainstorming skill includes a research verification step (step 4). When dispatching research agents, locate and read `researcher-prompt.md` from the brainstorming skill directory (same directory as `SKILL.md`). Substitute all placeholders per its checklist before dispatching. Pass `models.research` as the model and `routing.source_dirs` as the source directories.
 
 The brainstorming skill includes a hard gate against premature implementation. Enforce it.
 

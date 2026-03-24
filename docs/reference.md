@@ -129,11 +129,11 @@ Generates a self-contained HTML project status report at `docs/dashboard.html`.
 **Arguments:**
 - No arguments — generates dashboard from current state
 
-**Auto-regeneration:** State-changing commands (`/pipeline:build`, `/pipeline:review`, `/pipeline:commit`, `/pipeline:remediate`, `/pipeline:audit`, `/pipeline:redteam`, `/pipeline:ui-review`, `/pipeline:release`, `/pipeline:brainstorm`, `/pipeline:plan`, `/pipeline:research`, `/pipeline:markdown-review`) regenerate the dashboard as a final step when `dashboard.enabled` is true.
+**Auto-regeneration:** State-changing commands (`/pipeline:build`, `/pipeline:review`, `/pipeline:commit`, `/pipeline:remediate`, `/pipeline:audit`, `/pipeline:redteam`, `/pipeline:ui-review`, `/pipeline:release`, `/pipeline:brainstorm`, `/pipeline:plan`, `/pipeline:markdown-review`) regenerate the dashboard as a final step when `dashboard.enabled` is true.
 
 **Dashboard sections:**
 - **Health summary** — one-line status for executive glance
-- **Phase indicator** — visual pipeline: Research → Design → Plan → Build → Review → Release
+- **Phase indicator** — visual pipeline: Design → Plan → Build → Review → Release
 - **What Happened** — recent commits, closed findings, completed tasks, decisions (last 10)
 - **What's Active** — task progress, open findings by severity, GitHub issues, blockers
 - **What's Next** — rule-based lifecycle recommendations + AI-generated contextual suggestions
@@ -148,22 +148,6 @@ Generates a self-contained HTML project status report at `docs/dashboard.html`.
 
 ## Layer 2 — Structured Builds (features)
 
-### `/pipeline:research`
-
-Dispatches parallel research agents to investigate technical unknowns before planning.
-
-**When to use:** Before brainstorm/plan, when the task involves an unfamiliar API, a decision with multiple viable approaches, or anything where AI training data may be stale.
-
-**What it does:**
-1. Parses your request into 2-4 independent research questions
-2. Checks for prior research (Postgres tier: semantic search)
-3. Dispatches one agent per question in parallel
-4. Synthesizes findings with confidence scores
-5. Stores results (Postgres or `docs/research/`)
-6. Hands off to brainstorm/plan with research context
-
----
-
 ### `/pipeline:brainstorm`
 
 Explores requirements, proposes approaches, and writes a spec. Used before LARGE changes.
@@ -172,9 +156,10 @@ Explores requirements, proposes approaches, and writes a spec. Used before LARGE
 1. Checks for locked decisions (constraints from prior research/planning)
 2. Explores the codebase for relevant patterns
 3. Asks clarifying questions one at a time
-4. Proposes 2-3 approaches with trade-offs
-5. Writes a spec document to `docs/specs/`
-6. Dispatches a spec reviewer subagent for feedback
+4. Verifies technical assumptions — if unfamiliar tech is involved, dispatches parallel research agents (using `models.research`) with confidence scoring (HIGH/MEDIUM/LOW) before proposing approaches. Findings at HIGH confidence become locked constraints.
+5. Proposes 2-3 approaches with trade-offs
+6. Writes a spec document to `docs/specs/`
+7. Dispatches a spec reviewer subagent for feedback
 
 ---
 
