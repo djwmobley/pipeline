@@ -223,7 +223,6 @@ Tracked items for future development. Checked items are shipped.
 ### Open
 
 - [ ] **Full lifecycle visual diagram** — The pipeline flow crosses multiple context windows: PM → UX → orchestrator → engineer → QA → red team → orchestrator → engineer → QA → purple team → engineer → git. Needs a visual representation showing all agents, decision gates, loop-back points, and state handoffs.
-- [ ] **SBOM generation** — Produce a Software Bill of Materials (CycloneDX/SPDX) from dependency manifests during red team recon.
 - [ ] **Research skill buildout** — Currently the weakest skill (~27 lines, no frontmatter, no prompt templates). Needs the same rigor as other skills.
 - [ ] **Error handling guide** — What happens when gates fail, tools are missing, or Postgres is down? Users need to know recovery paths.
 - [ ] **Dashboard screenshot in README** — Visual proof of what the dashboard looks like.
@@ -251,6 +250,7 @@ Tracked items for future development. Checked items are shipped.
 - [x] `/pipeline:markdown-review` with three tiers
 - [x] Red team DEPS specialist with live audit
 - [x] Big 4 awareness across all agent prompts — functionality, usability, performance, security as push-pull dimensions at build, review, and design time
+- [x] SBOM generation — CycloneDX 1.6 with transitive dependencies from lockfile parsing, generated during red team recon
 
 ## What's Original to Pipeline
 

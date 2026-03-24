@@ -16,11 +16,11 @@ Comprehensive security assessment using parallel domain specialists. Unlike `/pi
 ```
 Knowledge query ──┐
                    ├──▶ Sell (token estimate) ──▶ Recon (haiku) ──▶ Select specialists
-Framework detect ──┘                                                        │
-                                                                            ▼
-                                                          Launch N specialists (sonnet, parallel)
-                                                                            │
-                                                                            ▼
+Framework detect ──┘                                    │                   │
+                                                        ▼                   ▼
+                                                  SBOM artifact    Launch N specialists (sonnet, parallel)
+                                                  (.cdx.json)              │
+                                                                           ▼
                                                           Collect reports ──▶ Lead analyst (opus)
                                                                                      │
                                                                             ┌────────┴────────┐

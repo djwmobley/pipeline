@@ -48,6 +48,10 @@ redteam:
   specialists: "auto"         # "auto" (profile+framework-based) or explicit list: [INJ, AUTH, XSS, ...]
   skip: []                    # Specialist IDs to skip (e.g., [CERT] for localhost-only apps)
   html_report: true           # Generate standalone HTML report artifact alongside markdown
+  sbom:
+    enabled: true              # Generate CycloneDX SBOM during recon (includes transitive deps from lockfile)
+    format: "cyclonedx"        # Only CycloneDX 1.6 supported currently
+    output_dir: "docs/findings/"  # Where to write the .cdx.json file
   recon_patterns:             # Grep patterns for Phase 0 recon
     - { pattern: "eval\\(", label: "eval-usage" }
     - { pattern: "innerHTML", label: "inner-html" }

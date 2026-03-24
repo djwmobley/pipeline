@@ -180,6 +180,7 @@ Applications rely on hundreds of third-party packages, any of which can introduc
 ### Checklist
 
 0. **Live dependency audit** — Run the project's configured audit command (`commands.security_audit` from pipeline.yml) to query real-time vulnerability databases. Parse JSON output for CRITICAL and HIGH severity advisories. This provides ground truth that training data cannot.
+0.5. **Read SBOM artifact** — If `docs/findings/sbom-*.cdx.json` exists from recon, read it for the complete dependency inventory including transitive dependencies. Use the SBOM as your primary package list — it contains every component with version, scope (direct/dev/transitive), and Package URL. Cross-reference with audit findings to ensure no packages were missed.
 1. Known CVEs in direct dependencies (via advisory databases)
 2. Known CVEs in transitive dependencies (deep dependency tree)
 3. Lockfile integrity (lockfile exists, matches manifest, committed to repo)
