@@ -229,6 +229,25 @@ Controls `/pipeline:remediate` — multi-source finding remediation. Accepts fin
 
 **Model routing:** Triage uses `models.cheap` (haiku). Implementation uses `models.implement` (sonnet). Review uses `models.review` (sonnet). Architectural planning uses `models.architecture` (opus). Verification re-runs use `models.review` (sonnet).
 
+### dashboard
+
+```yaml
+dashboard:
+  enabled: true
+  milestone: "v1.0 — Feature Complete"
+```
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `enabled` | boolean | `true` | Enable auto-regeneration after state-changing commands |
+| `milestone` | string | `""` | Current milestone label shown on dashboard header |
+
+When `dashboard.enabled` is true, Pipeline commands that change project state (build, review, commit, remediate, audit, redteam, ui-review, release, brainstorm, plan, research) regenerate `docs/dashboard.html` as a final step. Set to `false` to disable auto-regeneration; you can still generate manually with `/pipeline:dashboard`.
+
+The dashboard reads from existing data — no new database tables or schema changes required. On Postgres tier, it queries the `tasks`, `findings`, and `decisions` tables. On files tier, it parses markdown files and git log.
+
+The generated HTML is a self-contained file with no external dependencies. It includes light/dark mode (respects system preference), a refresh button, and an auto-refresh toggle. All data is embedded at generation time — the page makes zero outbound network calls.
+
 ### commit
 
 | Field | Default | What It Does |

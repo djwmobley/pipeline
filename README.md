@@ -107,6 +107,8 @@ If you already have a config, init detects what's complete and resumes from wher
 
 **Not sure how much process to use?** `/pipeline:triage` looks at your changes and tells you.
 
+Use `/pipeline:dashboard` to generate a static HTML nerve center showing project phase, task progress, findings, and recommended next steps. The dashboard auto-regenerates when state-changing commands run.
+
 ## Requirements
 
 **Must have:** [Claude Code](https://docs.anthropic.com/en/docs/claude-code), Git.
@@ -163,6 +165,7 @@ See the **[command reference](docs/reference.md)** for the full list with detail
 | `/pipeline:worktree` | Isolated git worktree |
 | `/pipeline:finish` | Merge, PR, keep, or discard a branch |
 | `/pipeline:update` | Change config after setup |
+| `/pipeline:dashboard` | Generate static HTML project status report |
 | `/pipeline:knowledge` | Session tracking + search |
 
 ## Configuration

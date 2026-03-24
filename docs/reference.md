@@ -111,6 +111,41 @@ You can override: "treat this as TINY" and it follows that workflow instead.
 
 ---
 
+### `/pipeline:dashboard`
+
+Generates a self-contained HTML project status report at `docs/dashboard.html`.
+
+**What it does:**
+1. Reads project config (milestone, knowledge tier, integrations)
+2. Derives current phase from artifact existence (specs, plans, findings, tags)
+3. Collects state data (tasks, findings, decisions from Postgres or files)
+4. Collects git state (recent commits, branch, unpushed changes)
+5. Lists open GitHub issues (if enabled)
+6. Generates health summary and rule-based recommendations
+7. Dispatches haiku for contextual AI recommendations (skipped on failure)
+8. Substitutes all data into HTML template
+9. Atomic write to `docs/dashboard.html`
+
+**Arguments:**
+- No arguments — generates dashboard from current state
+
+**Auto-regeneration:** State-changing commands (`/pipeline:build`, `/pipeline:review`, `/pipeline:commit`, `/pipeline:remediate`, `/pipeline:audit`, `/pipeline:redteam`, `/pipeline:ui-review`, `/pipeline:release`, `/pipeline:brainstorm`, `/pipeline:plan`, `/pipeline:research`) regenerate the dashboard as a final step when `dashboard.enabled` is true.
+
+**Dashboard sections:**
+- **Health summary** — one-line status for executive glance
+- **Phase indicator** — visual pipeline: Research → Design → Plan → Build → Review → Release
+- **What Happened** — recent commits, closed findings, completed tasks, decisions (last 10)
+- **What's Active** — task progress, open findings by severity, GitHub issues, blockers
+- **What's Next** — rule-based lifecycle recommendations + AI-generated contextual suggestions
+
+**Tiered data:**
+- **Postgres tier:** Rich — task counts, finding breakdowns, decision lists, cross-referenced recommendations
+- **Files tier:** Degraded — artifact existence checks, finding file counts, git log
+
+**Output:** Self-contained HTML file. Opens in any browser. Light/dark mode. Auto-refresh toggle. Zero outbound calls — all data embedded at generation time.
+
+---
+
 ## Design & Build Commands
 
 ### `/pipeline:research`
