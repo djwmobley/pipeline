@@ -38,7 +38,7 @@ body {
 /* Navigation */
 nav {
   position: sticky;
-  top: 0;
+  top: 2rem;
   z-index: 10;
   background: var(--bg);
   border-bottom: 1px solid var(--border);
@@ -200,7 +200,7 @@ tr:last-child td { border-bottom: none; }
 .layer-4 { background: #3f3f00; color: var(--yellow); }
 
 /* Sections */
-section { scroll-margin-top: 4rem; }
+section { scroll-margin-top: 6rem; }
 
 /* Lists */
 ul, ol { margin-bottom: 1rem; padding-left: 1.5rem; color: var(--text-muted); }
@@ -241,9 +241,32 @@ hr {
   nav .inner { gap: 1rem; }
   pre { font-size: 0.8rem; padding: 0.75rem; }
 }
+
+/* Phase banner — remove when graduating to beta/release */
+.phase-banner {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: linear-gradient(90deg, #92400e, #78350f);
+  border-bottom: 1px solid #d97706;
+  padding: 0.5rem 1.5rem;
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #fbbf24;
+  font-family: var(--sans);
+}
+.phase-banner strong { color: #fde68a; }
+.phase-banner a { color: #fde68a; text-decoration: underline; }
 </style>
 </head>
 <body>
+
+<!-- PHASE BANNER — remove or update when graduating to beta/release -->
+<div class="phase-banner">
+  <strong>Alpha (v0.1.0)</strong> — Under active development. APIs and config may change.
+  <a href="https://github.com/djwmobley/pipeline/issues">Feedback welcome.</a>
+</div>
 
 <nav>
 <div class="inner">

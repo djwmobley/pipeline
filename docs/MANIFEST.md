@@ -77,6 +77,15 @@ When you ship a feature, check which docs are affected.
 | `docs/reference.md` | Update command sections for affected security commands |
 | `README.md` | Update security walkthrough if user-facing behavior changes |
 
+### Shipping a Release
+
+| Doc | What to Update |
+|-----|---------------|
+| `CHANGELOG.md` | Add new version entry with categorized changes |
+| `.claude-plugin/plugin.json` | Update version field |
+| `scripts/package.json` | Update version field |
+| `README.md` | Move roadmap items from Open to Shipped |
+
 ### Changing Knowledge Tier Behavior
 
 | Doc | What to Update |
@@ -103,4 +112,5 @@ These directories contain generated output, not maintained documentation:
 | File | Scope | Audience |
 |------|-------|----------|
 | `CLAUDE.md` | Contributor guidelines — structure, conventions, shell safety, prompt injection prevention, destructive operation guards | Contributors and agents working on Pipeline itself |
+| `CHANGELOG.md` | Version history — all releases with features, fixes, and breaking changes | Users and contributors tracking changes |
 | `LICENSE` | MIT license | Legal |

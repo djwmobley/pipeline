@@ -1,5 +1,7 @@
 # Pipeline
 
+> **Alpha (v0.1.0-alpha)** — This plugin is under active development. Commands, config keys, and behavior may change between releases. [Feedback welcome.](https://github.com/djwmobley/pipeline/issues)
+
 A [Claude Code](https://docs.anthropic.com/en/docs/claude-code) plugin that matches process to change size. A one-line fix gets committed in seconds. A new feature gets designed, planned, built by subagents, and reviewed — automatically.
 
 ## What Using It Looks Like
@@ -229,6 +231,7 @@ Tracked items for future development. Checked items are shipped.
 - [ ] **Compliance framework testing** — Test red team findings against FedRAMP, SOC 1/2, NIST CSF 2.0, GDPR, PCI DSS 4.0, HIPAA, ISO 27001 certification specifications. Map CWE findings to compliance controls and flag gaps.
 - [ ] **Workflow chaining** — Chain commands together for fire-and-forget execution. Example: `/pipeline:brainstorm` → `/pipeline:plan` → `/pipeline:build` → `/pipeline:review` → `/pipeline:commit` as a single invocation.
 - [ ] **Human-in-the-loop guidance** — Distinguish what SHOULD be checked by a human (recommended review points) from what MUST be checked (safety-critical decisions, destructive operations, security sign-offs).
+- [ ] **Alpha and beta testing and feedback loops** — Structured process for collecting user feedback during pre-release phases, graduating from alpha to beta to stable release.
 
 ### Shipped
 

@@ -1,5 +1,7 @@
 # Pipeline Security Agents — Overview
 
+> **Alpha** — Pipeline is under active development. Content may change between releases.
+
 This document explains what Pipeline's security agents do, why they exist, and how to use them. It is written for product managers, engineering leads, and anyone who needs to understand Pipeline's security capabilities without reading the underlying code.
 
 ---

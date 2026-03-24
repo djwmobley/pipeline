@@ -1,5 +1,7 @@
 # Attribution
 
+> **Alpha** — Pipeline is under active development. Content may change between releases.
+
 Pipeline is a synthesis. It was built by studying three open-source projects, running a structured evaluation, and merging the strongest ideas from each into a new architecture with original additions.
 
 ## How the Evaluation Worked

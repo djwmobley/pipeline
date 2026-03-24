@@ -1,5 +1,7 @@
 # The Big 4 — A Framework for Building Good Software
 
+> **Alpha** — Pipeline is under active development. Content may change between releases.
+
 Every agent prompt in Pipeline evaluates four dimensions: functionality, usability, performance, and security. This page explains where the framework comes from, why it works, and how Pipeline applies it.
 
 ## The Framework

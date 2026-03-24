@@ -1,5 +1,7 @@
 # Command Reference
 
+> **Alpha** — Pipeline is under active development. Content may change between releases.
+
 All Pipeline commands, their arguments, and what they do. Commands are grouped by layer — most users only need Layer 1.
 
 ## Layer 1 — Quality Gates (daily use)

@@ -1,5 +1,7 @@
 # Pipeline Prerequisites
 
+> **Alpha** — Pipeline is under active development. Content may change between releases.
+
 ## Fast Track
 
 Already have Git and Claude Code? You're ready:

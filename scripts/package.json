@@ -1,6 +1,6 @@
 {
   "name": "pipeline-scripts",
-  "version": "1.0.0",
+  "version": "0.1.0-alpha",
   "description": "Pipeline plugin knowledge DB scripts",
   "type": "commonjs",
   "scripts": {

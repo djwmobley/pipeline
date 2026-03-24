@@ -8,7 +8,7 @@
     {
       "name": "pipeline",
       "description": "Config-driven development pipeline: size routing, quality gates, structured reviews, TDD, and systematic debugging for any project",
-      "version": "1.0.0",
+      "version": "0.1.0-alpha",
       "source": "./",
       "category": "development"
     }
