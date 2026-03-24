@@ -83,13 +83,46 @@ Example: `MR-A2A-001 | HIGH | HIGH | skills/building/builder-prompt.md:12 | miss
 | medium | Multi-file, pattern changes | Yes |
 | architectural | Structural redesign | Report only |
 
+### Structural Pattern Detection
+
+The scanner automatically detects intentional distributed patterns — blocks that appear
+across 3+ files with consistent heading, position, and size. These are reported as
+STRUCTURAL_PATTERN entries rather than DUPLICATE entries. The analyst does not flag
+structural patterns for extraction.
+
+If a structural pattern instance has drifted from the canonical form (e.g., a command
+paraphrases the block instead of copying it verbatim), the analyst flags only the
+drifted instance as LOW severity `pattern-drift`.
+
+Detection heuristics:
+- Block appears in 3+ files
+- Has its own markdown heading
+- Under 15 lines
+- Consistent structural position across files
+- References a skill, config value, or external file
+
+### Role-Aware Analysis
+
+The analyst applies different tiers and limits based on file role:
+
+| Role | Line Limits | Tiers |
+|------|-------------|-------|
+| command | 300 LOW / 500 MEDIUM | HYG, ARCH |
+| skill | 200 LOW / 300 MEDIUM | HYG, ARCH |
+| prompt-template | 150 LOW / 200 MEDIUM | HYG, ARCH, A2A |
+| reference-data | no limit (selective loading) | HYG, ARCH |
+| docs | no limit (human-facing) | HYG only |
+
+Only prompt templates have substitution placeholders, DATA tags, and output contracts —
+so only prompt templates get A2A tier checks.
+
 ## Severity Mapping
 
 | Severity | Examples |
 |----------|----------|
 | HIGH | Dead cross-refs, missing DATA tags, handoff mismatches, output contract drift |
-| MEDIUM | Files >300 lines, duplicate blocks >20 lines, undocumented placeholders, overloaded interfaces |
-| LOW | Files 200-300 lines, frontmatter inconsistencies, config key drift, postgres migration candidates, context budget warnings |
+| MEDIUM | Files over role limit (e.g., command >500, skill >300, template >200), duplicate blocks >20 lines, undocumented placeholders, overloaded interfaces |
+| LOW | Files approaching role limit (e.g., command >300, skill >200, template >150), frontmatter inconsistencies, config key drift, postgres migration candidates, context budget warnings |
 
 ## Model Routing
 

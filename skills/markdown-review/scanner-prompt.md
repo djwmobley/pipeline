@@ -57,6 +57,15 @@ Complete each task in order. Output only the structured lines specified at the e
 
 6. **Output contract inventory**: For each prompt template file, extract the structured output format specification — the block that defines what lines the agent must emit (e.g., `MANIFEST ...`, `FINDING ...`, `FIXED ...`).
 
+7. **Structural pattern detection**: After completing duplicate detection (task 4), analyze all DUPLICATE entries for structural patterns. A duplicate is likely structural if ALL of these are true:
+   - The block appears in 3 or more files
+   - The block has its own markdown heading (### or ##)
+   - The block is under 15 lines
+   - The block appears at a consistent structural position across files (e.g., always the last or penultimate section)
+   - The block references a skill, config value, or external file (delegation, not logic)
+
+   For each structural pattern detected, emit a STRUCTURAL_PATTERN line instead of DUPLICATE lines.
+
 ## Output Format
 
 Emit one line per entry, using exactly these prefixes:
@@ -68,6 +77,7 @@ PLACEHOLDER [file] | [name] | [has_data_tag: yes/no] | [in_checklist: yes/no]
 DUPLICATE [hash] | [file1:line_range] | [file2:line_range] | [snippet_first_20_chars]
 CONFIG_KEY [file] | [key_path] | [documented_in_guide: yes/no]
 OUTPUT_CONTRACT [file] | [format_name] | [fields]
+STRUCTURAL_PATTERN [pattern_heading] | [file_count] | [lines_per_instance] | [files_list] | [drift: none/list_of_drifted_files]
 ```
 
 Output ONLY the structured lines above. No prose, no recommendations, no analysis.

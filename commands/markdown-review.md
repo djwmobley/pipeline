@@ -48,8 +48,8 @@ Present scope summary:
 ```
 ## Markdown Review
 
-**Scope:** [N] plugin files + [M] user-generated files ([total] lines)
-**Tiers:** [markdown_review.tiers]
+**Scope:** [N] plugin files ([P] commands, [S] skills, [T] templates, [R] reference) + [M] user files + [D] docs ([total] lines)
+**Tiers:** HYG on all, ARCH on plugin files, A2A on prompt templates only
 **Line limit:** [markdown_review.line_limit]
 **Fix mode:** [markdown_review.fix_mode]
 
@@ -89,27 +89,32 @@ Complete the substitution checklist:
 4. `[TIERS_TO_RUN]` → `markdown_review.tiers` joined as comma-separated string
 5. `[LINE_LIMIT]` → `markdown_review.line_limit`
 
-Dispatch the analyst as a single Agent tool call with model `{{MODEL}}` and the fully substituted prompt. Capture all FINDING blocks; parse each for: finding ID, severity, effort. Count totals by severity and effort tier.
+Dispatch the analyst as a single Agent tool call with model `{{MODEL}}` and the fully substituted prompt. Capture all FINDING blocks; parse each for: finding ID, severity, confidence, effort. Count totals by severity and effort tier. LOW confidence findings will be presented separately for user review.
 
 ---
 
 ### Step 3 — Present findings
 
-Group by tier (HYG, ARCH, A2A), sort by severity within each tier. Present:
+Group by tier (HYG, ARCH, A2A), sort by severity within each tier. Separate HIGH/MEDIUM confidence findings from LOW confidence findings. Present:
 ```
 ## Markdown Review Findings
 
 **Total:** [N] findings ([H] HIGH / [M] MEDIUM / [L] LOW)
 **Effort:** [Q] quick wins, [E] medium, [A] architectural (report only)
 
-### Tier 1: File Hygiene (MR-HYG)
+### Findings (HIGH/MEDIUM confidence)
+
+#### Tier 1: File Hygiene (MR-HYG)
 [findings or "No findings"]
 
-### Tier 2: Information Architecture (MR-ARCH)
+#### Tier 2: Information Architecture (MR-ARCH)
 [findings or "No findings"]
 
-### Tier 3: A2A Protocol (MR-A2A)
+#### Tier 3: A2A Protocol (MR-A2A)
 [findings or "No findings"]
+
+### For Your Review (LOW confidence)
+[findings the analyst flagged but isn't certain about — verify before fixing]
 ```
 
 If `fix_mode` is `"auto"`: skip to option a. If `"report"`: skip to option d. Otherwise present:

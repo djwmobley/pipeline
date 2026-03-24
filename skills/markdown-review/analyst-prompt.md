@@ -5,7 +5,7 @@
 Before dispatching this prompt, confirm every substitution is complete:
 
 1. `{{MODEL}}` → value of `models.architecture` from pipeline.yml (e.g., `claude-opus-4-5`)
-2. `[SCANNER_MANIFEST]` → full scanner output (all MANIFEST/XREF/PLACEHOLDER/DUPLICATE/CONFIG_KEY/OUTPUT_CONTRACT lines)
+2. `[SCANNER_MANIFEST]` → full scanner output (all MANIFEST/XREF/PLACEHOLDER/DUPLICATE/STRUCTURAL_PATTERN/CONFIG_KEY/OUTPUT_CONTRACT lines)
 3. `[KNOWLEDGE_TIER]` → value of `knowledge.tier` from pipeline.yml (e.g., `files` or `postgres`)
 4. `[TIERS_TO_RUN]` → value of `markdown_review.tiers` from pipeline.yml (e.g., `hygiene, architecture, a2a`)
 5. `[LINE_LIMIT]` → value of `markdown_review.line_limit` from pipeline.yml (e.g., `200`)
@@ -30,6 +30,21 @@ TIERS_TO_RUN=[TIERS_TO_RUN]
 LINE_LIMIT=[LINE_LIMIT]
 </DATA>
 
+## Tier Scoping by File Role
+
+Not all tiers apply to all files:
+
+| File Role | Tier 1 (HYG) | Tier 2 (ARCH) | Tier 3 (A2A) |
+|-----------|:---:|:---:|:---:|
+| command | YES | YES | NO (commands don't have placeholders) |
+| skill | YES | YES | NO (skills don't have placeholders) |
+| prompt-template | YES | YES | YES |
+| reference-data | YES (line count exempted) | YES | NO |
+| docs | YES (line count exempted) | NO (not agent-loaded) | NO |
+| config | NO | NO | NO |
+
+Only apply tier checks to files where the tier is marked YES.
+
 <ARCHITECTURE-MANDATE>
 "It works" is not evidence that it is well-structured.
 A 400-line command file that successfully dispatches agents still consumes
@@ -44,10 +59,18 @@ Apply this tier if `hygiene` appears in TIERS_TO_RUN.
 
 Check every MANIFEST entry for:
 
-- **Line count over limit**: Flag files where line count exceeds LINE_LIMIT. Severity MEDIUM if over 300, LOW if over LINE_LIMIT but under 300.
+- **Line count over limit**: Apply differentiated limits based on file role from the MANIFEST:
+  - `command`: MEDIUM if over 500 lines, LOW if over 300 lines
+  - `skill`: MEDIUM if over 300 lines, LOW if over 200 lines
+  - `prompt-template`: MEDIUM if over 200 lines, LOW if over 150 lines
+  - `reference-data`: Do not flag for line count — flag for selective loading instead (see Tier 2)
+  - `docs`: Do not flag for line count — these are human-facing, never loaded into agent contexts
+  - `config`: Do not flag for line count
 - **Mixed concerns**: Flag files where process instructions and reference data coexist in the same file (e.g., a skill file that embeds a full data table that could live elsewhere).
 - **Frontmatter violations**: Commands must have `allowed-tools` and `description`. Skills must have `name` and `description`. Prompt templates must have a substitution checklist. Any missing required field is a violation.
-- **Duplicate text blocks**: Flag any DUPLICATE entries from the scanner. Over 20 lines is HIGH severity. 10-20 lines is MEDIUM.
+- **Duplicate text blocks**: Handle DUPLICATE and STRUCTURAL_PATTERN entries differently:
+  - **STRUCTURAL_PATTERN entries**: Do NOT flag for extraction. These are intentional distributed patterns detected by the scanner. If `drift` is not `none`, flag drifted files as LOW severity with category `pattern-drift` — the drifted instance should be updated to match the canonical form.
+  - **DUPLICATE entries** (not structural): Flag as before. Over 20 lines is HIGH severity. 10-20 lines is MEDIUM. Include a concrete FIX instruction.
 - **Dead cross-references**: Flag any XREF entry where the target file does not appear in the MANIFEST.
 
 ## Tier 2 — Information Architecture (MR-ARCH)
@@ -90,8 +113,17 @@ Check XREF entries of type `skill-load` and `prompt-read`:
 | Severity | Examples |
 |----------|----------|
 | HIGH | Dead cross-refs, missing DATA tags, handoff mismatches, output contract drift |
-| MEDIUM | Files >300 lines, duplicate blocks >20 lines, undocumented placeholders, overloaded interfaces |
-| LOW | Files 200-300 lines, frontmatter inconsistencies, config key drift, context budget warnings |
+| MEDIUM | Files over role limit (e.g., command >500, skill >300, template >200), duplicate blocks >20 lines, undocumented placeholders, overloaded interfaces |
+| LOW | Files approaching role limit (e.g., command >300, skill >200, template >150), frontmatter inconsistencies, config key drift, context budget warnings |
+
+## Using CONFIDENCE
+
+Set CONFIDENCE based on how certain you are of the finding:
+- **HIGH**: Clear-cut violation with no ambiguity (missing DATA tags, dead cross-refs, files 2x+ over limit)
+- **MEDIUM**: Likely an issue but could have a non-obvious justification (borderline line counts, mixed concerns where the mix might be intentional)
+- **LOW**: Detected by rules but might be by design — include a note explaining the uncertainty
+
+LOW confidence findings are presented to the user with a recommendation to verify before fixing. The fixer will skip LOW confidence findings unless the user explicitly approves them.
 
 ## Output Format
 
