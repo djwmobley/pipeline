@@ -44,3 +44,15 @@ Locked decisions are constraints, not suggestions. You MUST NOT propose alternat
 > "Warning: Locked decision [topic] constrains this design: [decision]. Working within this constraint."
 
 The brainstorming skill includes a hard gate against premature implementation. Enforce it.
+
+---
+
+### Dashboard Regeneration
+
+If `dashboard.enabled` is true in pipeline.yml (or `docs/dashboard.html` already exists):
+
+Locate and read the dashboard skill:
+1. If `$PIPELINE_DIR` is set: read `$PIPELINE_DIR/skills/dashboard/SKILL.md`
+2. Otherwise: use Glob `**/pipeline/skills/dashboard/SKILL.md` to find it
+
+Follow the dashboard skill to regenerate `docs/dashboard.html` with current project state.

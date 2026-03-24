@@ -32,3 +32,15 @@ Follow the planning skill exactly.
 If the spec is too vague to produce this level of detail, stop and report: "Spec lacks detail for implementation-ready planning. Run `/pipeline:brainstorm` first or clarify: [specific questions]."
 
 **Save plans to:** `{docs.plans_dir}/YYYY-MM-DD-{feature-name}.md` (use `date +%Y-%m-%d` via Bash for today's date)
+
+---
+
+### Dashboard Regeneration
+
+If `dashboard.enabled` is true in pipeline.yml (or `docs/dashboard.html` already exists):
+
+Locate and read the dashboard skill:
+1. If `$PIPELINE_DIR` is set: read `$PIPELINE_DIR/skills/dashboard/SKILL.md`
+2. Otherwise: use Glob `**/pipeline/skills/dashboard/SKILL.md` to find it
+
+Follow the dashboard skill to regenerate `docs/dashboard.html` with current project state.

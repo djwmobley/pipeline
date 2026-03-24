@@ -145,6 +145,18 @@ PROJECT_ROOT=$(pwd) node <resolved_scripts_dir>/pipeline-embed.js index
 
 ---
 
+### Dashboard Regeneration
+
+If `dashboard.enabled` is true in pipeline.yml (or `docs/dashboard.html` already exists):
+
+Locate and read the dashboard skill:
+1. If `$PIPELINE_DIR` is set: read `$PIPELINE_DIR/skills/dashboard/SKILL.md`
+2. Otherwise: use Glob `**/pipeline/skills/dashboard/SKILL.md` to find it
+
+Follow the dashboard skill to regenerate `docs/dashboard.html` with current project state.
+
+---
+
 ### Step 6 — Handoff
 
 Present the research brief and suggest next step:

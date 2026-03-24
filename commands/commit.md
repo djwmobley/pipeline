@@ -159,6 +159,18 @@ Run each command in `commit.post_commit_hooks[]` sequentially.
 
 ---
 
+### Dashboard Regeneration
+
+If `dashboard.enabled` is true in pipeline.yml (or `docs/dashboard.html` already exists):
+
+Locate and read the dashboard skill:
+1. If `$PIPELINE_DIR` is set: read `$PIPELINE_DIR/skills/dashboard/SKILL.md`
+2. Otherwise: use Glob `**/pipeline/skills/dashboard/SKILL.md` to find it
+
+Follow the dashboard skill to regenerate `docs/dashboard.html` with current project state.
+
+---
+
 ### Safety rules (always enforced)
 
 - Never stage or commit files matching `commit.never_stage` patterns
