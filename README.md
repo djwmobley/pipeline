@@ -75,6 +75,14 @@ Agents are stateless — they read their own context from GitHub issues or the d
 
 After all fixes land, it runs source-appropriate verification — specialist re-runs for security findings, sector re-runs for audit findings, review re-runs for code review findings, screenshot re-analysis for UI findings.
 
+### You verify the security posture
+
+After remediation, `/pipeline:purpleteam` verifies the aggregate result. It dispatches parallel defense specialists to confirm each attack vector is actually closed — not just that code changed, but that the specific exploitation scenario no longer works. An opus analyst checks whether the red team's exploit chains are now broken. A dependency audit catches newly-published vulnerabilities. Defensive patterns from verified fixes are codified into your knowledge tier so future code avoids the same mistakes.
+
+GitHub issues are updated with verification evidence — verified findings close cleanly, regressions are reopened with details.
+
+For a full explanation of the security workflow, see [Security Overview](docs/security.md).
+
 ## Getting Started
 
 ### Install
@@ -158,6 +166,7 @@ See the **[command reference](docs/reference.md)** for the full list with detail
 | `/pipeline:audit` | Full codebase review (parallel sectors) |
 | `/pipeline:redteam` | Security red team assessment |
 | `/pipeline:remediate` | Fix findings from any workflow with tracked issues |
+| `/pipeline:purpleteam` | Verify aggregate security posture after remediation |
 | `/pipeline:debug` | Systematic root-cause diagnosis |
 | `/pipeline:simplify` | Targeted code simplification |
 | `/pipeline:release` | Changelog + version bump + tag |

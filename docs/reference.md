@@ -339,6 +339,46 @@ All finding sources produce identical artifacts — same issue format, same comm
 
 ---
 
+### `/pipeline:purpleteam`
+
+Aggregate security verification after a red team + remediation cycle. Verifies that fixes actually closed attack vectors, checks exploit chains are broken, extracts defensive patterns, and runs dependency audit.
+
+**What it does:**
+1. Reads the most recent red team report and remediation summary from `docs/findings/`
+2. Dispatches parallel sonnet verifiers — one per fixed finding — to confirm each attack vector is closed
+3. Runs ecosystem-native dependency audit (`commands.security_audit` from config)
+4. Dispatches opus chain analyst to verify exploit chains are broken
+5. Dispatches opus posture analyst to synthesize results and extract defensive rules
+6. Updates GitHub issues with verification evidence (VERIFIED closes, REGRESSION/INCOMPLETE reopens)
+7. Persists defensive rules to knowledge tier
+8. Writes purple team report to `docs/findings/purpleteam-[date].md`
+
+**Read-only assessment.** No source code is modified.
+
+**Prerequisites:** A red team report (`docs/findings/redteam-*.md`) and a remediation summary (`docs/findings/remediation-*.md`) must exist. Run `/pipeline:redteam` then `/pipeline:remediate --source redteam` first.
+
+**Verdicts per finding:**
+- **VERIFIED** — attack vector confirmed closed with code-level evidence
+- **REGRESSION** — fix introduced a new vulnerability or reopened a related vector
+- **INCOMPLETE** — code changed but the specific exploitation scenario still works
+
+**Verdicts per exploit chain:**
+- **CHAIN_BROKEN** — at least one link verified-fixed, no alternative paths exist
+- **CHAIN_WEAKENED** — some links fixed but alternative attack paths remain
+- **CHAIN_INTACT** — no links in the chain were successfully fixed
+
+**Posture ratings:** HARDENED (all critical/high verified, all chains broken), IMPROVED (most verified), PARTIAL (mixed), UNCHANGED (majority incomplete/regressed).
+
+**Dependency audit:** Runs `commands.security_audit` from config (e.g., `npm audit --json`). Cross-references with DEPS findings from red team. Flags new advisories published since the red team ran.
+
+**GitHub issue updates:** Verified findings get a comment with evidence and are closed. Regressions and incompletes reopen the issue with details. All status tracked via issue comments — no separate tracking needed.
+
+**Token cost:** ~(N x 12K) + 55K for chain + posture analysis. A 10-finding verification is ~175K tokens. The command shows the estimate before launching.
+
+**Output:** `docs/findings/purpleteam-[date].md`
+
+---
+
 ### `/pipeline:debug`
 
 Systematic 4-phase root-cause diagnosis.

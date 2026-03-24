@@ -14,6 +14,7 @@ commands:
   lint_error_pattern: " error "
   test: "npx vitest run"
   test_verbose: "npx vitest run --reporter=verbose"
+  security_audit: "npm audit --json"  # Dependency vulnerability scan; set by init from pkg_manager
 
 # Size routing
 routing:
@@ -72,6 +73,14 @@ remediate:
     review: "review-rerun"             # Re-run review on changed files
     ui-review: "screenshot"            # Re-capture and analyze screenshot
     external: "none"                   # Skip — run appropriate command manually
+
+# Purple team verification
+# Run /pipeline:purpleteam after a red team + remediation cycle
+# Verifies aggregate security posture, not individual fixes
+purpleteam:
+  defensive_rules: true          # Extract and persist defensive patterns from verified fixes
+  chain_verification: true       # Verify exploit chains (uses opus)
+  posture_report: true           # Generate before/after posture comparison
 
 # Git
 commit:
@@ -147,7 +156,7 @@ integrations:
     use_in: [brainstorm]
   github:
     enabled: false
-    use_in: [commit, finish, remediate]
+    use_in: [commit, finish, remediate, purpleteam]
   chrome_devtools:
     enabled: false
     use_in: [ui-review]

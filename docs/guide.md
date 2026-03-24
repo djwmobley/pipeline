@@ -121,6 +121,7 @@ Your quality gate commands. Set any to `null` to disable that gate.
 | `lint_error_pattern` | `" error "` | Grep pattern to distinguish errors from warnings |
 | `test` | `"npx vitest run"` | `/pipeline:commit`, `/pipeline:finish`, `/pipeline:release` |
 | `test_verbose` | `"npx vitest run --reporter=verbose"` | `/pipeline:test` |
+| `security_audit` | `"npm audit --json"` | Dependency vulnerability scanner command. Set by init from `project.pkg_manager`. Null to skip. |
 
 Init detects these from your project files. If you change tools later, update here or run `/pipeline:update commands`.
 
@@ -228,6 +229,22 @@ Controls `/pipeline:remediate` — multi-source finding remediation. Accepts fin
 | Architectural | Structural change | Opus planner → sonnet implementer + sonnet reviewer per step |
 
 **Model routing:** Triage uses `models.cheap` (haiku). Implementation uses `models.implement` (sonnet). Review uses `models.review` (sonnet). Architectural planning uses `models.architecture` (opus). Verification re-runs use `models.review` (sonnet).
+
+### purpleteam
+
+Controls `/pipeline:purpleteam` — aggregate security verification after remediation.
+
+| Field | Default | What It Does |
+|-------|---------|-------------|
+| `defensive_rules` | `true` | Extract reusable defensive patterns from verified fixes and persist to knowledge tier |
+| `chain_verification` | `true` | Verify exploit chains from red team report (uses `models.architecture`) |
+| `posture_report` | `true` | Generate before/after posture comparison and recommendations |
+
+**Model routing:** Per-finding verification uses `models.review` (sonnet). Chain analysis and posture assessment use `models.architecture` (opus).
+
+**Prerequisites:** Requires a completed red team + remediation cycle. Reports must exist in `docs/findings/`.
+
+**Dependency audit:** Uses `commands.security_audit` (see commands section above). Null to skip.
 
 ### dashboard
 
