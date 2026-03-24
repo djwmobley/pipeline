@@ -1,8 +1,8 @@
 # Command Reference
 
-All Pipeline commands, their arguments, and what they do.
+All Pipeline commands, their arguments, and what they do. Commands are grouped by layer — most users only need Layer 1.
 
-## Everyday Commands
+## Layer 1 — Quality Gates (daily use)
 
 ### `/pipeline:commit`
 
@@ -146,7 +146,7 @@ Generates a self-contained HTML project status report at `docs/dashboard.html`.
 
 ---
 
-## Design & Build Commands
+## Layer 2 — Structured Builds (features)
 
 ### `/pipeline:research`
 
@@ -226,29 +226,7 @@ Then commit with: /pipeline:commit reviewed:✓
 
 ---
 
-## Advanced Commands
-
-### `/pipeline:audit`
-
-Full codebase review with parallel sector agents.
-
-**What it does:**
-1. Runs Phase 0 grep preprocessing (configurable patterns like `console.log`, unguarded `await`)
-2. Dispatches one review agent per sector (from `review.sectors[]` in config)
-3. Each sector agent does a two-pass read of its files
-4. A synthesis agent combines all sector reports:
-   - Traces crash paths across sectors
-   - Verifies dead exports
-   - Detects cross-sector duplication
-   - Escalates severity
-   - Deduplicates findings
-5. Produces unified report with confidence counts
-
-**Read-only.** No source code is modified.
-
-**First run:** If no sectors are configured, offers to auto-generate them from your directory structure.
-
----
+## Layer 3 — Security (pre-release)
 
 ### `/pipeline:redteam`
 
@@ -402,6 +380,30 @@ Full security assessment loop. Orchestrates red team → remediate → purple te
 
 ---
 
+## Layer 4 — Specialized Tools
+
+### `/pipeline:audit`
+
+Full codebase review with parallel sector agents.
+
+**What it does:**
+1. Runs Phase 0 grep preprocessing (configurable patterns like `console.log`, unguarded `await`)
+2. Dispatches one review agent per sector (from `review.sectors[]` in config)
+3. Each sector agent does a two-pass read of its files
+4. A synthesis agent combines all sector reports:
+   - Traces crash paths across sectors
+   - Verifies dead exports
+   - Detects cross-sector duplication
+   - Escalates severity
+   - Deduplicates findings
+5. Produces unified report with confidence counts
+
+**Read-only.** No source code is modified.
+
+**First run:** If no sectors are configured, offers to auto-generate them from your directory structure.
+
+---
+
 ### `/pipeline:markdown-review`
 
 Full markdown health check across three tiers: file hygiene, information architecture, and A2A protocol. Scans plugin instruction files and user-generated markdown, then fixes what it finds.
@@ -446,9 +448,20 @@ Never proposes a fix before Phase 1 is complete.
 
 ### `/pipeline:simplify`
 
-Targeted simplification of files flagged by review.
+Targeted code simplification for files flagged by `/pipeline:review` or `/pipeline:audit`.
 
-Receives a file list from `/pipeline:review` simplify candidates. Reviews each for SOLID violations, premature abstraction, and dead code. Applies fixes.
+**What it does:**
+1. Reads the "Simplify candidates" block from the most recent review or audit output
+2. For each flagged file, analyzes for:
+   - SOLID violations (god objects, tight coupling, interface bloat)
+   - Premature abstraction (helpers/utilities used once, config for a single case)
+   - Dead code (unused exports, unreachable branches, commented-out blocks)
+   - Over-engineering (feature flags for non-optional paths, unnecessary indirection)
+3. Applies fixes directly — no review subagent (the simplification IS the review)
+
+**When to use:** After `/pipeline:review` flags simplification candidates in its output. The review command identifies the files; simplify does the work.
+
+**Does not re-review.** Simplify trusts the review's identification. If you want the simplified code reviewed again, run `/pipeline:review` afterward.
 
 ---
 
