@@ -45,6 +45,11 @@ The research and confidence scoring system.
 - **Decision locks** — constraints captured during research/planning that cannot be overridden during implementation without explicit unlocking.
 - **Fresh context per task** — each subagent starts clean with only its task description and relevant files, preventing quality degradation as context accumulates. GSD calls this "context engineering."
 
+**Adopted later (post-competitive analysis, March 2026):**
+- **Build crash recovery** — GSD uses lock files, PID monitoring, `completed-units.json`, and auto-resume. Pipeline adopted the checkpoint concept as `.claude/build-state.json` — simpler (no PID monitoring, no exponential backoff) but covers the critical case of resuming interrupted multi-task builds.
+- **Worktree lifecycle management** — GSD detects merged branches, stale worktrees (14+ days), dirty working directories, and shows safety status. Pipeline adopted these as a health check step before worktree creation.
+- **Pre-inlined context for subagent dispatch** — GSD inlines task plans, decision registers, and prior summaries into dispatch prompts with compression levels. Pipeline adopted the concept (decision register + prior task summaries + framework detection) without GSD's compression levels.
+
 **Adapted:**
 - GSD's agent profiles (named personas with backstories) were rejected — they add token overhead without measurable quality improvement. Pipeline uses model routing instead (haiku/sonnet/opus by task complexity).
 - GSD's cost tracking was not adopted — useful but outside Pipeline's scope.

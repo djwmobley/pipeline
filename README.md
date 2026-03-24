@@ -280,7 +280,7 @@ Pipeline builds on ideas from three open-source projects. Credit where it's due:
 | Project | Author | License | What Pipeline Adopted |
 |---------|--------|---------|----------------------|
 | [Superpowers](https://github.com/obra/superpowers) | Jesse Vincent / Prime Radiant | MIT | Adversarial review, anti-rationalization gates, subagent dispatch, brainstorm-plan-build flow, worktree isolation |
-| [GSD-2](https://github.com/gsd-build/gsd-2) | gsd-build | MIT | Research phase, confidence scoring, decision locks, fresh-context-per-task |
+| [GSD-2](https://github.com/gsd-build/gsd-2) | gsd-build | MIT | Research phase, confidence scoring, decision locks, fresh-context-per-task, crash recovery, worktree lifecycle, pre-inlined dispatch context |
 | [BMAD Method](https://github.com/bmad-code-org/BMAD-METHOD) | BMad Code, LLC | MIT | Implementation readiness gates, scale-adaptive planning |
 
 See **[full attribution details](docs/attribution.md)** for the complete breakdown — what was adopted, what was adapted, and what was rejected from each source.
