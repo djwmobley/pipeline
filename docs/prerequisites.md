@@ -360,7 +360,35 @@ Get your key from: PostHog > Project Settings.
 
 ---
 
-## 11. Install the Pipeline Plugin
+## 11. Security Audit Tools
+
+**What these do:** Scan your project's dependencies for known security vulnerabilities. They check free, public databases — no accounts, no API keys, no cost.
+
+**Required?** Optional but recommended. Without them, Pipeline's security commands still work but skip the automated dependency audit step.
+
+Pipeline uses whichever tool matches your project's language. Most are already installed with their parent tools.
+
+| If your project uses... | The audit tool is... | How to get it | Vulnerability database |
+|---|---|---|---|
+| Node.js (npm) | `npm audit` | Already installed with Node.js (step 3) | GitHub Advisory Database |
+| Node.js (yarn) | `yarn audit` | `npm install -g yarn` | GitHub Advisory Database |
+| Node.js (pnpm) | `pnpm audit` | `npm install -g pnpm` | GitHub Advisory Database |
+| Python | `pip audit` | `pip install pip-audit` | Open Source Vulnerabilities (OSV) |
+| Rust | `cargo audit` | `cargo install cargo-audit` | RustSec Advisory Database |
+| Go | `govulncheck` | `go install golang.org/x/vuln/cmd/govulncheck@latest` | Go Vulnerability Database |
+
+**If you're using npm** (most common), you're already set — `npm audit` comes with Node.js.
+
+**Verify:** Run your project's audit command to test it:
+```
+npm audit
+```
+
+You should see either "found 0 vulnerabilities" or a list of known issues. Both mean the tool is working.
+
+---
+
+## 12. Install the Pipeline Plugin
 
 **This is the last step.** Everything above should be installed and verified first.
 
@@ -394,8 +422,9 @@ psql --version
 ollama --version
 claude --version
 claude mcp list
+npm audit --help
 ```
 
-The last command (`claude mcp list`) should show any MCP servers you connected (stitch, figma, etc.).
+The `claude mcp list` command should show any MCP servers you connected (stitch, figma, etc.). The `npm audit --help` command should print usage info — if you're using a different language, substitute your audit tool (e.g., `pip audit --help`, `cargo audit --help`).
 
 If any command says "not recognized" or "not found", close your terminal, reopen it, and try again. If it still doesn't work, the tool may not be in your PATH — see the notes in each step above.
