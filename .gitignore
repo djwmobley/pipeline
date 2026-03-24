@@ -1,4 +1,5 @@
 CLAUDE.local.md
+.claude/pipeline.yml
 node_modules/
 scripts/node_modules/
 scripts/package-lock.json
