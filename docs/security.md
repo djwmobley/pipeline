@@ -57,7 +57,7 @@ Red team thinks like someone trying to break into your application. It deploys u
 | CSRF | Tricking users into performing actions they didn't intend |
 | Cryptography | Weak encryption, hardcoded keys, insecure random numbers |
 | Configuration | Debug mode left on, verbose error messages, missing security headers |
-| Dependencies | Known vulnerabilities in third-party packages |
+| Dependencies | Runs live vulnerability audit (`npm audit`, `pip audit`, etc.), checks for known CVEs, lockfile integrity, typosquatting, abandoned packages |
 | Access Control | Users accessing data they shouldn't, privilege escalation |
 | Rate Limiting | No limits on login attempts, denial-of-service vectors |
 | Data Exposure | Sensitive data in logs, URLs, or API responses |

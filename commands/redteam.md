@@ -256,6 +256,7 @@ For each selected specialist, dispatch a subagent:
 10. `[MODE]` → `redteam.mode` from config
 11. `[URL]` → `redteam.url` from config (for black-box mode)
 12. `[SOURCE_DIRS]` → `routing.source_dirs` from config
+13. `[SECURITY_AUDIT_CMD]` → `commands.security_audit` from config (or `"null"` if not configured)
 
 Launch **all specialists in parallel** using the Agent tool. Each agent gets `description: "Red Team Specialist [DOMAIN_ID]: [DOMAIN_NAME]"`.
 
