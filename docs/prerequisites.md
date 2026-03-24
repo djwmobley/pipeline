@@ -224,7 +224,7 @@ This downloads about 670 MB — may take a few minutes on slower connections. It
 claude
 ```
 
-It will open a browser window to sign in with your Anthropic account. If you don't have one yet, you can create one at [console.anthropic.com](https://console.anthropic.com). A paid plan is required (Pro or Team).
+It will open a browser window to sign in with your Anthropic account. If you don't have one yet, you can create one at [console.anthropic.com](https://console.anthropic.com). A paid plan is required (Pro or Max).
 
 ---
 
