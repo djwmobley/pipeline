@@ -38,7 +38,7 @@
         --accent-hover: #3b82f6;
         --border: #3f3f46;
         --card-bg: #27272a;
-        --header-bg: #18181b;
+        --header-bg: #1b1b1e;
         --phase-line: #52525b;
       }
     }
@@ -51,7 +51,7 @@
       --accent-hover: #3b82f6;
       --border: #3f3f46;
       --card-bg: #27272a;
-      --header-bg: #18181b;
+      --header-bg: #1b1b1e;
       --phase-line: #52525b;
     }
 
@@ -100,10 +100,10 @@
     }
 
     .header-inner {
-      max-width: 960px;
+      max-width: 1120px;
       margin: 0 auto;
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: space-between;
       flex-wrap: wrap;
       gap: 8px;
@@ -111,15 +111,53 @@
 
     .header-left {
       display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .header-top-row {
+      display: flex;
       align-items: center;
       flex-wrap: wrap;
-      gap: 12px;
-      min-width: 0;
+      gap: 10px;
     }
 
     .project-name {
       font-size: 16px;
       font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
+
+    .quick-links {
+      display: flex;
+      gap: 6px;
+    }
+
+    .quick-links a {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .quick-links a:hover {
+      text-decoration: none;
+      border-color: var(--accent);
+    }
+
+    .milestone-badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 10px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 600;
       white-space: nowrap;
     }
 
@@ -136,49 +174,19 @@
       color: var(--border);
     }
 
-    .milestone-badge {
-      display: inline-block;
-      padding: 1px 8px;
-      border-radius: 10px;
-      background: var(--accent);
-      color: #fff;
-      font-size: 11px;
-      font-weight: 600;
-      white-space: nowrap;
-    }
-
-    .quick-links {
-      display: flex;
-      gap: 8px;
-      font-size: 12px;
-    }
-
-    .quick-links a {
-      padding: 2px 6px;
-      border-radius: 4px;
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      font-size: 11px;
-      white-space: nowrap;
-    }
-    .quick-links a:hover {
-      text-decoration: none;
-      border-color: var(--accent);
-    }
-
     /* Header controls (right side) */
     .header-controls {
       display: flex;
       align-items: center;
       gap: 8px;
       flex-shrink: 0;
+      padding-top: 2px;
     }
 
-    .header-controls button,
-    .header-controls select {
+    .header-controls button {
       font-family: var(--sans);
       font-size: 12px;
-      padding: 4px 10px;
+      padding: 4px 12px;
       border: 1px solid var(--border);
       border-radius: 4px;
       background: var(--card-bg);
@@ -186,31 +194,56 @@
       cursor: pointer;
       transition: border-color 0.15s;
     }
-    .header-controls button:hover,
-    .header-controls select:hover {
+    .header-controls button:hover {
       border-color: var(--accent);
     }
 
-    .header-controls label {
+    .auto-refresh-group {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .auto-refresh-group label {
       font-size: 12px;
       color: var(--text-muted);
       display: flex;
       align-items: center;
       gap: 4px;
       white-space: nowrap;
+      padding: 4px 10px;
+      cursor: pointer;
     }
 
-    .auto-refresh-group {
-      display: flex;
-      align-items: center;
-      gap: 4px;
+    .auto-refresh-group .ar-divider {
+      width: 1px;
+      height: 20px;
+      background: var(--border);
+      flex-shrink: 0;
+    }
+
+    .auto-refresh-group select {
+      font-family: var(--sans);
+      font-size: 12px;
+      padding: 4px 8px;
+      border: none;
+      background: transparent;
+      color: var(--text);
+      cursor: pointer;
+      outline: none;
+      -webkit-appearance: auto;
     }
 
     /* ============================================================
        Main Content
        ============================================================ */
     .main {
-      max-width: 960px;
+      max-width: 1120px;
       margin: 0 auto;
       padding: 20px 20px 40px;
     }
@@ -219,18 +252,41 @@
        Health Summary
        ============================================================ */
     .health-summary {
-      font-size: 16px;
-      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 20px;
+      font-weight: 700;
       padding: 14px 0;
       border-bottom: 1px solid var(--border);
       margin-bottom: 24px;
+    }
+
+    .health-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--accent);
+      flex-shrink: 0;
+      animation: health-pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes health-pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.4); }
+      50% { box-shadow: 0 0 0 6px rgba(37, 99, 235, 0); }
+    }
+    html.dark .health-dot {
+      animation-name: health-pulse-dark;
+    }
+    @keyframes health-pulse-dark {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(96, 165, 250, 0.4); }
+      50% { box-shadow: 0 0 0 6px rgba(96, 165, 250, 0); }
     }
 
     /* ============================================================
        Section Styling
        ============================================================ */
     .section {
-      border-top: 1px solid var(--border);
       padding: 20px 0;
     }
 
@@ -250,6 +306,11 @@
     /* ============================================================
        Phase Indicator (pipeline visualization)
        ============================================================ */
+    .phase-section {
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 24px;
+    }
+
     .phase-pipeline {
       display: flex;
       align-items: center;
@@ -322,6 +383,21 @@
     }
 
     /* ============================================================
+       Two-Column Grid
+       ============================================================ */
+    .two-col-grid {
+      display: grid;
+      grid-template-columns: 5fr 7fr;
+      gap: 32px;
+      margin-bottom: 8px;
+    }
+
+    .col-left,
+    .col-right {
+      min-width: 0;
+    }
+
+    /* ============================================================
        Activity Feed
        ============================================================ */
     .activity-list {
@@ -361,7 +437,7 @@
     }
 
     .activity-time {
-      font-size: 11px;
+      font-size: 12px;
       color: var(--text-muted);
       white-space: nowrap;
     }
@@ -376,8 +452,35 @@
     }
 
     /* ============================================================
+       Blockers
+       ============================================================ */
+    .blockers-box {
+      border: 2px solid var(--severity-high);
+      border-radius: 6px;
+      padding: 12px 16px;
+      margin-top: 16px;
+      background: var(--card-bg);
+    }
+
+    .blockers-heading {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--severity-high);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* ============================================================
        Task Progress
        ============================================================ */
+    .progress-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 14px 16px;
+    }
+
     .progress-bar-container {
       background: var(--card-bg);
       border: 1px solid var(--border);
@@ -401,7 +504,7 @@
       display: inline-block;
       padding: 2px 8px;
       border-radius: 10px;
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 700;
       margin-right: 4px;
       margin-bottom: 4px;
@@ -420,26 +523,6 @@
     .badge-low, .badge-info {
       background: var(--severity-low);
       color: #fff;
-    }
-
-    /* ============================================================
-       Blockers
-       ============================================================ */
-    .blockers-box {
-      border: 2px solid var(--severity-high);
-      border-radius: 6px;
-      padding: 12px 16px;
-      margin-top: 12px;
-      background: var(--card-bg);
-    }
-
-    .blockers-heading {
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--severity-high);
-      margin-bottom: 6px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
     }
 
     /* ============================================================
@@ -463,18 +546,50 @@
     }
 
     /* ============================================================
-       Recommendations
+       Subsection Spacing
        ============================================================ */
-    .recommendations {
+    .subsection {
+      margin-bottom: 20px;
+    }
+
+    .subsection-heading {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    /* ============================================================
+       What's Next — full width, three-card row
+       ============================================================ */
+    .whats-next-section {
+      border-top: 1px solid var(--border);
+      padding: 20px 0;
+    }
+
+    .next-cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
       margin-top: 8px;
     }
 
+    .recommendations {
+      margin-top: 0;
+    }
+
     .recommendation {
-      padding: 10px 14px;
+      padding: 12px 14px;
       margin-bottom: 8px;
       border-radius: 6px;
       background: var(--card-bg);
       border: 1px solid var(--border);
+    }
+
+    .recommendation-ai {
+      border-left: 3px solid var(--accent);
     }
 
     .recommendation-command {
@@ -500,30 +615,27 @@
       letter-spacing: 0.5px;
     }
 
-    /* ============================================================
-       Subsection Spacing
-       ============================================================ */
-    .subsection {
-      margin-bottom: 16px;
-    }
-
-    .subsection-heading {
-      font-size: 13px;
+    .ai-badge {
+      display: inline-block;
+      font-size: 12px;
       font-weight: 700;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 8px;
+      color: var(--accent);
+      background: transparent;
+      border: 1px solid var(--accent);
+      border-radius: 4px;
+      padding: 0 5px;
+      margin-bottom: 6px;
+      letter-spacing: 0.03em;
     }
 
     /* ============================================================
        Footer
        ============================================================ */
     .footer {
-      max-width: 960px;
+      max-width: 1120px;
       margin: 0 auto;
       padding: 16px 20px;
-      font-size: 11px;
+      font-size: 12px;
       color: var(--text-muted);
       text-align: center;
       border-top: 1px solid var(--border);
@@ -552,12 +664,29 @@
       .header { position: static; }
       .header-controls { display: none; }
       .phase-current { animation: none; }
+      .health-dot { animation: none; }
       body { font-size: 12px; }
+      .two-col-grid {
+        grid-template-columns: 1fr;
+      }
+      .next-cards {
+        grid-template-columns: 1fr;
+      }
     }
 
     /* ============================================================
        Responsive
        ============================================================ */
+    @media (max-width: 768px) {
+      .two-col-grid {
+        grid-template-columns: 1fr;
+        gap: 0;
+      }
+      .next-cards {
+        grid-template-columns: 1fr;
+      }
+    }
+
     @media (max-width: 640px) {
       .header-inner {
         flex-direction: column;
@@ -572,7 +701,7 @@
       }
       .phase-pill {
         padding: 4px 10px;
-        font-size: 11px;
+        font-size: 12px;
       }
       .phase-arrow {
         width: 16px;
@@ -588,35 +717,37 @@
   <header class="header">
     <div class="header-inner">
       <div class="header-left">
-        <span class="project-name">{{PROJECT_NAME}}</span>
-        <div class="header-meta">
+        <div class="header-top-row">
+          <span class="project-name">{{PROJECT_NAME}}</span>
+          <div class="quick-links">
+            {{SPEC_LINK}}
+            {{PLAN_LINK}}
+            {{FINDINGS_LINK}}
+            {{REPO_LINK}}
+          </div>
           {{MILESTONE}}
-          <span class="separator">|</span>
+        </div>
+        <div class="header-meta">
           {{BRANCH}}
           <span class="separator">|</span>
           <span>{{LAST_UPDATED}}</span>
-        </div>
-        <div class="quick-links">
-          {{SPEC_LINK}}
-          {{PLAN_LINK}}
-          {{FINDINGS_LINK}}
-          {{REPO_LINK}}
         </div>
       </div>
       <div class="header-controls">
         <div class="auto-refresh-group">
           <label>
             <input type="checkbox" id="auto-refresh-toggle">
-            Auto
+            Auto-refresh
           </label>
+          <span class="ar-divider"></span>
           <select id="auto-refresh-interval">
             <option value="30000">30s</option>
-            <option value="60000" selected>1m</option>
-            <option value="300000">5m</option>
+            <option value="60000" selected>1 min</option>
+            <option value="300000">5 min</option>
           </select>
         </div>
-        <button id="refresh-btn" title="Refresh now">Refresh</button>
-        <button id="theme-toggle" title="Toggle light/dark mode">Theme</button>
+        <button id="refresh-btn">Refresh</button>
+        <button id="theme-toggle">Theme</button>
       </div>
     </div>
   </header>
@@ -628,64 +759,75 @@
 
     <!-- Health Summary -->
     <div class="health-summary">
+      <span class="health-dot"></span>
       {{HEALTH_SUMMARY}}
     </div>
 
-    <!-- Section 1: Phase Indicator -->
-    <section class="section">
+    <!-- Phase Indicator -->
+    <section class="phase-section">
       <h2 class="section-heading">Phase</h2>
       <div class="phase-pipeline">
         {{PHASE_INDICATORS}}
       </div>
     </section>
 
-    <!-- Section 2: What Happened -->
-    <section class="section">
-      <h2 class="section-heading">What Happened</h2>
-      <ul class="activity-list">
-        {{ACTIVITY_FEED}}
-      </ul>
-    </section>
+    <!-- Two-Column Grid: What Happened + What's Active -->
+    <div class="two-col-grid">
 
-    <!-- Section 3: What's Active -->
-    <section class="section">
-      <h2 class="section-heading">What's Active</h2>
-
-      <div class="subsection">
-        <div class="subsection-heading">Progress</div>
-        {{TASK_PROGRESS}}
+      <!-- LEFT COLUMN: What Happened + Blockers -->
+      <div class="col-left">
+        <section class="section">
+          <h2 class="section-heading">What Happened</h2>
+          <ul class="activity-list">
+            {{ACTIVITY_FEED}}
+          </ul>
+          {{BLOCKERS}}
+        </section>
       </div>
 
-      <div class="subsection">
-        <div class="subsection-heading">Open Findings</div>
-        {{OPEN_FINDINGS}}
+      <!-- RIGHT COLUMN: What's Active -->
+      <div class="col-right">
+        <section class="section">
+          <h2 class="section-heading">What's Active</h2>
+
+          <div class="subsection">
+            <div class="subsection-heading">Progress</div>
+            <div class="progress-card">
+              {{TASK_PROGRESS}}
+            </div>
+          </div>
+
+          <div class="subsection">
+            <div class="subsection-heading">Open Findings</div>
+            {{OPEN_FINDINGS}}
+          </div>
+
+          <div class="subsection">
+            <div class="subsection-heading">GitHub Issues</div>
+            {{GITHUB_ISSUES}}
+          </div>
+        </section>
       </div>
 
-      <div class="subsection">
-        {{GITHUB_ISSUES}}
-      </div>
+    </div>
 
-      <div class="subsection">
-        {{BLOCKERS}}
-      </div>
-    </section>
-
-    <!-- Section 4: What's Next -->
-    <section class="section">
+    <!-- What's Next (full width) -->
+    <section class="whats-next-section">
       <h2 class="section-heading">What's Next</h2>
-
-      <div class="subsection">
-        <div class="subsection-heading">Lifecycle</div>
-        <div class="recommendations">
-          {{RULE_RECOMMENDATIONS}}
+      <div class="next-cards">
+        <div>
+          <div class="recommendation-label">Lifecycle</div>
+          <div class="recommendations">
+            {{RULE_RECOMMENDATIONS}}
+          </div>
         </div>
-      </div>
-
-      <div class="subsection">
-        <div class="recommendation-label">Pipeline suggests:</div>
-        <div class="recommendations">
-          {{AI_RECOMMENDATIONS}}
+        <div>
+          <div class="recommendation-label"><span class="ai-badge">AI</span> Pipeline suggests</div>
+          <div class="recommendations">
+            {{AI_RECOMMENDATIONS}}
+          </div>
         </div>
+        <div></div>
       </div>
     </section>
 
