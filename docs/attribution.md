@@ -84,5 +84,8 @@ These features don't trace to any of the three source projects:
 - **Project profile system** — auto-detection of project type (SPA, fullstack, mobile, API, CLI, library) with profile-specific review criteria and security checklists.
 - **Integration detection** — runtime probing for available tools (Postgres, Ollama, GitHub CLI, Chrome DevTools, Playwright, Sentry) with graceful fallbacks and no silent installs.
 - **Release pipeline** — changelog generation from conventional commits, version bumping across package ecosystems (npm, cargo, pip), git tagging, and optional GitHub release creation.
+- **Security lifecycle** — red team → remediate → purple team as a structured loop with per-finding state tracking and verification.
+- **Cross-domain destructive operation guards** — hard stop before any data-destroying action across git, databases, and files. The agent must name the action, state intent, state what will be permanently lost, and get explicit confirmation — with a rationalization prevention table because LLMs will talk themselves into "this is just cleanup" without it.
+- **Big 4 dimensional awareness** — every agent prompt evaluates functionality, usability, performance, and security as dimensions in tension. The weight varies by role: the PM agent explores tradeoffs, the engineer flags concerns, the reviewer verifies all four. See the [Big 4 framework](big-4.md) for the full concept.
 
 Back to the [README](../README.md).
