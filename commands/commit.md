@@ -159,6 +159,30 @@ Run each command in `commit.post_commit_hooks[]` sequentially.
 
 ---
 
+### Persist to knowledge tier
+
+**If `knowledge.tier` is `"postgres"` AND `integrations.postgres.enabled`:**
+
+**Script path:** Use the resolved `SCRIPTS_DIR` from Step 6 (`$PIPELINE_DIR` or fallback paths).
+
+Record the commit as a decision:
+```bash
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update decision "$(cat <<'TOPIC'
+commit-[short_sha]
+TOPIC
+)" "$(cat <<'SUMMARY'
+[commit type](scope): [commit summary] ([short SHA])
+SUMMARY
+)" "$(cat <<'DETAIL'
+[N] files changed. [brief description of what changed and why]
+DETAIL
+)"
+```
+
+**If `knowledge.tier` is `"files"`:** No writes — commits are too frequent; decisions per commit would bloat DECISIONS.md.
+
+---
+
 ### Dashboard Regeneration
 
 If `dashboard.enabled` is true in pipeline.yml (or `docs/dashboard.html` already exists):

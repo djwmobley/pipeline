@@ -522,3 +522,29 @@ Modify config after initial setup.
 Session tracking, decisions, gotchas, and search.
 
 See the [configuration guide](guide.md#knowledge-tiers) for setup and all subcommands.
+
+---
+
+## Auto-Persistence
+
+Every state-changing command automatically persists its outputs to the configured knowledge tier. You never need to call `/pipeline:knowledge` manually — data flows silently as commands run.
+
+**What gets persisted per command:**
+
+| Command | Postgres Tier | Files Tier |
+|---------|--------------|------------|
+| `/pipeline:commit` | Decision (commit SHA + summary) | Nothing — too frequent |
+| `/pipeline:review` | Findings + verdict decision | Nothing — findings in `docs/findings/` |
+| `/pipeline:audit` | Findings + verdict decision | Decision only (audit verdicts are significant) |
+| `/pipeline:build` | Session + task status updates | Session (rotated) |
+| `/pipeline:debug` | Gotcha + decision | Gotcha only (root causes are always worth recording) |
+| `/pipeline:brainstorm` | Decision | Decision (only if locked) |
+| `/pipeline:plan` | Tasks + planning decision | Nothing — tasks are in the plan file |
+| `/pipeline:release` | Decision + session | Decision + session (rotated) |
+| `/pipeline:finish` | Session + decision | Session (rotated) + decision (if locked) |
+| `/pipeline:redteam` | Session + gotchas + decision | Gotchas (HIGH/CRITICAL only) + decision |
+| `/pipeline:remediate` | Decision + gotchas + finding status | Gotchas (HIGH only) |
+| `/pipeline:purpleteam` | Finding status + gotchas + decision | Gotchas (HIGH only) + decision |
+| `/pipeline:markdown-review` | Findings + decision | Nothing — findings in `docs/findings/` |
+
+**If neither tier is configured**, the persistence block is a no-op. Commands still write their reports to `docs/findings/` as normal.

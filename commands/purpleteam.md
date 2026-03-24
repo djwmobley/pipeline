@@ -263,21 +263,26 @@ EOF
 
 **Shell safety:** All comment bodies use heredocs with single-quoted delimiters (`<<'EOF'`) to prevent injection from report-derived content.
 
-**Knowledge tier — Postgres (if `knowledge.tier` is `"postgres"` AND `integrations.postgres.enabled`):**
+**Resolve `$SCRIPTS_DIR`:** Locate the pipeline plugin's `scripts/` directory:
+1. If `$PIPELINE_DIR` is set: `$PIPELINE_DIR/scripts/`
+2. Check `${HOME:-$USERPROFILE}/dev/pipeline/scripts/`
+3. Search: find `pipeline-db.js` under `${HOME:-$USERPROFILE}/.claude/`
+
+**If `knowledge.tier` is `"postgres"` AND `integrations.postgres.enabled`:**
 
 For each VERIFIED finding:
 ```bash
-node scripts/pipeline-db.js update finding [ID] status verified
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update finding [ID] status verified
 ```
 
 For each REGRESSION or INCOMPLETE finding (fix did not hold — set back to in_progress):
 ```bash
-node scripts/pipeline-db.js update finding [ID] status in_progress
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update finding [ID] status in_progress
 ```
 
 For each defensive rule (if `purpleteam.defensive_rules` is true):
 ```bash
-node scripts/pipeline-db.js update gotcha new "$(cat <<'TITLE'
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update gotcha new "$(cat <<'TITLE'
 [rule title]
 TITLE
 )" "$(cat <<'DESC'
@@ -288,7 +293,7 @@ DESC
 
 Record the decision:
 ```bash
-node scripts/pipeline-db.js update decision 'purple-team-verification' "$(cat <<'SUMMARY'
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update decision 'purple-team-verification' "$(cat <<'SUMMARY'
 [date]: [V] verified, [R] regression, [I] incomplete. Posture: [POSTURE_RATING]
 SUMMARY
 )" "$(cat <<'DETAIL'
@@ -297,13 +302,33 @@ DETAIL
 )"
 ```
 
-**Knowledge tier — files (if `knowledge.tier` is `"files"`):**
+**If `knowledge.tier` is `"files"`:**
 
-If `purpleteam.defensive_rules` is true, append each defensive rule to `docs/gotchas.md`:
-```markdown
-### [Rule category] — [Pattern name]
-**Rule:** [Description]
-**Source:** Purple team verification [date], finding [ID]
+For each CRITICAL or HIGH defensive rule only (if `purpleteam.defensive_rules` is true):
+```bash
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-files.js gotcha "$(cat <<'TITLE'
+[Rule category] — [Pattern name]
+TITLE
+)" "$(cat <<'RULE'
+[Description]. Source: Purple team [date], finding [ID]
+RULE
+)"
+```
+
+Record the decision:
+```bash
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-files.js decision 'purple-team-verification' "$(cat <<'SUMMARY'
+[date]: [V] verified, [R] regression, [I] incomplete. Posture: [POSTURE_RATING]
+SUMMARY
+)" "$(cat <<'DETAIL'
+[posture summary — 1-2 sentences]
+DETAIL
+)"
+```
+
+Prune stale decisions:
+```bash
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-files.js prune
 ```
 
 **Write the verification report** to `docs/findings/purpleteam-YYYY-MM-DD.md`:

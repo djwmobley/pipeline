@@ -10,6 +10,7 @@
  *   node pipeline-files.js session <N> <tests> "<desc>"            # Record session N
  *   node pipeline-files.js gotcha "<issue>" "<rule>"               # Append a gotcha
  *   node pipeline-files.js decision "<topic>" "<decision>" "<reason>"  # Record a decision
+ *   node pipeline-files.js prune                                      # Archive stale decisions, rotate sessions
  */
 
 const fs = require('fs');
@@ -20,6 +21,10 @@ const ROOT = findProjectRoot();
 const SESSIONS_DIR = path.join(ROOT, 'docs', 'sessions');
 const GOTCHAS_PATH = path.join(ROOT, 'docs', 'gotchas.md');
 const DECISIONS_PATH = path.join(ROOT, 'DECISIONS.md');
+const ARCHIVE_DIR = path.join(ROOT, 'docs', 'archive');
+
+const MAX_SESSIONS = 5;
+const DECISION_RETAIN_DAYS = 7;
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 
@@ -120,6 +125,18 @@ function cmdSession(num, tests, desc) {
 
   fs.writeFileSync(filepath, content, 'utf8');
   console.log(c.green('Session recorded: ') + filepath);
+
+  // Rotate: keep only the most recent MAX_SESSIONS files
+  const allSessions = fs.readdirSync(SESSIONS_DIR)
+    .filter(f => f.endsWith('.md'))
+    .sort();
+  if (allSessions.length > MAX_SESSIONS) {
+    const toDelete = allSessions.slice(0, allSessions.length - MAX_SESSIONS);
+    for (const old of toDelete) {
+      fs.unlinkSync(path.join(SESSIONS_DIR, old));
+    }
+    console.log(c.dim(`Rotated: removed ${toDelete.length} old session(s), keeping ${MAX_SESSIONS}`));
+  }
 }
 
 // ─── GOTCHA ───────────────────────────────────────────────────────────────────
@@ -158,6 +175,67 @@ function cmdDecision(topic, decision, reason) {
   console.log(c.green('Decision recorded: ') + topic);
 }
 
+// ─── PRUNE ────────────────────────────────────────────────────────────────────
+
+function cmdPrune() {
+  let pruned = 0;
+
+  // Prune decisions: keep [LOCKED] + last DECISION_RETAIN_DAYS days
+  if (fs.existsSync(DECISIONS_PATH)) {
+    const content = fs.readFileSync(DECISIONS_PATH, 'utf8');
+    const header = '# Decisions\n\n';
+    const entries = content.replace(/^# Decisions\s*\n*/, '').split('---').filter(s => s.trim());
+
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - DECISION_RETAIN_DAYS);
+    const cutoffStr = cutoff.toISOString().slice(0, 10);
+
+    const keep = [];
+    const archive = [];
+
+    for (const entry of entries) {
+      const trimmed = entry.trim();
+      if (!trimmed) continue;
+
+      const isLocked = trimmed.includes('[LOCKED]');
+      const dateMatch = trimmed.match(/\*\*Date:\*\*\s*(\d{4}-\d{2}-\d{2})/);
+      const entryDate = dateMatch ? dateMatch[1] : null;
+
+      if (isLocked || (entryDate && entryDate >= cutoffStr)) {
+        keep.push(trimmed);
+      } else {
+        archive.push(trimmed);
+        pruned++;
+      }
+    }
+
+    // Archive old decisions
+    if (archive.length > 0) {
+      ensureDir(ARCHIVE_DIR);
+      const archivePath = path.join(ARCHIVE_DIR, `decisions-${today()}.md`);
+      const archiveContent = archive.map(e => `${e}\n\n---\n`).join('\n');
+
+      if (fs.existsSync(archivePath)) {
+        fs.appendFileSync(archivePath, '\n' + archiveContent, 'utf8');
+      } else {
+        fs.writeFileSync(archivePath, `# Archived Decisions — ${today()}\n\n${archiveContent}`, 'utf8');
+      }
+    }
+
+    // Rewrite DECISIONS.md with only kept entries
+    const kept = keep.length > 0
+      ? header + keep.map(e => `${e}\n\n---\n`).join('\n')
+      : header;
+    fs.writeFileSync(DECISIONS_PATH, kept, 'utf8');
+  }
+
+  if (pruned > 0) {
+    console.log(c.green(`Pruned: ${pruned} stale decision(s) archived to docs/archive/`));
+  } else {
+    console.log(c.dim('Nothing to prune.'));
+  }
+}
+
 // ─── HELP ─────────────────────────────────────────────────────────────────────
 
 function cmdHelp() {
@@ -169,6 +247,7 @@ ${c.cyan('Commands:')}
   ${c.bold('session')} <N> <tests> "<desc>"              Record session N
   ${c.bold('gotcha')} "<issue>" "<rule>"                  Add a critical constraint
   ${c.bold('decision')} "<topic>" "<decision>" "<reason>" Record an architectural decision
+  ${c.bold('prune')}                                     Archive stale decisions, rotate sessions
   ${c.bold('help')}                                      Show this message
 
 ${c.cyan('Storage:')}
@@ -196,6 +275,9 @@ const [, , cmd, ...args] = process.argv;
         break;
       case 'decision':
         cmdDecision(args[0], args[1], args[2]);
+        break;
+      case 'prune':
+        cmdPrune();
         break;
       case 'help':
       case undefined:

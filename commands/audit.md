@@ -131,6 +131,54 @@ Then inform user: "Findings saved to `docs/findings/audit-YYYY-MM-DD.md`. Run `/
 
 ---
 
+### Step 6c — Persist to knowledge tier
+
+**Resolve `$SCRIPTS_DIR`:** Locate the pipeline plugin's `scripts/` directory:
+1. If `$PIPELINE_DIR` is set: `$PIPELINE_DIR/scripts/`
+2. Check `${HOME:-$USERPROFILE}/dev/pipeline/scripts/`
+3. Search: find `pipeline-db.js` under `${HOME:-$USERPROFILE}/.claude/`
+
+**If `knowledge.tier` is `"postgres"` AND `integrations.postgres.enabled`:**
+
+For each 🔴 or 🟡 finding from the synthesis report:
+```bash
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update finding new "$(cat <<'EOF'
+{"id":"[FINDING_ID]","source":"audit","severity":"[high|medium]","confidence":"[HIGH|MEDIUM|LOW]","location":"[file:line]","category":"[sector/criterion]","description":"[one-line description]","impact":"[why it matters]","remediation":"[fix description]","effort":"[quick|medium|large]"}
+EOF
+)"
+```
+
+Record the audit verdict:
+```bash
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update decision 'full-audit' "$(cat <<'SUMMARY'
+Audit [date]: [N] findings ([M] 🔴 / [P] 🟡 / [Q] 🔵) across [sector_count] sectors
+SUMMARY
+)" "$(cat <<'DETAIL'
+[1-sentence posture summary]
+DETAIL
+)"
+```
+
+**If `knowledge.tier` is `"files"`:**
+
+Record the audit verdict (significant enough for the active working set):
+```bash
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-files.js decision 'full-audit' "$(cat <<'SUMMARY'
+Audit [date]: [N] findings across [sector_count] sectors
+SUMMARY
+)" "$(cat <<'DETAIL'
+[1-sentence posture summary]
+DETAIL
+)"
+```
+
+Prune stale decisions:
+```bash
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-files.js prune
+```
+
+---
+
 ### Dashboard Regeneration
 
 If `dashboard.enabled` is true in pipeline.yml (or `docs/dashboard.html` already exists):

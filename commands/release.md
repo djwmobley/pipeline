@@ -189,6 +189,62 @@ NOTES
 
 ---
 
+### Persist to knowledge tier
+
+**Resolve `$SCRIPTS_DIR`:** Locate the pipeline plugin's `scripts/` directory:
+1. If `$PIPELINE_DIR` is set: `$PIPELINE_DIR/scripts/`
+2. Check `${HOME:-$USERPROFILE}/dev/pipeline/scripts/`
+3. Search: find `pipeline-db.js` under `${HOME:-$USERPROFILE}/.claude/`
+
+**If `knowledge.tier` is `"postgres"` AND `integrations.postgres.enabled`:**
+
+Record the release decision:
+```bash
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update decision 'release' "$(cat <<'SUMMARY'
+Released v[version] on [date]. [N] commits. Bump: [patch|minor|major]
+SUMMARY
+)" "$(cat <<'DETAIL'
+[N] feat, [M] fix, [P] other commits since v[previous_version]
+DETAIL
+)"
+```
+
+Record the session:
+```bash
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update session [next_number] [test_count] "$(cat <<'EOF'
+Release v[version]: [N] commits, changelog updated, tagged
+EOF
+)"
+```
+
+**If `knowledge.tier` is `"files"`:**
+
+Record the release decision (releases are significant):
+```bash
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-files.js decision 'release' "$(cat <<'SUMMARY'
+Released v[version] on [date]. [N] commits
+SUMMARY
+)" "$(cat <<'DETAIL'
+Bump: [patch|minor|major]. [N] feat, [M] fix since v[previous_version]
+DETAIL
+)"
+```
+
+Record session (auto-rotates to keep 5 most recent):
+```bash
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-files.js session [next_number] [test_count] "$(cat <<'EOF'
+Release v[version]
+EOF
+)"
+```
+
+Prune stale decisions:
+```bash
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-files.js prune
+```
+
+---
+
 ### Dashboard Regeneration
 
 If `dashboard.enabled` is true in pipeline.yml (or `docs/dashboard.html` already exists):

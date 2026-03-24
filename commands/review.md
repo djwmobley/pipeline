@@ -180,6 +180,38 @@ Then: "Run `/pipeline:remediate --source review` to batch-fix 🔴 findings, or 
 
 ---
 
+### Step 8c — Persist to knowledge tier
+
+**Resolve `$SCRIPTS_DIR`:** Locate the pipeline plugin's `scripts/` directory:
+1. If `$PIPELINE_DIR` is set: `$PIPELINE_DIR/scripts/`
+2. Check `${HOME:-$USERPROFILE}/dev/pipeline/scripts/`
+3. Search: find `pipeline-db.js` under `${HOME:-$USERPROFILE}/.claude/`
+
+**If `knowledge.tier` is `"postgres"` AND `integrations.postgres.enabled`:**
+
+For each 🔴 or 🟡 finding, persist as a structured record:
+```bash
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update finding new "$(cat <<'EOF'
+{"id":"[FINDING_ID]","source":"review","severity":"[high|medium]","confidence":"[HIGH|MEDIUM|LOW]","location":"[file:line]","category":"[review criterion]","description":"[one-line description]","impact":"[why it matters]","remediation":"[fix description]","effort":"[quick|medium|large]"}
+EOF
+)"
+```
+
+Record the verdict:
+```bash
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update decision 'code-review' "$(cat <<'SUMMARY'
+Review [date]: [verdict]. [N] findings ([M] 🔴 / [P] 🟡 / [Q] 🔵)
+SUMMARY
+)" "$(cat <<'DETAIL'
+Files reviewed: [file list]. [1-sentence quality summary]
+DETAIL
+)"
+```
+
+**If `knowledge.tier` is `"files"`:** No additional writes — findings already saved to `docs/findings/review-*.md` above.
+
+---
+
 ### Dashboard Regeneration
 
 If `dashboard.enabled` is true in pipeline.yml (or `docs/dashboard.html` already exists):

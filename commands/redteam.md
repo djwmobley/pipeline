@@ -326,39 +326,80 @@ Report: "HTML report saved to `docs/findings/redteam-[date].html` — open in an
 
 ### Step 9 — Persist to knowledge tier
 
+**Resolve `$SCRIPTS_DIR`:** Locate the pipeline plugin's `scripts/` directory:
+1. If `$PIPELINE_DIR` is set: `$PIPELINE_DIR/scripts/`
+2. Check `${HOME:-$USERPROFILE}/dev/pipeline/scripts/`
+3. Search: find `pipeline-db.js` under `${HOME:-$USERPROFILE}/.claude/`
+
+Store the resolved absolute path. Use `PROJECT_ROOT=$(pwd) node [scripts_dir]/...` for all commands below.
+
 **If `knowledge.tier` is `"postgres"` AND `integrations.postgres.enabled`:**
 
 Record the session:
 ```bash
-node scripts/pipeline-db.js update session [next_session_number] 0 'Red team assessment: [N] findings ([C] critical, [H] high, [M] medium, [L] low)'
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update session [next_session_number] 0 "$(cat <<'EOF'
+Red team assessment: [N] findings ([C] critical, [H] high, [M] medium, [L] low)
+EOF
+)"
 ```
 
 For each CRITICAL or HIGH finding, store as a gotcha:
 ```bash
-node scripts/pipeline-db.js update gotcha new '[finding ID: brief summary]' '[remediation action]'
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update gotcha new "$(cat <<'TITLE'
+[finding ID]: [brief summary]
+TITLE
+)" "$(cat <<'RULE'
+[remediation action]
+RULE
+)"
 ```
 
 Record the decision:
 ```bash
-node scripts/pipeline-db.js update decision 'security-assessment' 'Red team [date]: [overall verdict]' '[summary of security posture and key risks]'
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update decision 'security-assessment' "$(cat <<'SUMMARY'
+Red team [date]: [overall verdict]
+SUMMARY
+)" "$(cat <<'DETAIL'
+[summary of security posture and key risks]
+DETAIL
+)"
 ```
 
 **If `knowledge.tier` is `"files"`:**
 
-Append a session summary to `docs/sessions/`:
-```
-## Session [N] — Red Team Assessment
-
-**Date:** [date]
-**Tests passing:** N/A (assessment only)
-**Summary:** Security assessment with [N] specialists. Found [C] critical, [H] high, [M] medium, [L] low findings.
-**Key findings:** [list critical/high finding summaries]
+Record session (auto-rotates to keep 5 most recent):
+```bash
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-files.js session [next_session_number] 0 "$(cat <<'EOF'
+Red team assessment: [N] findings ([C] critical, [H] high, [M] medium, [L] low)
+EOF
+)"
 ```
 
-If critical or high findings exist, append to `docs/gotchas.md`:
+For each CRITICAL or HIGH finding only, store as a gotcha:
+```bash
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-files.js gotcha "$(cat <<'TITLE'
+[finding ID]: [brief summary]
+TITLE
+)" "$(cat <<'RULE'
+[remediation action]
+RULE
+)"
 ```
-### [finding ID] — [brief description]
-**Rule:** [remediation action]
+
+Record the decision:
+```bash
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-files.js decision 'security-assessment' "$(cat <<'SUMMARY'
+Red team [date]: [overall verdict]
+SUMMARY
+)" "$(cat <<'DETAIL'
+[summary of security posture and key risks]
+DETAIL
+)"
+```
+
+Prune stale decisions:
+```bash
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-files.js prune
 ```
 
 ---
