@@ -114,6 +114,91 @@ git log --oneline origin/[branch]..HEAD 2>/dev/null | wc -l  # unpushed commits
 gh issue list --repo '[project.repo]' --state open --limit 10 --json number,title,labels,url
 ```
 
+## Step 5b — Security Lifecycle
+
+Check for security assessment files:
+
+```bash
+ls docs/findings/redteam-*.md 2>/dev/null | sort -r | head -1
+ls docs/findings/remediation-*.md 2>/dev/null | sort -r | head -1
+ls docs/findings/purpleteam-*.md 2>/dev/null | sort -r | head -1
+```
+
+**If none of these files exist**, set `{{SECURITY_LIFECYCLE}}` to:
+
+```html
+<p class="section-empty">No security assessments yet. Run <code>/pipeline:redteam</code> to start.</p>
+```
+
+**If findings exist**, read the most recent file of each type and build per-finding state:
+
+1. **Parse red team report** (`docs/findings/redteam-*.md`) — extract finding IDs (e.g., `VULN-001`) and severities (Critical / High / Medium / Low). Each finding starts with a heading like `## VULN-001 — [Title]` and a `**Severity:**` field.
+
+2. **Parse remediation summary** (`docs/findings/remediation-*.md`) — extract which finding IDs are fixed and any associated commit SHAs. Look for lines matching `VULN-\d+` paired with fix status (fixed / skipped / accepted / incomplete).
+
+3. **Parse purple team report** (`docs/findings/purpleteam-*.md`) — extract per-finding verification verdicts (verified / regression / incomplete / skipped). Look for lines matching `VULN-\d+` paired with a verdict keyword.
+
+4. **Derive per-finding overall status** using this priority order:
+   - `regression` — purple team found the fix did not hold
+   - `verified` — purple team confirmed fix is effective
+   - `fixed` — remediation recorded, no purple team yet
+   - `incomplete` — remediation attempted but not complete
+   - `skipped` — accepted risk / won't fix
+   - `found` — red team only, no remediation yet
+
+5. **Compute aggregate counts** across all finding IDs:
+   - N = total findings
+   - V = count with status `verified`
+   - F = count with status `fixed`
+   - R = count with status `regression`
+   - I = count with status `incomplete`
+   - S = count with status `skipped`
+
+6. **Determine phase completion flags**:
+   - Red Team done: red team report exists
+   - Remediate done: remediation report exists and covers at least one finding
+   - Purple Team done: purple team report exists
+
+7. **Generate HTML** for `{{SECURITY_LIFECYCLE}}`:
+
+```html
+<div class="security-summary">
+  [N] findings: [V] verified, [F] fixed (unverified), [R] regressions, [I] incomplete, [S] skipped/accepted
+</div>
+<div class="security-phase-flow">
+  <span class="security-phase-label security-phase-done">Red Team ✓</span>
+  <span class="security-phase-arrow"></span>
+  <span class="security-phase-label [security-phase-done OR security-phase-pending]">Remediate [✓ or ""]</span>
+  <span class="security-phase-arrow"></span>
+  <span class="security-phase-label [security-phase-done OR security-phase-pending]">Purple Team [✓ or ""]</span>
+</div>
+<table class="security-table">
+  <thead>
+    <tr>
+      <th>Finding</th>
+      <th>Severity</th>
+      <th>Red Team</th>
+      <th>Remediate</th>
+      <th>Purple Team</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    <!-- One row per finding ID -->
+    <tr>
+      <td>[ID — Title or ID alone if title unavailable]</td>
+      <td><span class="badge badge-[critical|high|medium|low]">[Severity]</span></td>
+      <td>[✓ or —]</td>
+      <td>[commit SHA as <code> if available, ✓ if fixed without SHA, — if not yet]</td>
+      <td>[verdict pill or — if pending]</td>
+      <td><span class="status-pill status-[found|fixed|verified|regression|incomplete|skipped]">[Status]</span></td>
+    </tr>
+  </tbody>
+</table>
+```
+
+Use the `.badge-critical` / `.badge-high` / `.badge-medium` / `.badge-low` classes for severity (matching existing badge styles). Use `.status-pill.status-[status]` for the final status column. Render commit SHAs inside `<code>` tags, truncated to 7 characters.
+
 ## Step 6 — Generate Health Summary
 
 Rule-based one-liner. Format: `[Phase] — [task progress if available], [finding summary]`
@@ -164,6 +249,7 @@ Build a map of `{{PLACEHOLDER}}` to HTML content for every token in the template
 - `{{PHASE_INDICATORS}}` — generate HTML spans with appropriate classes
 - `{{ACTIVITY_FEED}}` — generate HTML list items
 - `{{TASK_PROGRESS}}`, `{{OPEN_FINDINGS}}`, `{{GITHUB_ISSUES}}`, `{{BLOCKERS}}`
+- `{{SECURITY_LIFECYCLE}}`
 - `{{RULE_RECOMMENDATIONS}}`, `{{AI_RECOMMENDATIONS}}`
 
 ## Step 10 — Read Template and Substitute

@@ -179,6 +179,7 @@ Applications rely on hundreds of third-party packages, any of which can introduc
 
 ### Checklist
 
+0. **Live dependency audit** — Run the project's configured audit command (`commands.security_audit` from pipeline.yml) to query real-time vulnerability databases. Parse JSON output for CRITICAL and HIGH severity advisories. This provides ground truth that training data cannot.
 1. Known CVEs in direct dependencies (via advisory databases)
 2. Known CVEs in transitive dependencies (deep dependency tree)
 3. Lockfile integrity (lockfile exists, matches manifest, committed to repo)
@@ -187,6 +188,7 @@ Applications rely on hundreds of third-party packages, any of which can introduc
 6. Version pinning strategy (pinned vs floating, caret vs tilde vs exact)
 7. Abandoned or unmaintained packages (no updates in 2+ years, archived repos)
 8. Dependency confusion risk (private package names that could collide with public registry)
+9. Cross-reference audit output with source code — verify vulnerable packages are actually imported and used (transitive-only exposure is lower severity)
 
 ---
 

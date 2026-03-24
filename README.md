@@ -167,6 +167,7 @@ See the **[command reference](docs/reference.md)** for the full list with detail
 | `/pipeline:redteam` | Security red team assessment |
 | `/pipeline:remediate` | Fix findings from any workflow with tracked issues |
 | `/pipeline:purpleteam` | Verify aggregate security posture after remediation |
+| `/pipeline:security` | Full security loop — red team, remediate, purple team |
 | `/pipeline:debug` | Systematic root-cause diagnosis |
 | `/pipeline:simplify` | Targeted code simplification |
 | `/pipeline:release` | Changelog + version bump + tag |

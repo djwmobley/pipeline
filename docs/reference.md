@@ -275,6 +275,8 @@ Security red team assessment with parallel domain specialists.
 
 **12 specialist domains:** INJ (Injection), AUTH (Authentication), XSS (Cross-Site Scripting), CSRF (Cross-Site Request Forgery), CRYPTO (Cryptography), CONFIG (Security Misconfiguration), DEPS (Dependency & Supply Chain), ACL (Access Control), RATE (Rate Limiting & DoS), DATA (Data Exposure), FILE (File & Path Safety), CERT (Certificate & Transport).
 
+**DEPS live audit:** The DEPS specialist runs the project's configured `commands.security_audit` command (e.g., `npm audit --json`, `pip audit -f json`) to query real-time vulnerability databases. This provides ground truth beyond model training data — findings include CVE IDs, affected package versions, and cross-references against source code to distinguish actively-used packages from transitive-only exposure.
+
 **Profile-aware:** Different project types get different specialists. A CLI tool skips XSS and CSRF. An API skips browser-specific domains.
 
 **Framework-aware:** A Next.js injection specialist checks Server Actions. A Django one checks ORM escape hatches. Framework detection runs automatically.
@@ -376,6 +378,27 @@ Aggregate security verification after a red team + remediation cycle. Verifies t
 **Token cost:** ~(N x 12K) + 55K for chain + posture analysis. A 10-finding verification is ~175K tokens. The command shows the estimate before launching.
 
 **Output:** `docs/findings/purpleteam-[date].md`
+
+---
+
+### `/pipeline:security`
+
+Full security assessment loop. Orchestrates red team → remediate → purple team with user review gates between each phase.
+
+**What it does:**
+1. Runs `/pipeline:redteam` (find vulnerabilities)
+2. Presents findings for review (user marks false positives)
+3. Runs `/pipeline:remediate --source redteam` (fix confirmed findings)
+4. Presents fixes for review
+5. Runs `/pipeline:purpleteam` (verify fixes, assess posture)
+
+**Prerequisites:** Same as red team + remediate + purple team combined.
+
+**User gates:** Three explicit approval points — after red team, after remediation, after purple team. You can stop at any gate and resume manually with the individual commands.
+
+**When to use:** Before beta or production releases. Replaces running the three commands separately.
+
+**Output:** All three reports in `docs/findings/` plus GitHub issue updates.
 
 ---
 

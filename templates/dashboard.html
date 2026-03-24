@@ -560,6 +560,143 @@
     }
 
     /* ============================================================
+       Security Lifecycle — full width
+       ============================================================ */
+    .security-lifecycle {
+      border-top: 1px solid var(--border);
+      padding: 20px 0;
+    }
+
+    .security-flow {
+      margin-top: 4px;
+    }
+
+    .security-summary {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .security-phase-flow {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .security-phase-label {
+      padding: 4px 12px;
+      border-radius: 14px;
+      white-space: nowrap;
+    }
+
+    .security-phase-done {
+      background: var(--phase-done);
+      color: var(--text-on-color);
+    }
+
+    .security-phase-pending {
+      background: transparent;
+      color: var(--phase-future);
+      border: 2px solid var(--phase-line);
+    }
+
+    .security-phase-arrow {
+      display: inline-block;
+      width: 24px;
+      height: 2px;
+      background: var(--phase-line);
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .security-phase-arrow::after {
+      content: "";
+      position: absolute;
+      right: 0;
+      top: -3px;
+      width: 0;
+      height: 0;
+      border-top: 4px solid transparent;
+      border-bottom: 4px solid transparent;
+      border-left: 6px solid var(--phase-line);
+    }
+
+    .security-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .security-table th {
+      text-align: left;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 6px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .security-table td {
+      padding: 7px 10px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+
+    .security-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .security-table tr:hover td {
+      background: var(--card-bg);
+    }
+
+    /* Status pills */
+    .status-pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-on-color);
+    }
+
+    .status-found {
+      background: var(--severity-medium);
+    }
+
+    .status-fixed {
+      background: var(--accent);
+    }
+
+    .status-verified {
+      background: var(--phase-done);
+    }
+
+    .status-regression {
+      background: var(--severity-high);
+    }
+
+    .status-incomplete {
+      background: var(--severity-medium);
+    }
+
+    .status-skipped {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--phase-line);
+    }
+
+    /* ============================================================
        What's Next — full width, three-card row
        ============================================================ */
     .whats-next-section {
@@ -810,6 +947,14 @@
       </div>
 
     </div>
+
+    <!-- Security Lifecycle (full width) -->
+    <section class="security-lifecycle" id="security-lifecycle">
+      <h2 class="section-heading">Security Lifecycle</h2>
+      <div class="security-flow">
+        {{SECURITY_LIFECYCLE}}
+      </div>
+    </section>
 
     <!-- What's Next (full width) -->
     <section class="whats-next-section">
