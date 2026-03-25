@@ -20,6 +20,9 @@ Read `.claude/pipeline.yml` from the project root. Extract:
 - `architect` — architect config section (if present)
 - `qa` — QA config section (if present)
 - `project.profile` — project profile
+- `integrations.github.enabled` — whether GitHub CLI is available
+- `integrations.github.issue_tracking` — whether to create/link issues across lifecycle
+- `project.repo` — GitHub repo (owner/repo)
 
 If no config file exists, report: "No `.claude/pipeline.yml` found. Run `/pipeline:init` first." and stop.
 
@@ -124,6 +127,29 @@ DETAIL
 ```
 
 **If `knowledge.tier` is `"files"`:** No writes — tasks are in the plan file, decisions would bloat DECISIONS.md.
+
+---
+
+### GitHub Epic Update
+
+If `integrations.github.enabled` AND `integrations.github.issue_tracking`:
+
+1. Read the spec file used for this plan. Extract `github_epic: N` from its metadata (YAML frontmatter or metadata comment block).
+2. If found:
+   - Write `github_epic: [N]` into the plan file metadata (add after the first `---` line).
+   - Comment on the epic:
+     ```bash
+     gh issue comment [N] --repo '[project.repo]' --body "$(cat <<'EOF'
+     ## Plan Created
+
+     **Tasks:** [count]
+     **Plan:** `[plan file path]`
+     [bulleted task title list]
+     EOF
+     )"
+     ```
+   - Update the epic status checklist (edit the issue body to check `Plan`).
+3. If not found: skip — user may have started from plan directly or GitHub tracking was added after brainstorm.
 
 ---
 

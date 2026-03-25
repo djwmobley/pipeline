@@ -45,6 +45,9 @@ Read `.claude/pipeline.yml` from the project root. Extract:
 - `qa.db_verification` — DB verification enabled (for QA verify)
 - `qa.flake_retries` — flake retry count (for QA verify)
 - `project.profile` — project profile
+- `integrations.github.enabled` — whether GitHub CLI is available
+- `integrations.github.issue_tracking` — whether to create/link issues across lifecycle
+- `project.repo` — GitHub repo (owner/repo)
 
 If no config file exists, report: "No `.claude/pipeline.yml` found. Run `/pipeline:init` first." and stop.
 
@@ -75,6 +78,31 @@ Store this as `BASELINE_SHA`. After all tasks complete, include it in the comple
 ```
 
 If resuming an existing build, do NOT overwrite — use the existing state file.
+
+### GitHub Progress Tracking
+
+If `integrations.github.enabled` AND `integrations.github.issue_tracking`:
+
+1. Read the plan file for `github_epic: N` in its metadata.
+2. If found, comment at build start:
+   ```bash
+   gh issue comment [N] --repo '[project.repo]' --body "$(cat <<'EOF'
+   ## Build Started
+   **Tasks:** [count] | **Baseline:** [BASELINE_SHA]
+   EOF
+   )"
+   ```
+3. At build completion (before presenting completion options), comment:
+   ```bash
+   gh issue comment [N] --repo '[project.repo]' --body "$(cat <<'EOF'
+   ## Build Complete
+   **Tasks executed:** [count]
+   **Auto-verify:** [PASS/FAIL/SKIPPED]
+   EOF
+   )"
+   ```
+   Update the epic status checklist (edit the issue body to check `Build`).
+4. If no epic found: skip — build works without GitHub tracking.
 
 ### Auto-Verify (MEDIUM+ changes)
 

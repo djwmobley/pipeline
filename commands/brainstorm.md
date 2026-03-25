@@ -21,6 +21,8 @@ Read `.claude/pipeline.yml` from the project root. Extract:
 - `integrations.stitch.project_id` — existing Stitch project for this pipeline project (may be null)
 - `integrations.stitch.device_type` — target device for generated screens
 - `integrations.figma.enabled` — whether Figma MCP is available for design reference
+- `integrations.github.enabled` — whether GitHub CLI is available
+- `integrations.github.issue_tracking` — whether to create/link issues across lifecycle
 
 If no config file exists, report: "No `.claude/pipeline.yml` found. Run `/pipeline:init` first." and stop.
 
@@ -91,6 +93,45 @@ SUMMARY
 DETAIL
 )"
 ```
+
+---
+
+### GitHub Issue Tracking
+
+If `integrations.github.enabled` AND `integrations.github.issue_tracking`:
+
+1. Create the feature epic:
+   ```bash
+   gh issue create --repo '[project.repo]' \
+     --title "$(cat <<'TITLE'
+   [Feature name from spec title]
+   TITLE
+   )" \
+     --body "$(cat <<'EOF'
+   ## Feature Epic
+
+   [2-3 sentence summary from spec]
+
+   ### Spec
+   `[spec file path]`
+
+   ### Status
+   - [x] Brainstorm
+   - [ ] Plan
+   - [ ] Build
+   - [ ] QA
+   - [ ] Review
+   - [ ] Ship
+   EOF
+   )" \
+     --label "pipeline:epic"
+   ```
+
+2. Store the returned issue number.
+3. Append `github_epic: [N]` to the spec file metadata (add after the first `---` line if YAML frontmatter exists, or add a metadata comment block at the top).
+4. Report: "Created feature epic: #[N]"
+
+If `integrations.github.enabled` is false OR `integrations.github.issue_tracking` is false: skip this section entirely.
 
 ---
 

@@ -100,6 +100,15 @@ When you ship a feature, check which docs are affected.
 | `scripts/package.json` | Update version field |
 | `README.md` | Move roadmap items from Open to Shipped |
 
+### Changing GitHub Integration Behavior
+
+| Doc | What to Update |
+|-----|---------------|
+| `docs/guide.md` | Update `integrations.github` section and integrations table |
+| `docs/reference.md` | Update GitHub tracking mentions in affected command sections |
+| `README.md` | Update requirements table GitHub CLI row |
+| `templates/pipeline.yml` | Update `integrations.github` defaults |
+
 ### Changing Knowledge Tier Behavior
 
 | Doc | What to Update |

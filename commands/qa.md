@@ -25,6 +25,8 @@ Read `.claude/pipeline.yml` from the project root. Extract:
 - `models.architecture`, `models.qa`, `models.cheap`
 - `docs.plans_dir`, `docs.specs_dir`
 - `knowledge.tier`
+- `integrations.github.enabled`, `integrations.github.issue_tracking`
+- `project.repo` — GitHub repo (owner/repo)
 
 If no config exists: "No `.claude/pipeline.yml` found. Run `/pipeline:init` first." Stop.
 
@@ -228,6 +230,55 @@ QA verify: [verdict] — [pass_count] pass, [fail_count] fail, [flaky_count] fla
 EOF
 )"
 ```
+
+---
+
+### GitHub QA Tracking
+
+If `integrations.github.enabled` AND `integrations.github.issue_tracking`:
+
+Find the epic number: read the spec or plan file for `github_epic: N`.
+
+**Plan mode:**
+- Comment on the epic that a test plan was created:
+  ```bash
+  gh issue comment [N] --repo '[project.repo]' --body "$(cat <<'EOF'
+  ## QA Test Plan Created
+
+  **Work packages:** [count]
+  **Scenarios:** [total] (P0: [X], P1: [Y])
+  **Integration seams:** [K]
+
+  Plan: `[test plan file path]`
+  EOF
+  )"
+  ```
+- Update the epic status checklist (check `QA`).
+
+**Verify mode:**
+1. For each blocking FAIL where triage = code-is-wrong:
+   ```bash
+   gh issue create --repo '[project.repo]' \
+     --title "$(cat <<'TITLE'
+   QA: [scenario ID] — [description]
+   TITLE
+   )" \
+     --body "$(cat <<'EOF'
+   ## QA Failure
+
+   **Scenario:** [scenario ID]
+   **Work Package:** [WP-NNN]
+   **Triage:** code-is-wrong
+   **Evidence:** [failure details]
+
+   Linked to: #[EPIC_N]
+   EOF
+   )" \
+     --label "pipeline:qa"
+   ```
+2. Comment the verdict summary on the epic.
+
+If no epic found: skip — QA works without GitHub tracking.
 
 ---
 

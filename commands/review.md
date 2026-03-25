@@ -23,6 +23,8 @@ Read `.claude/pipeline.yml` from the project root. Extract:
 - `review.non_negotiable` — intentional decisions to never flag
 - `review.criteria` — categories to review against
 - `routing.source_dirs` — directories containing source code
+- `integrations.github.enabled`, `integrations.github.issue_tracking`
+- `project.repo` — GitHub repo (owner/repo)
 
 If no config file exists, report: "No `.claude/pipeline.yml` found. Run `/pipeline:init` first." and stop.
 
@@ -209,6 +211,52 @@ DETAIL
 ```
 
 **If `knowledge.tier` is `"files"`:** No additional writes — findings already saved to `docs/findings/review-*.md` above.
+
+---
+
+### GitHub Finding Tracking
+
+If `integrations.github.enabled` AND `integrations.github.issue_tracking`:
+
+Find the epic number: check the most recent plan file in `docs.plans_dir` for `github_epic: N`.
+
+1. For each 🔴 Must Fix finding:
+   ```bash
+   gh issue create --repo '[project.repo]' \
+     --title "$(cat <<'TITLE'
+   [FINDING_ID]: [description]
+   TITLE
+   )" \
+     --body "$(cat <<'EOF'
+   ## Code Review Finding
+
+   **Severity:** 🔴 Must Fix
+   **Location:** [file:line]
+   **Category:** [review criterion]
+   **Confidence:** [HIGH/MEDIUM]
+
+   [explanation of the problem and fix suggestion]
+
+   Linked to: #[EPIC_N]
+   EOF
+   )" \
+     --label "review" --label "high"
+   ```
+2. Comment the verdict summary on the epic:
+   ```bash
+   gh issue comment [N] --repo '[project.repo]' --body "$(cat <<'EOF'
+   ## Code Review Verdict
+
+   **Result:** [verdict]
+   **Findings:** [M] 🔴 / [P] 🟡 / [Q] 🔵
+   **Report:** `[report file path]`
+   EOF
+   )"
+   ```
+
+🟡 and 🔵 findings do NOT get issues — they stay in `docs/findings/` only.
+
+If no epic found: skip — review works without GitHub tracking.
 
 ---
 

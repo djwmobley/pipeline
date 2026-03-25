@@ -24,7 +24,7 @@ Read `.claude/pipeline.yml` from the project root. Extract:
 - `routing.source_dirs`
 - `review.non_negotiable[]`
 - `knowledge.tier`
-- `integrations.github.enabled`, `project.repo`
+- `integrations.github.enabled`, `integrations.github.issue_tracking`, `project.repo`
 - `integrations.postgres.enabled`
 
 If no config exists: "No `.claude/pipeline.yml` found. Run `/pipeline:init` first." Stop.
@@ -98,6 +98,13 @@ This is the pivotal step. Finding data enters the ticket store. After this, tria
 
 For each finding where `CREATE_ISSUE` is true:
 
+**Dedup check:** Before creating a new issue, search for an existing one with the same finding ID:
+```bash
+gh issue list --repo '[project.repo]' --search '[FINDING_ID] in:title' --state open --json number --limit 1
+```
+If found: reuse that issue number instead of creating a duplicate. Skip the `gh issue create` below.
+
+If not found, create:
 ```bash
 gh issue create --repo '[project.repo]' \
   --title "$(cat <<'TITLE'

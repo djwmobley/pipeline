@@ -21,6 +21,8 @@ Read `.claude/pipeline.yml` from the project root. Extract:
 - `review.non_negotiable[]`
 - `knowledge.tier`
 - `docs.plans_dir`, `docs.specs_dir`
+- `integrations.github.enabled`, `integrations.github.issue_tracking`
+- `project.repo` — GitHub repo (owner/repo)
 
 If no config exists: "No `.claude/pipeline.yml` found. Run `/pipeline:init` first." Stop.
 
@@ -163,6 +165,48 @@ c) Re-run with different domains  (add/remove from analysis)
 ```
 
 If the builder chooses to override, apply the override annotation to the artifact and update knowledge tier.
+
+---
+
+### GitHub Decision Tracking
+
+If `integrations.github.enabled` AND `integrations.github.issue_tracking`:
+
+1. Find epic number from the spec file (`github_epic: N`).
+2. Comment on the epic with the decisions summary table:
+   ```bash
+   gh issue comment [N] --repo '[project.repo]' --body "$(cat <<'EOF'
+   ## Architectural Decisions
+
+   | # | Domain | Decision | Confidence |
+   |---|--------|----------|------------|
+   [table rows from decisions]
+
+   Decisions saved to `[artifact path]`
+   EOF
+   )"
+   ```
+3. For each LOW-confidence decision, create a child issue:
+   ```bash
+   gh issue create --repo '[project.repo]' \
+     --title "$(cat <<'TITLE'
+   [DECISION-NNN]: [title] (needs review)
+   TITLE
+   )" \
+     --body "$(cat <<'EOF'
+   ## Architectural Decision — Needs Review
+
+   **Domain:** [domain]
+   **Decision:** [text]
+   **Confidence:** LOW
+   **Trade-offs:** [rationale]
+
+   Linked to: #[EPIC_N]
+   EOF
+   )" \
+     --label "pipeline:decision"
+   ```
+4. If no epic found in spec: skip linking.
 
 ---
 

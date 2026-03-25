@@ -187,7 +187,7 @@ You don't need to learn these upfront. They'll surface naturally — `/pipeline:
 |------|-------------|------------|
 | PostgreSQL | Semantic search across sessions, structured task tracking, security assessment history | Markdown files (works fine, no search) |
 | [Ollama](https://ollama.com) | Vector similarity search (runs an embedding model locally — no API keys, no cloud) | Keyword search only |
-| GitHub CLI | PR creation from the terminal | Push and use the browser |
+| GitHub CLI | PR creation, lifecycle issue tracking (feature epics, finding issues) | Push and use the browser, no issue tracking |
 | Chrome / Playwright | Automatic screenshots for UI review | Provide screenshots yourself |
 | Sentry | Auto-pull recent errors during debug | Describe the error yourself |
 | [Google Stitch](https://stitch.withgoogle.com) | AI-generated design mockups during brainstorming | Simple HTML wireframes |
@@ -246,6 +246,7 @@ Tracked items for future development. Checked items are shipped.
 
 ### Shipped
 
+- [x] GitHub lifecycle tracking — epic-threaded issue model (brainstorm creates epic, downstream commands comment/create child issues), dedup checks, graceful degradation when GitHub is off
 - [x] Engineering Architect — silent recon for MEDIUM (inside plan), full domain specialist orchestration for LARGE/MILESTONE with decision records, override mechanism, and build-time constraint injection
 - [x] QA Planning & Verification — risk-driven test plans (not just AC tracing), parallel QA workers with business-behavior intent comments, mandatory seam testing at integration boundaries, failure triage (code-is-wrong vs test-is-wrong), auto-verify for MEDIUM+ builds
 - [x] Build crash recovery — `.claude/build-state.json` checkpoints after each task, resume on restart (GSD-2 inspired)

@@ -21,6 +21,8 @@ Read `.claude/pipeline.yml` from the project root. Extract:
 - `security[]`
 - `review.non_negotiable[]`
 - `knowledge.tier`
+- `integrations.github.enabled`, `integrations.github.issue_tracking`
+- `project.repo` — GitHub repo (owner/repo)
 
 If no config exists: "No `.claude/pipeline.yml` found. Run `/pipeline:init` first." Stop.
 
@@ -401,6 +403,52 @@ Prune stale decisions:
 ```bash
 PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-files.js prune
 ```
+
+---
+
+### GitHub Security Tracking
+
+If `integrations.github.enabled` AND `integrations.github.issue_tracking`:
+
+Find the epic number: check the most recent spec or plan file for `github_epic: N`.
+
+1. For each CRITICAL or HIGH finding:
+   ```bash
+   gh issue create --repo '[project.repo]' \
+     --title "$(cat <<'TITLE'
+   [FINDING_ID]: [brief summary]
+   TITLE
+   )" \
+     --body "$(cat <<'EOF'
+   ## Security Finding
+
+   **Severity:** [CRITICAL/HIGH]
+   **Confidence:** [HIGH/MEDIUM]
+   **Location:** [file:line or URL:path]
+   **CWE:** [CWE-ID]
+   **Domain:** [specialist domain]
+
+   [description + exploitation scenario + remediation]
+
+   Linked to: #[EPIC_N]
+   EOF
+   )" \
+     --label "redteam" --label "[severity]"
+   ```
+2. Comment the summary on the epic:
+   ```bash
+   gh issue comment [N] --repo '[project.repo]' --body "$(cat <<'EOF'
+   ## Red Team Assessment Complete
+
+   **Findings:** [C] critical, [H] high, [M] medium, [L] low
+   **Report:** `[report file path]`
+   EOF
+   )"
+   ```
+
+MEDIUM and LOW findings do NOT get issues — they stay in `docs/findings/` only.
+
+If no epic found: skip — red team works without GitHub tracking.
 
 ---
 

@@ -9,7 +9,7 @@ Guide completion of development work by presenting clear options and handling th
 
 ### Step 1 — Load config and verify tests
 
-Read `.claude/pipeline.yml` for `commands.test`, `project.branch`, and `integrations.github.enabled`.
+Read `.claude/pipeline.yml` for `commands.test`, `project.branch`, `integrations.github.enabled`, `integrations.github.issue_tracking`, `project.repo`, and `docs.plans_dir`.
 
 Run the test suite. If tests fail:
 ```
@@ -104,6 +104,8 @@ TITLE
 
 ## Test Plan
 - [ ] [verification steps]
+
+[If github_epic exists in the most recent plan file in docs.plans_dir: add "Part of #[EPIC_N]" here]
 EOF
 )"
 ```

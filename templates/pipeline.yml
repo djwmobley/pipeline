@@ -191,7 +191,8 @@ integrations:
     use_in: [brainstorm]
   github:
     enabled: false
-    use_in: [commit, finish, remediate, purpleteam]
+    use_in: [brainstorm, plan, architect, build, qa, review, redteam, commit, finish, remediate, purpleteam]
+    issue_tracking: true  # Create/link issues across lifecycle. false = only commit/finish/remediate use GitHub.
   chrome_devtools:
     enabled: false
     use_in: [ui-review]

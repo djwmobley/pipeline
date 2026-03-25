@@ -42,6 +42,7 @@ Reviews changed code with severity tiers and confidence levels.
 5. Reads each changed file in full for context
 6. Reviews against configured criteria
 7. Reports findings in red/yellow/blue format with confidence
+8. If GitHub issue tracking enabled: creates issues for 🔴 Must Fix findings and comments verdict on epic
 
 **Arguments:**
 - No arguments — reviews uncommitted changes (`git diff`)
@@ -162,6 +163,7 @@ Explores requirements, proposes approaches, and writes a spec. Used before LARGE
 5. Proposes 2-3 approaches with trade-offs
 6. Writes a spec document to `docs/specs/`
 7. Dispatches a spec reviewer subagent for feedback
+8. If GitHub issue tracking enabled: creates a feature epic issue and writes `github_epic: N` to spec metadata
 
 ---
 
@@ -198,6 +200,7 @@ Creates an implementation plan from a spec.
 6. Generates a QA strategy section with P0 scenarios and seam tests (MEDIUM+)
 7. Validates implementation readiness — every task must name specific files, functions, and types
 8. Saves to `docs/plans/`
+9. If GitHub issue tracking enabled: propagates `github_epic` from spec to plan metadata and comments the plan summary on the epic
 
 For LARGE+ changes with 3+ relevant domains and no existing decisions, plan auto-invokes the full architect mode before planning.
 
@@ -214,7 +217,8 @@ Executes a plan with fresh subagents.
    - Implementer commits its work
    - Dispatches a reviewer subagent to check spec compliance + code quality
    - If issues found: fix agent dispatched, re-reviewed
-3. Reports completion with baseline SHA for review
+3. If GitHub issue tracking enabled: comments build start/complete on the feature epic
+4. Reports completion with baseline SHA for review
 
 **Model routing:** Mechanical tasks (1-2 files, clear spec) get `models.cheap` (haiku). Integration tasks (multi-file) get `models.implement` (sonnet).
 
@@ -270,6 +274,7 @@ Executes a test plan with parallel QA workers and seam pass synthesis. For LARGE
 4. After all workers complete: QA lead (opus) runs the seam pass — tests ACROSS integration boundaries that no individual worker tested
 5. Failure triage: every failure classified as code-is-wrong, test-is-wrong, flaky, or environment
 6. Produces a test report with verdict (PASS/FAIL/PARTIAL) and coverage metrics
+7. If GitHub issue tracking enabled: creates issues for code-is-wrong failures and comments verdict on epic
 
 **MILESTONE fix-and-rerun:** If the verdict is FAIL, offers to fix `code-is-wrong` failures and re-verify affected work packages (max 1 retry cycle).
 
@@ -292,6 +297,7 @@ Security red team assessment with parallel domain specialists.
 6. Lead analyst (opus) synthesizes findings into exploit chains and risk matrix
 7. Produces markdown report + optional standalone HTML artifact
 8. Persists critical findings to knowledge tier
+9. If GitHub issue tracking enabled: creates issues for CRITICAL/HIGH findings and comments summary on epic
 
 **Arguments:**
 - No arguments — full assessment with auto-selected specialists
@@ -328,7 +334,7 @@ All finding sources produce identical artifacts — same issue format, same comm
 1. Locates the most recent findings report from `docs/findings/` (or one you specify)
 2. Detects source type from filename prefix (redteam, audit, review, ui-review, external)
 3. Dispatches haiku triage agent to parse any native format into uniform finding records
-4. Writes tickets — GitHub issues (primary), Postgres findings table, or files (fallback)
+4. Writes tickets — GitHub issues (primary, with dedup check to avoid duplicating existing issues), Postgres findings table, or files (fallback)
 5. Presents remediation plan — you approve before work starts
 6. Executes fixes in batches with stateless agent dispatch:
    - **Quick wins** — single implementer agent (reads context from ticket, not inline)

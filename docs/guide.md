@@ -106,7 +106,7 @@ integrations:
   ollama: { enabled: false, use_in: [knowledge] }
   postgres: { enabled: false, use_in: [knowledge] }
   gamma: { enabled: false, use_in: [brainstorm] }
-  github: { enabled: true, use_in: [commit, finish] }
+  github: { enabled: true, use_in: [brainstorm, plan, architect, build, qa, review, redteam, commit, finish, remediate, purpleteam], issue_tracking: true }
   chrome_devtools: { enabled: false, use_in: [ui-review], dev_url: null }
   playwright: { enabled: false, use_in: [ui-review] }
 
@@ -420,7 +420,7 @@ Each integration has `enabled` (true/false) and `use_in` (which commands use it)
 |-------------|------------------|----------------|
 | `postgres` | `pg_isready` or port 5432 | Knowledge tier |
 | `ollama` | `localhost:11434` responds | Semantic search via local embeddings ([Ollama](https://ollama.com) — runs any embedding model on your machine, no API keys, no cloud) |
-| `github` | `GITHUB_TOKEN` env var | PR creation in `/pipeline:finish`, issue tracking in `/pipeline:remediate` |
+| `github` | `GITHUB_TOKEN` env var | PR creation in `/pipeline:finish`, lifecycle issue tracking (feature epics from brainstorm, finding issues from review/redteam/qa, progress comments on epics). Set `issue_tracking: false` to keep only PR creation. |
 | `sentry` | `SENTRY_AUTH_TOKEN` env var | Error import in `/pipeline:debug` |
 | `chrome_devtools` | `localhost:9222` responds | Screenshots for `/pipeline:ui-review` |
 | `playwright` | `npx playwright --version` works | Screenshots (fallback) |
