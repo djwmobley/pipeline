@@ -165,17 +165,41 @@ Explores requirements, proposes approaches, and writes a spec. Used before LARGE
 
 ---
 
+### `/pipeline:architect`
+
+Produces architectural decision records that constrain downstream planning and implementation. For LARGE/MILESTONE changes — MEDIUM changes get silent recon inside `/pipeline:plan`.
+
+**What it does:**
+1. Dispatches a recon agent (haiku) to scan the codebase for dependencies, patterns, and conventions
+2. Selects relevant architectural domains from recon results (DATA, STATE, UI, API, INFRA, TEST — typically 2-4, not all six)
+3. Launches parallel domain specialists (sonnet) — one per relevant domain
+4. Lead architect (opus) synthesizes specialist outputs, resolves cross-domain conflicts, and produces decision records
+5. Saves decisions to `docs/plans/` and persists to knowledge tier
+6. Presents decisions to builder with confidence levels — LOW confidence items require builder review
+
+**Decision records** are individually addressable and invalidatable. Each has a specific invalidation condition ("Invalidate if: deployment target changes from Vercel to self-hosted"). Build agents check relevant decisions and report `DONE_WITH_CONCERNS` if a real-world constraint conflicts.
+
+**Override mechanism:** The builder can annotate any decision: `OVERRIDE: Using Drizzle — target is Cloudflare Workers, Prisma unsupported.` Overrides propagate as hard constraints to all downstream agents.
+
+**Config:** `architect.*` in pipeline.yml. See the [configuration guide](guide.md#architect).
+
+---
+
 ### `/pipeline:plan`
 
 Creates an implementation plan from a spec.
 
 **What it does:**
-1. Reads the most recent spec (or one you specify)
-2. Breaks it into bite-sized tasks (2-5 min each)
-3. Orders tasks by dependency
-4. Assigns model routing per task (haiku for mechanical, sonnet for integration)
-5. Validates implementation readiness — every task must name specific files, functions, and types
-6. Saves to `docs/plans/`
+1. Runs silent architecture recon (haiku) to identify existing patterns and constraints
+2. Reads the most recent spec (or one you specify)
+3. Breaks it into bite-sized tasks (2-5 min each)
+4. Orders tasks by dependency
+5. Assigns model routing per task (haiku for mechanical, sonnet for integration)
+6. Generates a QA strategy section with P0 scenarios and seam tests (MEDIUM+)
+7. Validates implementation readiness — every task must name specific files, functions, and types
+8. Saves to `docs/plans/`
+
+For LARGE+ changes with 3+ relevant domains and no existing decisions, plan auto-invokes the full architect mode before planning.
 
 ---
 
@@ -203,13 +227,53 @@ Build never silently skips a failed task.
 
 **Cost note:** Build dispatches 2 agents per task (implementer + reviewer). A 10-task plan is ~20 subagent calls. Audit dispatches N sector agents + 1 synthesis agent. Keep this in mind for larger plans — the quality is high but so is the token usage.
 
+**Auto-verify (MEDIUM+):** After all tasks complete, build runs targeted QA verification automatically if `qa.auto_verify` is true. MEDIUM changes get 3-5 inline checks from the plan's QA strategy section. LARGE+ changes get a recommendation to run `/pipeline:qa verify` for full parallel workers + seam testing.
+
 **Output:**
 ```
-Build complete. 8 tasks executed.
+Build complete. 8 tasks executed. Baseline: abc1234
+Auto-verify: PASS
 
-Review with: /pipeline:review --since abc1234
-Then commit with: /pipeline:commit reviewed:✓
+What next?
+1. Review + commit + finish
+2. Review only
+3. Run QA verify
+4. Skip review, commit directly
+5. Leave as-is
 ```
+
+---
+
+### `/pipeline:qa plan`
+
+Generates a standalone test plan with work packages, scenarios, and seam definitions. For LARGE/MILESTONE changes.
+
+**What it does:**
+1. Reads the spec, implementation plan, decision records, and existing test patterns
+2. For MILESTONE: conducts a brief builder risk interview (5-7 questions)
+3. Dispatches a QA planner (opus) that identifies risks at component interaction points — not just acceptance criteria tracing
+4. Produces work packages with scenarios (P0/P1), seam test definitions, and a coverage matrix
+5. Saves to `docs/plans/`
+
+**Config:** `qa.*` in pipeline.yml. See the [configuration guide](guide.md#qa).
+
+---
+
+### `/pipeline:qa verify`
+
+Executes a test plan with parallel QA workers and seam pass synthesis. For LARGE/MILESTONE changes.
+
+**What it does:**
+1. Locates the test plan (standalone or QA section from implementation plan)
+2. Dispatches parallel QA workers (sonnet) — one per work package
+3. Workers write tests with business-behavior intent comments (`// Verifies: expired coupons rejected at checkout (TS-007)`), run them, and report structured results
+4. After all workers complete: QA lead (opus) runs the seam pass — tests ACROSS integration boundaries that no individual worker tested
+5. Failure triage: every failure classified as code-is-wrong, test-is-wrong, flaky, or environment
+6. Produces a test report with verdict (PASS/FAIL/PARTIAL) and coverage metrics
+
+**MILESTONE fix-and-rerun:** If the verdict is FAIL, offers to fix `code-is-wrong` failures and re-verify affected work packages (max 1 retry cycle).
+
+**Coverage metrics** are reported but never gated — no thresholds block builds. P0 AC coverage, P1 AC coverage, seam coverage, and code line coverage are all informational.
 
 ---
 

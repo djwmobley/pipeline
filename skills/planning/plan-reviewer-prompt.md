@@ -25,6 +25,7 @@ Task tool (general-purpose, model: {{MODEL}}):
     | Buildability | Could an engineer follow this without getting stuck? |
     | Build Sequence | Dependencies correctly ordered |
     | Model Routing | Tasks assigned appropriate complexity |
+    | Constraint Compliance | Does any task use a library, pattern, or convention not sanctioned by the Architectural Constraints section? If the plan has an `## Architectural Constraints` section, every task must be consistent with it. Flag violations as 🔴 HIGH. |
 
     Only flag issues that would cause real problems during implementation. Approve unless there are serious gaps.
 

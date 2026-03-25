@@ -51,8 +51,27 @@ Every plan MUST start with:
 
 **Model Routing:** [Which tasks need sonnet vs haiku]
 
+**Decisions:** [path to decision records, or "inline — see Architectural Constraints below"]
+
 ---
 ```
+
+## Architectural Constraints
+
+If the plan command provided an `## Architectural Constraints` section (from recon or decision records), include it in the plan immediately after the header.
+
+The planner MUST:
+- Follow established patterns listed in the constraints (don't introduce a new library when one exists)
+- Respect existing conventions (naming, file organization, export style)
+- Document any deviations required by the spec as explicit decision records:
+  ```
+  ### Decisions for This Feature
+  - DECISION-001: [title] — [decision]. Invalidate if: [condition].
+  ```
+
+If architectural constraints conflict with the spec, flag the conflict and ask the builder to resolve it.
+
+The plan reviewer (dispatched during the review loop) checks constraint compliance: "Does any task use a library, pattern, or convention not sanctioned by the architectural constraints?"
 
 ## Task Structure
 

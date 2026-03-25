@@ -64,6 +64,26 @@ redteam:
     - { pattern: "cors\\(\\)", label: "permissive-cors" }
     - { pattern: "disable.*csrf|csrf.*false", label: "csrf-disabled" }
 
+# Engineering Architect — technology decisions
+# Silent recon for MEDIUM (auto-runs inside /pipeline:plan)
+# Full orchestration for LARGE+ (explicit /pipeline:architect or auto-invoked)
+architect:
+  specialists: "auto"           # "auto" (recon-determined) or explicit: [DATA, STATE, UI, API, INFRA, TEST]
+  skip: []                      # Domain IDs to skip (e.g., [INFRA] for prototypes)
+  enforce_in_build: true        # Build reviewer checks decision compliance
+
+# QA — test planning and verification
+# Inline QA section for MEDIUM (auto-runs inside /pipeline:plan)
+# Standalone plan for LARGE+ (explicit /pipeline:qa plan)
+# Auto-verify for MEDIUM+ (auto-runs after /pipeline:build)
+qa:
+  auto_verify: true             # /pipeline:build auto-invokes QA verify for MEDIUM+
+  workers: "auto"               # "auto" (from test plan work packages) or explicit cap (2-6)
+  browser_testing: true          # QA workers can use Chrome DevTools / Playwright
+  db_verification: true          # QA workers can query database state
+  api_testing: true              # QA workers can make HTTP requests
+  flake_retries: 1               # Retries for e2e/visual tests (unit tests always get 0)
+
 # Remediation
 # Run /pipeline:remediate after any finding-producing command to fix issues
 # Accepts findings from: redteam, audit, review, ui-review, external reports
@@ -113,6 +133,7 @@ models:
   review: "sonnet"         # Code review, sector agents
   plan: "sonnet"           # Planning
   architecture: "opus"     # High-stakes architectural decisions
+  qa: "sonnet"               # QA worker agents
 
 # Knowledge tier: "files" (default) or "postgres"
 #

@@ -16,12 +16,41 @@ Read `.claude/pipeline.yml` from the project root. Extract:
 - `docs.specs_dir` — where to find specs
 - `models` — model routing for task assignment
 - `commands.test` — test command for verification steps
+- `routing.source_dirs` — source directories
+- `architect` — architect config section (if present)
+- `qa` — QA config section (if present)
+- `project.profile` — project profile
 
 If no config file exists, report: "No `.claude/pipeline.yml` found. Run `/pipeline:init` first." and stop.
 
 **Spec selection:** If the user specified a spec file, use it. Otherwise, list files in `docs.specs_dir` and use the most recent one. If multiple exist with no clear recency, ask the user which to plan from.
 
-Follow the planning skill exactly.
+---
+
+### Architecture Recon (silent — runs automatically)
+
+Before planning, run architecture recon to understand the codebase's existing patterns and conventions. This is invisible to the builder — no separate command, no extra step.
+
+Locate the architecture skill:
+1. If `$PIPELINE_DIR` is set: read `$PIPELINE_DIR/skills/architecture/SKILL.md`
+2. Otherwise: use Glob `**/pipeline/skills/architecture/SKILL.md` to find it
+
+Follow the architecture skill's **Silent Mode** (MEDIUM path):
+
+1. Dispatch the recon agent using `recon-agent-prompt.md` from the architecture skill directory
+2. The recon agent returns a **Constraints Block** (existing stack, patterns, relevant domains, test coverage)
+3. Inject the Constraints Block into the planning skill as an `## Architectural Constraints` section
+
+**LARGE/MILESTONE auto-invoke:** If the recon agent identifies 3+ relevant domains AND no decision records file exists in `docs.plans_dir` for the current spec, auto-invoke the full architecture mode:
+1. Read the full architecture SKILL.md and follow the **Full Mode** path
+2. This dispatches domain specialists and produces a decisions artifact
+3. The decisions artifact's Constraints Summary replaces the inline recon constraints
+
+If the user has already run `/pipeline:architect` explicitly (decision records file exists), skip recon entirely — read the existing decisions and inject their Constraints Summary.
+
+---
+
+Follow the planning skill exactly, passing the architectural constraints as context.
 
 **Implementation readiness requirement:** The plan MUST be concrete enough to implement without further design decisions:
 - Every task names specific files to create or modify
@@ -32,6 +61,34 @@ Follow the planning skill exactly.
 If the spec is too vague to produce this level of detail, stop and report: "Spec lacks detail for implementation-ready planning. Run `/pipeline:brainstorm` first or clarify: [specific questions]."
 
 **Save plans to:** `{docs.plans_dir}/YYYY-MM-DD-{feature-name}.md` (use `date +%Y-%m-%d` via Bash for today's date)
+
+---
+
+### QA Strategy Section (inline — runs automatically for MEDIUM+)
+
+After writing the implementation plan tasks but before the review loop, generate a QA section.
+
+Locate the QA skill:
+1. If `$PIPELINE_DIR` is set: read `$PIPELINE_DIR/skills/qa/SKILL.md`
+2. Otherwise: use Glob `**/pipeline/skills/qa/SKILL.md` to find it
+
+Follow the QA skill's **Plan Mode — Inline (MEDIUM)** path:
+
+1. Read the spec, the architectural constraints (from recon), and the implementation plan tasks just written
+2. Read existing test files in the codebase (use Glob to find test patterns, read 2-3 samples)
+3. Identify the top 5 risks at component interaction points
+4. Generate a `## QA Strategy` section and append it to the implementation plan
+
+The QA section includes:
+- Risk assessment (5 risks at component interaction level)
+- P0 test scenarios with test intent
+- Seam tests at integration boundaries
+
+Build agents will see this section alongside their tasks and write tests that map to it.
+
+**LARGE/MILESTONE auto-invoke:** If the change is LARGE or MILESTONE sized (determined by file count and scope from the plan), suggest running `/pipeline:qa plan` for a standalone test plan with work packages. Do not auto-invoke — present the option:
+
+> "This is a LARGE change with [N] tasks across [M] files. A standalone QA test plan with parallel work packages would provide better coverage. Run `/pipeline:qa plan` now? (Y/n)"
 
 ---
 

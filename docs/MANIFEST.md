@@ -48,6 +48,20 @@ When you ship a feature, check which docs are affected.
 | `docs/reference.md` | Update `/pipeline:redteam` section |
 | `docs/guide.md` | Update `redteam` config section and auto-selection table |
 
+### Adding or Changing Architect Domains
+
+| Doc | What to Update |
+|-----|---------------|
+| `docs/guide.md` | Update `architect` config section |
+| `docs/reference.md` | Update `/pipeline:architect` section |
+
+### Adding or Changing QA Features
+
+| Doc | What to Update |
+|-----|---------------|
+| `docs/guide.md` | Update `qa` config section and size routing table |
+| `docs/reference.md` | Update `/pipeline:qa plan` and `/pipeline:qa verify` sections |
+
 ### Adding an Integration
 
 | Doc | What to Update |
@@ -103,8 +117,8 @@ These directories contain generated output, not maintained documentation:
 |-----------|-------------|----------|
 | `docs/specs/` | `/pipeline:brainstorm` | Feature specs scoped to a single feature |
 | `docs/superpowers/specs/` | Superpowers brainstorming skill | Same — feature specs |
-| `docs/plans/` | `/pipeline:plan` | Implementation plans with task breakdowns |
-| `docs/findings/` | `/pipeline:redteam`, `/pipeline:audit`, `/pipeline:review`, `/pipeline:remediate`, `/pipeline:purpleteam` | Security reports, audit findings, SBOM artifacts, remediation summaries |
+| `docs/plans/` | `/pipeline:plan`, `/pipeline:architect`, `/pipeline:qa plan` | Implementation plans, architectural decision records, test plans |
+| `docs/findings/` | `/pipeline:redteam`, `/pipeline:audit`, `/pipeline:review`, `/pipeline:remediate`, `/pipeline:purpleteam`, `/pipeline:qa verify` | Security reports, audit findings, SBOM artifacts, remediation summaries, QA reports |
 | `docs/sessions/` | Auto-persistence | Session logs (files tier only, rotated to last 5) |
 
 ## Other Tracked Files

@@ -10,10 +10,11 @@
 6. If task requires verification (most do), paste the core rule from `skills/verification/SKILL.md`: "NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION EVIDENCE — run the verification command, read full output, confirm success before reporting DONE."
 7. `[TASK_NUMBER]` → the task number from the plan (e.g., `1`, `2`, `3`)
 8. If task has `tdd: required`, replace `{{TDD_SECTION}}` with the content of skills/tdd/SKILL.md. If `tdd: optional` or absent, replace `{{TDD_SECTION}}` with an empty string (remove the placeholder line entirely).
-10. `{{DECISION_REGISTER}}` → Read `review.non_negotiable[]` from pipeline.yml. If non-empty, format as a bulleted list of intentional decisions. If empty, remove the `## Decision Register` section entirely.
+9. `{{DECISION_REGISTER}}` → Read `review.non_negotiable[]` from pipeline.yml. If non-empty, format as a bulleted list of intentional decisions. If empty, remove the `## Decision Register` section entirely.
+10. `{{ARCHITECTURAL_CONSTRAINTS}}` → If `architect.enforce_in_build` is true in pipeline.yml, extract constraints from decision records (see commands/build.md for lookup logic). Format as a bulleted list of constraints grouped by decision ID. If no decisions exist or `enforce_in_build` is false, remove the `## Architectural Constraints` section entirely.
 11. `{{PRIOR_TASKS}}` → If `.claude/build-state.json` exists and has tasks with `"status": "done"`, format as a numbered list: `1. [title] — done (commit [sha])`. If no prior tasks or no state file, remove the `## Prior Tasks in This Build` section entirely.
 12. `{{FRAMEWORK}}` → Read `project.profile` from pipeline.yml (e.g., `spa`, `fullstack`, `api`). If set, include it. If null, omit the line.
-9. `{{TICKET_CONTEXT}}` → (remediation only) Replace with ticket-reading instructions based on backend:
+13. `{{TICKET_CONTEXT}}` → (remediation only) Replace with ticket-reading instructions based on backend:
    - **GitHub:** `Read the GitHub issue for full requirements: gh issue view [N] --repo '[repo]' --json title,body,labels,comments`
    - **Postgres:** `Read the finding record: node scripts/pipeline-db.js get finding [ID]`
    - **Files (fallback):** Inline the finding record from triage output
@@ -49,6 +50,14 @@ Task tool (general-purpose, model: {{MODEL}}):
     These are intentional architectural decisions. Do not contradict them.
 
     {{DECISION_REGISTER}}
+
+    ## Architectural Constraints
+
+    These constraints come from architectural decision records. Follow them — they represent
+    reviewed technology choices. If a constraint blocks your implementation, report DONE_WITH_CONCERNS
+    with the specific decision ID and why it conflicts.
+
+    {{ARCHITECTURAL_CONSTRAINTS}}
 
     ## Prior Tasks in This Build
 

@@ -72,6 +72,19 @@ commit:
   push_after_commit: true
   post_commit_hooks: []
 
+architect:
+  specialists: "auto"
+  skip: []
+  enforce_in_build: true
+
+qa:
+  auto_verify: true
+  workers: "auto"
+  browser_testing: true
+  db_verification: true
+  api_testing: true
+  flake_retries: 1
+
 models:
   cheap: "haiku"
   explore: "haiku"
@@ -80,6 +93,7 @@ models:
   review: "sonnet"
   plan: "sonnet"
   architecture: "opus"
+  qa: "sonnet"
 
 knowledge:
   tier: "files"
@@ -164,8 +178,42 @@ Which Claude model handles which job. Model names: `haiku`, `sonnet`, `opus`.
 | `review` | `sonnet` | Code review, audit sector agents |
 | `plan` | `sonnet` | Planning |
 | `architecture` | `opus` | High-stakes architectural decisions |
+| `qa` | `sonnet` | QA worker agents |
 
 **Rule of thumb:** Haiku explores and does mechanical work. Sonnet reasons and writes code. Opus makes decisions that are hard to reverse.
+
+### architect
+
+Controls the `/pipeline:architect` engineering architect and silent recon during `/pipeline:plan`.
+
+| Field | Default | What It Does |
+|-------|---------|-------------|
+| `specialists` | `"auto"` | `"auto"` (recon determines relevant domains) or explicit list: `[DATA, STATE, UI, API, INFRA, TEST]` |
+| `skip` | `[]` | Domain IDs to skip (e.g., `[INFRA]` for prototypes) |
+| `enforce_in_build` | `true` | Build reviewer checks decision compliance — constraints from decision records are injected into implementer prompts |
+
+**Size routing:**
+- **MEDIUM:** Silent recon runs automatically inside `/pipeline:plan`. No user-facing steps.
+- **LARGE/MILESTONE:** Full orchestration via `/pipeline:architect` — recon → parallel domain specialists → lead architect synthesis → decision records.
+
+### qa
+
+Controls the `/pipeline:qa` test planning and verification.
+
+| Field | Default | What It Does |
+|-------|---------|-------------|
+| `auto_verify` | `true` | `/pipeline:build` auto-invokes QA verification for MEDIUM+ changes |
+| `workers` | `"auto"` | `"auto"` (one worker per work package, capped at 6) or explicit number |
+| `browser_testing` | `true` | QA workers can use Chrome DevTools / Playwright for e2e scenarios |
+| `db_verification` | `true` | QA workers can query database state for verification |
+| `api_testing` | `true` | QA workers can make HTTP requests |
+| `flake_retries` | `1` | Retries for e2e/visual tests. Unit tests always get 0 retries (flaky unit = concurrency bug). |
+
+**Size routing:**
+- **TINY:** No QA. Existing lint + typecheck only.
+- **MEDIUM:** QA section generated inside implementation plan. Auto-verify runs 3-5 targeted checks after build.
+- **LARGE:** Standalone test plan via `/pipeline:qa plan`. Full parallel workers + seam pass via `/pipeline:qa verify`.
+- **MILESTONE:** Same as LARGE plus builder risk interview (5-7 questions) and fix-and-rerun cycle.
 
 ### redteam
 
