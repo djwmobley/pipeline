@@ -394,7 +394,7 @@ hr {
 Run /pipeline:review, apply all fixes, then /pipeline:commit reviewed:✓</code></pre>
 
 <h3>You run <code>/pipeline:review</code> on your changes</h3>
-<p>Pipeline reads every changed file in full, runs your linter on just those files, and reviews against your configured criteria:</p>
+<p>Pipeline runs your typecheck, linter, and SAST scanner (semgrep with custom security rules, or grep fallback) on changed files, then reads every changed file in full and reviews against your configured criteria:</p>
 <div class="review-example">
 <p><strong>Files reviewed</strong></p>
 <p><span class="file-ref">src/hooks/useAuth.ts</span>, <span class="file-ref">src/pages/Login.tsx</span>, <span class="file-ref">src/lib/api.ts</span></p>
@@ -412,11 +412,12 @@ Run /pipeline:review, apply all fixes, then /pipeline:commit reviewed:✓</code>
 <p>You describe what you want. Pipeline routes you through:</p>
 <ol>
 <li><code>/pipeline:brainstorm</code> — asks clarifying questions one at a time, proposes 2-3 approaches, writes a spec. If GitHub issue tracking is enabled, creates a feature epic.</li>
+<li><code>/pipeline:debate</code> — three parallel agents (Advocate, Skeptic, Practitioner) stress-test the spec from first principles</li>
 <li><code>/pipeline:architect</code> — parallel domain specialists assess your technology choices and produce decision records</li>
-<li><code>/pipeline:plan</code> — turns the spec into bite-sized tasks with specific files, functions, and types. Includes an inline QA strategy.</li>
+<li><code>/pipeline:plan</code> — turns the spec into bite-sized tasks with architectural constraints, debate verdict, and a QA strategy.</li>
 <li><code>/pipeline:build</code> — dispatches a fresh subagent for each task. Each agent gets only its task and relevant files — no accumulated context, so quality doesn't degrade over a 15-task build.</li>
 <li><code>/pipeline:qa verify</code> — parallel QA workers execute test scenarios, a seam pass verifies integration boundaries</li>
-<li><code>/pipeline:review --since abc123</code> — reviews everything built since the baseline commit</li>
+<li><code>/pipeline:review --since abc123</code> — runs SAST scanning (semgrep + custom security rules), agent template lint, then reviews everything built since the baseline</li>
 <li><code>/pipeline:finish</code> — merge, PR, dashboard update</li>
 </ol>
 <p>Each step comments on the GitHub feature epic, so you can track progress from a single issue thread.</p>

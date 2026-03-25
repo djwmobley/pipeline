@@ -27,7 +27,7 @@ You can't talk your way past this. The gate is absolute.
 
 ### You run `/pipeline:review` on your changes
 
-Pipeline reads every changed file in full, runs your linter on just those files, and reviews against your configured criteria. The output looks like this:
+Pipeline runs your typecheck, linter, and SAST scanner (semgrep with custom security rules, or grep fallback) on changed files, then reads every changed file in full and reviews against your configured criteria. If you're editing Pipeline itself, agent template lint checks your prompt templates for structural correctness. The output looks like this:
 
 ```
 ## Code Review
@@ -58,12 +58,13 @@ Every finding has a severity (🔴 HIGH / 🟡 MEDIUM / 🔵 LOW), a confidence 
 You describe what you want. Pipeline routes you through the full workflow:
 
 1. **`/pipeline:brainstorm`** — asks clarifying questions one at a time, proposes 2-3 approaches, writes a spec. Creates a GitHub feature epic if issue tracking is enabled.
-2. **`/pipeline:architect`** — parallel domain specialists assess your technology choices and produce decision records that constrain the build
-3. **`/pipeline:plan`** — turns the spec into bite-sized tasks with architectural constraints and a QA strategy. For LARGE/MILESTONE, generates a standalone QA test plan with work packages.
-4. **`/pipeline:build`** — dispatches a fresh subagent for each task with architectural constraints injected. Each agent gets only its task and relevant files — no accumulated context, so quality doesn't degrade over a 15-task build. A reviewer agent checks each task before moving to the next.
-5. **`/pipeline:qa verify`** — parallel QA workers execute the test plan, a seam pass verifies integration boundaries
-6. **`/pipeline:review --since abc123`** — reviews everything built since the baseline commit
-7. **`/pipeline:finish`** — merge, PR, dashboard update
+2. **`/pipeline:debate`** — three parallel agents (Advocate, Skeptic, Practitioner) stress-test the spec from first principles. Produces constraints the plan must respect.
+3. **`/pipeline:architect`** — parallel domain specialists assess your technology choices and produce decision records that constrain the build
+4. **`/pipeline:plan`** — turns the spec into bite-sized tasks with architectural constraints, debate verdict, and a QA strategy. For LARGE/MILESTONE, generates a standalone QA test plan with work packages.
+5. **`/pipeline:build`** — dispatches a fresh subagent for each task with architectural constraints injected. Each agent gets only its task and relevant files — no accumulated context, so quality doesn't degrade over a 15-task build. A reviewer agent checks each task before moving to the next.
+6. **`/pipeline:qa verify`** — parallel QA workers execute the test plan, a seam pass verifies integration boundaries
+7. **`/pipeline:review --since abc123`** — runs SAST scanning (semgrep + custom security rules), agent template lint if prompt templates changed, then reviews everything built since the baseline commit
+8. **`/pipeline:finish`** — merge, PR, dashboard update
 
 Architect and QA activate automatically for LARGE/MILESTONE changes — you can skip them if you've already made your technology choices or want to handle QA yourself. For MEDIUM changes, these capabilities run invisibly inside plan and build.
 
