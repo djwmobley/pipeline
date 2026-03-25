@@ -138,6 +138,59 @@ Then cleanup worktree (Step 5).
 
 ---
 
+### Step 4b — Ship transition
+
+**Runs only for Options 1 and 2 (merge paths).** Skip entirely if `knowledge.tier` is not `"postgres"` or `integrations.postgres.enabled` is false.
+
+**Find the associated roadmap task:**
+
+1. Read the most recent plan file in `docs.plans_dir` for `github_epic: N` (same pattern as Step 4 Option 3).
+2. Query Postgres for the roadmap task:
+   ```bash
+   PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js query "$(cat <<'SQL'
+   SELECT * FROM tasks WHERE github_issue = [N] AND category = 'roadmap'
+   SQL
+   )"
+   ```
+3. If no match, fallback — extract keywords from the branch name (split on `-`, drop common prefixes like `feat`, `fix`, `chore`) and query:
+   ```bash
+   PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js query "$(cat <<'SQL'
+   SELECT * FROM tasks WHERE category = 'roadmap' AND status != 'done' AND title ILIKE '%[branch-name-keyword]%'
+   SQL
+   )"
+   ```
+4. If still no match, skip the rest of this step silently. Not all branches are roadmap items.
+
+**Update Postgres** — mark the task as done:
+```bash
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update task [id] done
+```
+
+**Close GitHub issue** — only if `integrations.github.enabled` AND the task has a `github_issue` value:
+```bash
+gh issue close [N] --repo '[project.repo]' --comment '## Shipped'
+```
+
+**Report:**
+```
+Shipped: [task title] (task #[id], issue #[N] closed)
+```
+
+If there was no GitHub issue to close, omit the issue portion:
+```
+Shipped: [task title] (task #[id])
+```
+
+`$SCRIPTS_DIR` is already resolved in the "Persist to knowledge tier" section — use the same value here.
+
+| Rationalization | Reality |
+|---|---|
+| "No task matched, so nothing to do" | If the branch clearly shipped a roadmap feature but no task matched, report the gap so it can be fixed manually. |
+| "I'll mark it done later" | The merge just happened. Mark it now or it will be forgotten. |
+| "The issue will be closed by the PR" | PRs close issues on merge only if the body contains `Closes #N`. Don't assume — close explicitly. |
+
+---
+
 ### Step 5 — Cleanup worktree
 
 For Options 1, 2, 3, 5: if in a worktree (git-dir path contains 'worktrees'), clean up after merge/discard.

@@ -86,7 +86,11 @@ When you ship a feature, check which docs are affected.
 
 | Doc | What to Update |
 |-----|---------------|
-| `README.md` | Move from Open to Shipped in roadmap |
+| `README.md` | **Automatic** — `/pipeline:finish` triggers dashboard regeneration, which regenerates the `## Roadmap` section from Postgres `roadmap_tasks` view |
+| Postgres | **Automatic** — `/pipeline:finish` marks the task as `done` via ship transition (Step 4b) |
+| GitHub | **Automatic** — `/pipeline:finish` closes the linked GitHub issue |
+
+All three stores update automatically on merge. No manual intervention needed.
 
 ### Changing the Security Lifecycle
 

@@ -11,6 +11,9 @@
  *   node pipeline-db.js update session <num> <tests> "<summary>" # Record a session
  *   node pipeline-db.js update task new "<title>" [phase] [issue] # Create a task
  *   node pipeline-db.js update task <id> <status>                # Update task status
+ *   node pipeline-db.js update task <id> github_issue <N>        # Link task to GitHub issue
+ *   node pipeline-db.js update task <id> readme_label "<text>"   # Set roadmap display label
+ *   node pipeline-db.js update task <id> category <value>        # Set category (roadmap|build|finding|internal)
  *   node pipeline-db.js update gotcha new "<issue>" "<rule>"     # Add a gotcha
  *   node pipeline-db.js update decision "<topic>" "<decision>" "<reason>"  # Record a decision
  *   node pipeline-db.js update finding new '<json>'              # Insert finding record
@@ -180,21 +183,62 @@ async function cmdUpdate(args) {
         );
         console.log(c.green(`Task #${r.rows[0].id} "${title}" created.`));
       } else {
-        const [status] = taskRest;
-        const valid = ['pending', 'in_progress', 'done', 'deferred'];
-        if (!valid.includes(status)) {
-          console.error(`Status must be one of: ${valid.join(', ')}`);
-          process.exit(1);
+        const [fieldOrStatus, ...valueParts] = taskRest;
+        const taskId = parseInt(idOrNew);
+
+        // Field-specific updates: update task <id> github_issue|readme_label|category <value>
+        if (fieldOrStatus === 'github_issue') {
+          const value = parseInt(valueParts[0]);
+          if (isNaN(value)) { console.error('Usage: update task <id> github_issue <N>'); process.exit(1); }
+          const r = await client.query(
+            'UPDATE tasks SET github_issue=$1, updated_at=NOW() WHERE id=$2 RETURNING title',
+            [value, taskId]
+          );
+          if (r.rowCount === 0) { console.error(`Task #${taskId} not found.`); process.exit(1); }
+          console.log(c.green(`Task #${taskId} "${r.rows[0].title}" linked to issue #${value}`));
+
+        } else if (fieldOrStatus === 'readme_label') {
+          const value = valueParts.join(' ');
+          if (!value) { console.error('Usage: update task <id> readme_label "<text>"'); process.exit(1); }
+          const r = await client.query(
+            'UPDATE tasks SET readme_label=$1, updated_at=NOW() WHERE id=$2 RETURNING title',
+            [value, taskId]
+          );
+          if (r.rowCount === 0) { console.error(`Task #${taskId} not found.`); process.exit(1); }
+          console.log(c.green(`Task #${taskId} "${r.rows[0].title}" readme_label → ${value}`));
+
+        } else if (fieldOrStatus === 'category') {
+          const value = valueParts[0];
+          const validCats = ['roadmap', 'build', 'finding', 'internal'];
+          if (!validCats.includes(value)) {
+            console.error(`Category must be one of: ${validCats.join(', ')}`);
+            process.exit(1);
+          }
+          const r = await client.query(
+            'UPDATE tasks SET category=$1, updated_at=NOW() WHERE id=$2 RETURNING title',
+            [value, taskId]
+          );
+          if (r.rowCount === 0) { console.error(`Task #${taskId} not found.`); process.exit(1); }
+          console.log(c.green(`Task #${taskId} "${r.rows[0].title}" category → ${value}`));
+
+        } else {
+          // Status update (original path)
+          const status = fieldOrStatus;
+          const valid = ['pending', 'in_progress', 'done', 'deferred'];
+          if (!valid.includes(status)) {
+            console.error(`Status must be one of: ${valid.join(', ')}\nOr use a field name: github_issue | readme_label | category`);
+            process.exit(1);
+          }
+          const r = await client.query(
+            'UPDATE tasks SET status=$1, updated_at=NOW() WHERE id=$2 RETURNING title',
+            [status, taskId]
+          );
+          if (r.rowCount === 0) {
+            console.error(`Task #${taskId} not found.`);
+            process.exit(1);
+          }
+          console.log(c.green(`Task #${taskId} "${r.rows[0].title}" → ${status}`));
         }
-        const r = await client.query(
-          'UPDATE tasks SET status=$1, updated_at=NOW() WHERE id=$2 RETURNING title',
-          [status, parseInt(idOrNew)]
-        );
-        if (r.rowCount === 0) {
-          console.error(`Task #${idOrNew} not found.`);
-          process.exit(1);
-        }
-        console.log(c.green(`Task #${idOrNew} "${r.rows[0].title}" → ${status}`));
       }
 
     } else if (entity === 'gotcha') {
@@ -512,6 +556,15 @@ ${c.dim(`Database: ${CONFIG.database} @ ${CONFIG.host}:${CONFIG.port}`)}
 
   ${c.cyan('update task')} <id> <status>
       Update task status (pending | in_progress | done | deferred)
+
+  ${c.cyan('update task')} <id> github_issue <N>
+      Link task to a GitHub issue
+
+  ${c.cyan('update task')} <id> readme_label "<text>"
+      Set the roadmap display label (shown in README)
+
+  ${c.cyan('update task')} <id> category <value>
+      Set task category (roadmap | build | finding | internal)
 
   ${c.cyan('update gotcha new')} "<issue>" "<rule>"
       Add a critical gotcha

@@ -25,7 +25,9 @@ digraph dashboard {
   substitute [label="Substitute\nTemplate"];
   write [label="Atomic\nWrite"];
 
-  config -> phase -> state -> git -> github -> haiku -> substitute -> write;
+  readme [label="README\nRoadmap Sync\n(postgres only)"];
+
+  config -> phase -> state -> git -> github -> haiku -> substitute -> write -> readme;
 }
 ```
 
@@ -338,6 +340,58 @@ mv docs/dashboard.tmp.html docs/dashboard.html
 ```
 
 This prevents auto-refresh from reading a partially written file.
+
+## Step 13 — README Roadmap Sync
+
+**Condition:** Only run this step if `knowledge.tier` is `"postgres"`. The `roadmap_tasks` view does not exist on the files tier — skip silently.
+
+Query the `roadmap_tasks` view:
+
+```bash
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js query 'SELECT * FROM roadmap_tasks'
+```
+
+If the query returns zero rows, skip the README update silently and proceed to the end.
+
+### Build roadmap markdown
+
+Sort the results into two groups:
+
+1. **Open items** — rows where `status` is NOT `done` and NOT `deferred`, sorted by `id` ASC
+2. **Shipped items** — rows where `status` is `done`, sorted by `updated_at` DESC
+
+Render each item as a markdown checkbox line:
+
+- **Open:** `- [ ] **[readme_label]** — [title]`
+- **Shipped:** `- [x] [readme_label] — [title]`
+
+If `readme_label` equals `title`, omit the ` — [title]` suffix (no need to repeat):
+
+- **Open (label = title):** `- [ ] **[title]**`
+- **Shipped (label = title):** `- [x] [title]`
+
+Rows with `status` = `deferred` are excluded entirely.
+
+### Replace README section
+
+Read `README.md` from the project root. Locate the content between the `## Roadmap` heading and the next `##` heading. Replace that content while preserving:
+
+- The `## Roadmap` heading itself
+- The intro line: `Tracked items for future development. Checked items are shipped.`
+
+The replacement block is:
+
+```markdown
+## Roadmap
+
+Tracked items for future development. Checked items are shipped.
+
+[open items]
+
+[shipped items]
+```
+
+Use the Edit tool pattern — read the existing section, replace it with the new content. If `README.md` does not contain a `## Roadmap` section, skip silently.
 
 ## Red Flags
 

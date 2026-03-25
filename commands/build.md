@@ -217,6 +217,21 @@ For any deferred tasks:
 PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update task [task_id] deferred
 ```
 
+**Update parent roadmap task:** After all build tasks are marked done, check if there is a parent roadmap task to advance:
+1. Read the plan file for `github_epic: N` in its metadata
+2. Query for a parent roadmap task:
+   ```bash
+   PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js query 'SELECT * FROM tasks WHERE github_issue = [N] AND category = '\''roadmap'\'''
+   ```
+3. If a roadmap task is found AND its status is `'pending'`, update it to `in_progress`:
+   ```bash
+   PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update task [parent_id] in_progress
+   ```
+   Report: `Roadmap task #[parent_id] '[title]' → in_progress (all build tasks complete)`
+4. If no parent roadmap task is found, skip silently.
+
+<!-- The task stays in_progress until /pipeline:finish marks it done on merge. -->
+
 **If `knowledge.tier` is `"files"`:**
 
 Record session only (auto-rotates to keep 5 most recent):

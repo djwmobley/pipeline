@@ -466,8 +466,21 @@ knowledge:
 | `/pipeline:knowledge hybrid "query"` | Keyword + vector search |
 | `/pipeline:knowledge index` | Update embeddings |
 | `/pipeline:knowledge query "SQL"` | Run raw SQL |
+| `/pipeline:knowledge task ID github_issue N` | Link task to GitHub issue |
+| `/pipeline:knowledge task ID readme_label "text"` | Set README roadmap display label |
+| `/pipeline:knowledge task ID category value` | Set category: roadmap, build, finding, internal |
 | `/pipeline:knowledge export` | Export gotchas + decisions to JSON |
 | `/pipeline:knowledge import <source> --all` | Import from file or another project DB |
+
+#### State synchronization
+
+Pipeline tracks project state across three stores: **Postgres** (master), **GitHub Issues** (synced mirror), and **README roadmap** (rendered view).
+
+- **Postgres is always right.** All commands persist to Postgres automatically.
+- **GitHub Issues stay in sync.** `/pipeline:brainstorm` creates epics and linked Postgres tasks. `/pipeline:finish` closes issues on merge.
+- **README updates itself.** Dashboard regeneration (triggered by every state-changing command) regenerates the `## Roadmap` section from the `roadmap_tasks` Postgres view.
+
+Tasks with `category=roadmap` appear in the README. The `readme_label` field controls the bold display text. This is set automatically by `/pipeline:brainstorm` — you don't need to manage it manually.
 
 ### integrations
 

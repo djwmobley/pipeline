@@ -135,6 +135,51 @@ If `integrations.github.enabled` is false OR `integrations.github.issue_tracking
 
 ---
 
+### Postgres Task Creation
+
+This ensures every brainstormed feature has a Postgres task from day one, preventing drift between stores.
+
+Using the same `SCRIPTS_DIR` resolved earlier for the locked-decisions query:
+
+**If `knowledge.tier` is `"postgres"` AND `integrations.postgres.enabled`:**
+
+**Case 1 — GitHub epic was created (issue number is available):**
+
+Create a task linked to the epic:
+```bash
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update task new '$(cat <<'FNAME'
+[feature name]
+FNAME
+)' 'design' [github_issue_number]
+```
+
+**Case 2 — GitHub is NOT enabled but Postgres IS (no issue number):**
+
+Create a task without the GitHub link:
+```bash
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update task new '$(cat <<'FNAME'
+[feature name]
+FNAME
+)' 'design'
+```
+
+**In either case**, capture the new task ID from the output (it prints `Task #N ...`), then set the task as a roadmap item:
+```bash
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update task [new_id] category roadmap
+```
+```bash
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update task [new_id] readme_label '$(cat <<'LABEL'
+[feature name]
+LABEL
+)'
+```
+
+Report: "Created Postgres task #[new_id] for [feature name] (linked to epic #[N])" — or without the epic reference if GitHub was skipped.
+
+If `knowledge.tier` is not `"postgres"` OR `integrations.postgres.enabled` is false: skip this section entirely.
+
+---
+
 ### Dashboard Regeneration
 
 If `dashboard.enabled` is true in pipeline.yml (or `docs/dashboard.html` already exists):

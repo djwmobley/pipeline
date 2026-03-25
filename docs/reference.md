@@ -677,10 +677,10 @@ Every state-changing command automatically persists its outputs to the configure
 | `/pipeline:audit` | Findings + verdict decision | Decision only (audit verdicts are significant) |
 | `/pipeline:build` | Session + task status updates | Session (rotated) |
 | `/pipeline:debug` | Gotcha + decision | Gotcha only (root causes are always worth recording) |
-| `/pipeline:brainstorm` | Decision | Decision (only if locked) |
+| `/pipeline:brainstorm` | Decision + **roadmap task** (linked to GitHub epic if enabled) | Decision (only if locked) |
 | `/pipeline:plan` | Tasks + planning decision | Nothing — tasks are in the plan file |
 | `/pipeline:release` | Decision + session | Decision + session (rotated) |
-| `/pipeline:finish` | Session + decision | Session (rotated) + decision (if locked) |
+| `/pipeline:finish` | Session + decision + **ship transition** (roadmap task → done, GitHub issue → closed, README roadmap regenerated) | Session (rotated) + decision (if locked) |
 | `/pipeline:redteam` | Session + gotchas + decision | Gotchas (HIGH/CRITICAL only) + decision |
 | `/pipeline:remediate` | Decision + gotchas + finding status | Gotchas (HIGH only) |
 | `/pipeline:purpleteam` | Finding status + gotchas + decision | Gotchas (HIGH only) + decision |
@@ -689,3 +689,25 @@ Every state-changing command automatically persists its outputs to the configure
 | `/pipeline:markdown-review` | Findings + decision | Nothing — findings in `docs/findings/` |
 
 **If neither tier is configured**, the persistence block is a no-op. Commands still write their reports to `docs/findings/` as normal.
+
+## State Synchronization
+
+Pipeline maintains three tracking stores with a clear hierarchy:
+
+| Store | Role | Updated By |
+|-------|------|-----------|
+| **Postgres** | Master source of truth | All commands (auto-persist) |
+| **GitHub Issues** | Synced mirror — agent communication + human project tracking | brainstorm (creates epic + task), finish (closes on merge), remediate/purpleteam (finding issues) |
+| **README roadmap** | Rendered view of Postgres | Dashboard regeneration (runs after every state-changing command) |
+
+**Ship transition:** When `/pipeline:finish` merges a feature branch, it automatically: marks the Postgres roadmap task as done, closes the linked GitHub issue, and regenerates the README roadmap section.
+
+**New features:** When `/pipeline:brainstorm` creates a GitHub epic, it also creates a linked Postgres task with `category=roadmap`, ensuring every feature is tracked from day one.
+
+**`pipeline-db.js` task field updates:**
+
+```
+update task <id> github_issue <N>     # Link task to GitHub issue
+update task <id> readme_label "<text>" # Set README roadmap display label
+update task <id> category <value>     # roadmap | build | finding | internal
+```

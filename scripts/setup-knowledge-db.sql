@@ -40,9 +40,15 @@ CREATE TABLE IF NOT EXISTS tasks (
   phase TEXT DEFAULT 'backlog',
   priority TEXT DEFAULT 'medium',    -- low, medium, high, critical
   github_issue INTEGER,
+  readme_label TEXT,                 -- bold text shown in README roadmap (null = not a roadmap item)
+  category TEXT DEFAULT 'internal',  -- roadmap, build, finding, internal
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Idempotent column additions for existing databases
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS readme_label TEXT;
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS category TEXT DEFAULT 'internal';
 
 -- Decisions — finalized architectural choices with rationale
 CREATE TABLE IF NOT EXISTS decisions (
@@ -171,6 +177,14 @@ CREATE OR REPLACE VIEW active_gotchas AS
   FROM gotchas
   WHERE active = TRUE
   ORDER BY created_at DESC;
+
+CREATE OR REPLACE VIEW roadmap_tasks AS
+  SELECT id, title, readme_label, status, github_issue, category, updated_at
+  FROM tasks
+  WHERE category = 'roadmap'
+  ORDER BY
+    CASE status WHEN 'pending' THEN 0 WHEN 'in_progress' THEN 1 WHEN 'done' THEN 2 WHEN 'deferred' THEN 3 END,
+    id;
 
 CREATE OR REPLACE VIEW open_findings AS
   SELECT id, source, severity, confidence, location, category,
