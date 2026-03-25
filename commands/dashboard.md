@@ -19,7 +19,7 @@ Read `.claude/pipeline.yml` from the project root. Extract:
 - `project.*` — name, repo, branch
 - `dashboard.*` — enabled, milestone
 - `knowledge.tier` — files or postgres
-- `integrations.github.enabled`, `integrations.postgres.enabled`
+- `integrations.github.enabled`, `integrations.github.issue_tracking`, `integrations.postgres.enabled`
 - `docs.*` — specs_dir, plans_dir
 - `models.cheap` — for recommendations agent
 
@@ -31,13 +31,14 @@ Follow the dashboard skill exactly. Execute all steps in order:
 1. Derive phase from artifact existence
 2. Collect state data (Postgres queries or file parsing, depending on knowledge tier)
 3. Collect git state
-4. Collect GitHub issues (if enabled)
-5. Generate health summary (rule-based)
-6. Generate rule-based recommendations
-7. Generate AI recommendations (haiku call — skip on failure)
-8. Build substitution map
-9. Read HTML template and substitute all tokens
-10. Atomic write to `docs/dashboard.html`
+4. Collect GitHub issues and feature epic (if enabled)
+5. Collect security lifecycle data (if findings exist)
+6. Generate health summary (rule-based)
+7. Generate rule-based recommendations
+8. Generate AI recommendations (haiku call — skip on failure)
+9. Build substitution map
+10. Read HTML template and substitute all tokens
+11. Atomic write to `docs/dashboard.html`
 
 ### Output
 

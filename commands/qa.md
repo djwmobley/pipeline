@@ -76,16 +76,15 @@ Read and use `planner-prompt.md` from the QA skill directory.
 
 Substitutions:
 - `{{MODEL}}` → `models.architecture` (opus — risk-driven planning requires judgment)
-- `[SPEC_CONTENT]` → full spec text
-- `[PLAN_CONTENT]` → full implementation plan text
+- `[SPEC_TEXT]` → full spec text
+- `[PLAN_TASKS]` → full implementation plan text
 - `[DECISION_RECORDS]` → decision records if they exist
 - `[EXISTING_TESTS]` → summary of existing test patterns, frameworks, file organization
 - `[SOURCE_DIRS]` → `routing.source_dirs`
 - `[TEST_COMMAND]` → `commands.test`
-- `[BUILDER_RESPONSES]` → interview responses (MILESTONE) or empty
+- `[BUILDER_INTERVIEW]` → interview responses (MILESTONE) or "N/A — no interview" (LARGE)
 - `[BROWSER_TESTING]` → `qa.browser_testing`
 - `[DB_VERIFICATION]` → `qa.db_verification`
-- `[API_TESTING]` → `qa.api_testing`
 
 ### Step 4 — Save test plan
 
@@ -137,10 +136,8 @@ Read the test plan's work packages. Worker count:
 ### Step 3 — Scan existing test patterns
 
 Before dispatching workers, scan the codebase for existing test patterns:
-```bash
-# Find test files
-find [SOURCE_DIRS] -name "*.test.*" -o -name "*.spec.*" -o -name "__tests__" 2>/dev/null | head -20
-```
+
+Use Glob to find test files: `**/*.test.*`, `**/*.spec.*`, `**/__tests__/**`
 
 Summarize: test framework, file organization, fixture patterns, assertion style. This goes into each worker's prompt as `[EXISTING_TEST_PATTERNS]`.
 

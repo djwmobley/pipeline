@@ -412,7 +412,11 @@ If `integrations.github.enabled` AND `integrations.github.issue_tracking`:
 
 Find the epic number: check the most recent spec or plan file for `github_epic: N`.
 
-1. For each CRITICAL or HIGH finding:
+1. For each CRITICAL or HIGH finding, check for existing issue first:
+   ```bash
+   gh issue list --repo '[project.repo]' --search '[FINDING_ID] in:title' --state open --json number --limit 1
+   ```
+   If an issue already exists for this finding ID, skip creation. Otherwise:
    ```bash
    gh issue create --repo '[project.repo]' \
      --title "$(cat <<'TITLE'

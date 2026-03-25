@@ -9,7 +9,7 @@ Guide completion of development work by presenting clear options and handling th
 
 ### Step 1 — Load config and verify tests
 
-Read `.claude/pipeline.yml` for `commands.test`, `project.branch`, `integrations.github.enabled`, `integrations.github.issue_tracking`, `project.repo`, and `docs.plans_dir`.
+Read `.claude/pipeline.yml` for `commands.test`, `project.branch`, `integrations.github.enabled`, `integrations.github.issue_tracking`, `project.repo`, `docs.plans_dir`, and `dashboard.enabled`.
 
 Run the test suite. If tests fail:
 ```
@@ -93,6 +93,8 @@ Only offer the Push+PR option if `integrations.github.enabled` is true in pipeli
 
 Read `git log [base-branch]..HEAD --oneline` to populate the summary bullets and derive the PR title.
 
+Before creating the PR, check the most recent plan file in `docs.plans_dir` for `github_epic: N`. If found, include `Part of #[EPIC_N]` at the end of the PR body.
+
 ```bash
 git push -u origin [feature-branch]
 gh pr create --title "$(cat <<'TITLE'
@@ -105,7 +107,7 @@ TITLE
 ## Test Plan
 - [ ] [verification steps]
 
-[If github_epic exists in the most recent plan file in docs.plans_dir: add "Part of #[EPIC_N]" here]
+[If epic found: Part of #[EPIC_N]]
 EOF
 )"
 ```
@@ -207,6 +209,18 @@ Prune stale decisions:
 ```bash
 PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-files.js prune
 ```
+
+---
+
+### Dashboard Regeneration
+
+If `dashboard.enabled` is true in pipeline.yml (or `docs/dashboard.html` already exists):
+
+Locate and read the dashboard skill:
+1. If `$PIPELINE_DIR` is set: read `$PIPELINE_DIR/skills/dashboard/SKILL.md`
+2. Otherwise: use Glob `**/pipeline/skills/dashboard/SKILL.md` to find it
+
+Follow the dashboard skill to regenerate `docs/dashboard.html` with current project state.
 
 ---
 

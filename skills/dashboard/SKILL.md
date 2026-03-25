@@ -37,6 +37,7 @@ Read `.claude/pipeline.yml`. Extract:
 - `dashboard.enabled`, `dashboard.milestone`
 - `knowledge.tier`
 - `integrations.github.enabled`
+- `integrations.github.issue_tracking`
 - `integrations.postgres.enabled`
 - `docs.specs_dir`, `docs.plans_dir`
 - `models.cheap` (for haiku recommendations)
@@ -104,13 +105,76 @@ git rev-parse --short HEAD
 git log --oneline origin/[branch]..HEAD 2>/dev/null | wc -l  # unpushed commits
 ```
 
-## Step 5 — GitHub Issues (if enabled)
+## Step 5 — GitHub Issues + Feature Epic (if enabled)
+
+If `integrations.github.enabled` is false, set `{{GITHUB_EPIC}}` and `{{GITHUB_ISSUES}}` to empty-state HTML and skip to Step 6.
+
+### Step 5a — Find active epic
+
+If `integrations.github.issue_tracking` is true:
+
+Read the most recent spec file from `docs.specs_dir` for a `github_epic: N` line in the YAML frontmatter.
+If not found in spec, check the most recent plan file from `docs.plans_dir`.
+
+If a `github_epic` number is found:
 
 ```bash
-gh issue list --repo '[project.repo]' --state open --limit 10 --json number,title,labels,url
+gh issue view [N] --repo '[project.repo]' --json title,body,state,comments,labels
 ```
 
-## Step 5b — Security Lifecycle
+**Parse the issue body** for the status checklist (brainstorm creates this):
+- `- [x] Brainstorm` → done
+- `- [ ] Plan` → pending
+- Extract each checkbox state for: Brainstorm, Plan, Build, QA, Review, Ship
+
+**Parse comments** for activity entries (newest 10):
+Each lifecycle command posts a comment with a heading (e.g., `## Plan Created`, `## Build Started`, `## QA Verdict`).
+Extract heading + timestamp as activity items for the `{{ACTIVITY_FEED}}`.
+
+If no `github_epic` found or `issue_tracking` is false: set EPIC_DATA to null.
+
+### Step 5b — Fetch open issues
+
+```bash
+gh issue list --repo '[project.repo]' --state open --limit 20 --json number,title,labels,url
+```
+
+If `issue_tracking` is true, group issues by label:
+- `pipeline:qa` → QA Failures
+- `review` → Review Findings
+- `redteam` → Security Findings
+- `pipeline:decision` → Decisions
+- `pipeline:epic` → Epic (exclude from issue list, shown in epic card)
+- (unlabeled or other) → Other
+
+If `issue_tracking` is false: display as a flat list (backward compatible).
+
+### Step 5c — Build substitution data
+
+**EPIC_DATA** (null if no epic found):
+- epic_number, epic_title, epic_state
+- checklist: [{name: "Brainstorm", done: true}, {name: "Plan", done: true}, ...]
+- linked_issue_count (count of open issues excluding the epic itself)
+
+**ISSUE_GROUPS** (only when issue_tracking is true):
+- { label: "pipeline:qa", display: "QA Failures", issues: [...] }
+- { label: "review", display: "Review Findings", issues: [...] }
+- { label: "redteam", display: "Security Findings", issues: [...] }
+- { label: "pipeline:decision", display: "Decisions", issues: [...] }
+- { label: "other", display: "Other", issues: [...] }
+
+Only include groups that have at least one issue.
+
+**EPIC_ACTIVITY**: Recent epic comments as activity items (## heading → activity line).
+Merge these into the `{{ACTIVITY_FEED}}` alongside git commits.
+
+**Empty states:**
+- GitHub disabled: `<p class="section-empty">GitHub integration not enabled.</p>` for both tokens
+- GitHub enabled, `issue_tracking: false`: `<p class="section-empty">Issue tracking disabled. Enable <code>issue_tracking</code> in pipeline.yml to track feature epics.</p>` for `{{GITHUB_EPIC}}`
+- GitHub enabled, `issue_tracking: true`, no epic: `<p class="section-empty">No active feature epic. Run <code>/pipeline:brainstorm</code> to create one.</p>` for `{{GITHUB_EPIC}}`
+- No open issues: `<p class="section-empty">No open issues.</p>` for `{{GITHUB_ISSUES}}`
+
+## Step 6 — Security Lifecycle
 
 Check for security assessment files:
 
@@ -195,20 +259,23 @@ ls docs/findings/purpleteam-*.md 2>/dev/null | sort -r | head -1
 
 Use the `.badge-critical` / `.badge-high` / `.badge-medium` / `.badge-low` classes for severity (matching existing badge styles). Use `.status-pill.status-[status]` for the final status column. Render commit SHAs inside `<code>` tags, truncated to 7 characters.
 
-## Step 6 — Generate Health Summary
+## Step 7 — Generate Health Summary
 
 Rule-based one-liner. Format: `[Phase] — [task progress if available], [finding summary]`
 
 Examples by state:
 
 - "Building — 8/10 tasks complete, 0 critical findings"
+- "Building — 8/10 tasks complete, epic #42 (Build phase)"
 - "Reviewing — 5 findings to fix (1 critical)"
 - "Ready for Release — all findings resolved"
 - "Planned — ready to start building"
 
+When EPIC_DATA is available, append the epic phase to the summary: `, epic #[N] ([current phase] phase)`.
+
 On files tier (no task counts): `[Phase] — [finding count] open findings ([critical count] critical)`
 
-## Step 7 — Generate Rule-Based Recommendations
+## Step 8 — Generate Rule-Based Recommendations
 
 | Phase | Recommendation |
 |---|---|
@@ -226,7 +293,7 @@ Additional signals:
 - No tests configured: "Configure `commands.test` in pipeline.yml"
 - Unpushed commits: "Push with `/pipeline:commit push`"
 
-## Step 8 — AI Recommendations (haiku)
+## Step 9 — AI Recommendations (haiku)
 
 Read the prompt template from `skills/dashboard/recommendations-prompt.md`.
 
@@ -234,7 +301,7 @@ Substitute values into the template. Dispatch haiku subagent.
 
 If the call fails or returns empty, skip — rule-based recommendations are sufficient.
 
-## Step 9 — Build Substitution Map
+## Step 10 — Build Substitution Map
 
 Build a map of `{{PLACEHOLDER}}` to HTML content for every token in the template. Key tokens:
 
@@ -243,11 +310,11 @@ Build a map of `{{PLACEHOLDER}}` to HTML content for every token in the template
 - `{{HEALTH_SUMMARY}}`
 - `{{PHASE_INDICATORS}}` — generate HTML spans with appropriate classes
 - `{{ACTIVITY_FEED}}` — generate HTML list items
-- `{{TASK_PROGRESS}}`, `{{OPEN_FINDINGS}}`, `{{GITHUB_ISSUES}}`, `{{BLOCKERS}}`
+- `{{TASK_PROGRESS}}`, `{{OPEN_FINDINGS}}`, `{{GITHUB_EPIC}}`, `{{GITHUB_ISSUES}}`, `{{BLOCKERS}}`
 - `{{SECURITY_LIFECYCLE}}`
 - `{{RULE_RECOMMENDATIONS}}`, `{{AI_RECOMMENDATIONS}}`
 
-## Step 10 — Read Template and Substitute
+## Step 11 — Read Template and Substitute
 
 Read the template from the plugin directory:
 
@@ -256,7 +323,7 @@ Read the template from the plugin directory:
 
 Replace each `{{PLACEHOLDER}}` token with its HTML value.
 
-## Step 11 — Atomic Write
+## Step 12 — Atomic Write
 
 Write to a temp file first, then rename:
 
