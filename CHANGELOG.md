@@ -2,6 +2,12 @@
 
 All notable changes to Pipeline are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Features
+
+- `/pipeline:lint-agents` — deterministic structural lint for agent prompt templates. 7 checks across 3 categories (structural, security, consistency). Integrated into `/pipeline:commit` Step 3e. Config section `lint_agents` in pipeline.yml.
+
 ## [0.1.0-alpha] — 2026-03-24
 
 Initial alpha release. Everything shipped to date in a single baseline.

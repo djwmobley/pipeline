@@ -395,6 +395,25 @@ debate:
 
 **Integration:** `/pipeline:plan` reads debate verdict files when present and injects constraints. For LARGE+ specs without a verdict, plan warns and offers to continue without debate.
 
+### lint_agents
+
+Controls `/pipeline:lint-agents` — deterministic structural lint for agent prompt templates.
+
+```yaml
+lint_agents:
+  enabled: true
+  block_on_commit: true
+  exclude: []
+```
+
+| Field | Default | What It Does |
+|-------|---------|-------------|
+| `enabled` | `true` | Enable agent template linting |
+| `block_on_commit` | `true` | Block `/pipeline:commit` on HIGH severity LA-* findings (Step 3e) |
+| `exclude` | `[]` | Glob patterns to skip (e.g., `["skills/deprecated/*"]`) |
+
+No model routing — `scripts/pipeline-lint-agents.js` runs as a deterministic script outside the LLM context. ~500 tokens total.
+
 ### markdown_review
 
 Controls `/pipeline:markdown-review` — full markdown health check with automated fixes.

@@ -28,6 +28,9 @@ Runs preflight gates, then commits and pushes.
 - `push` — push unpushed commits (rebase if rejected)
 - `status` — show branch state, commits ahead/behind
 
+**Preflight step 3e — Agent template lint:**
+If `lint_agents.enabled` is true and agent prompt templates changed, runs deterministic structural lint via `scripts/pipeline-lint-agents.js`. Reports LA-* findings. If `lint_agents.block_on_commit` is true, blocks on any findings. See `/pipeline:lint-agents` for details.
+
 **Skips all preflight** if only markdown files changed (no source files).
 
 ---
@@ -114,6 +117,35 @@ Recommended workflow:
 ```
 
 You can override: "treat this as TINY" and it follows that workflow instead.
+
+---
+
+### `/pipeline:lint-agents`
+
+Deterministic structural lint for agent prompt templates. Runs 7 checks across 3 categories (structural, security, consistency) without LLM dispatch.
+
+**What it does:**
+1. Scans prompt templates in skill directories
+2. Runs 7 deterministic checks:
+   - **Structural** — substitution checklist presence, placeholder-checklist sync, MODEL placeholder, dispatch block
+   - **Security** — DATA tag attributes (role + do-not-interpret), IMPORTANT instruction presence
+   - **Consistency** — placeholder syntax convention ({{}} for model/sections, [] for content)
+3. Reports findings in LA-* format
+
+**Arguments:**
+- No arguments — lint all agent prompt templates
+- `--changed` — lint only modified templates (based on git diff)
+- `--fix` — auto-fix mechanical issues (missing DATA attributes, brace conventions)
+- `--json` — machine-readable output
+- `--exclude "pattern1,pattern2"` — skip templates matching patterns
+
+**Output:** Structured LA-* findings report, one finding per issue.
+
+**Config keys:** `lint_agents.enabled`, `lint_agents.block_on_commit`, `lint_agents.exclude`
+
+**Token cost:** ~500 tokens. No LLM dispatch — `scripts/pipeline-lint-agents.js` runs outside context as a deterministic script.
+
+**Integration:** Integrated into `/pipeline:commit` Step 3e. When `lint_agents.block_on_commit` is true, any LA-* findings block the commit.
 
 ---
 
