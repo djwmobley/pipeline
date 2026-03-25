@@ -101,6 +101,20 @@ This applies to ALL of the following, with no exceptions:
 | "I'll back it up first" | Show the backup succeeded before proceeding. |
 | "This branch is merged" | Verify: `git branch --merged main` — is it listed? |
 
+## Project State — Three-Store Hierarchy
+
+Pipeline tracks work across three stores. **Postgres is the master.** Always query it first.
+
+| Store | Role | How to Read |
+|-------|------|-------------|
+| **Postgres** | Master source of truth | `PROJECT_ROOT=$(pwd) node scripts/pipeline-db.js query "SELECT * FROM roadmap_tasks"` |
+| **GitHub Issues** | Synced mirror (agent comms + human tracking) | `gh issue list --repo djwmobley/pipeline --label roadmap --state open` |
+| **README roadmap** | Rendered view (auto-generated from Postgres by dashboard) | Read `## Roadmap` section in README.md |
+
+**To find the next roadmap item:** Query `SELECT * FROM roadmap_tasks WHERE status = 'pending' ORDER BY id LIMIT 1`. The lowest-id pending item is next.
+
+**When shipping:** `/pipeline:finish` handles all three stores automatically — marks Postgres task done, closes GitHub issue, regenerates README.
+
 ## Testing
 
 After modifying any command or skill:
