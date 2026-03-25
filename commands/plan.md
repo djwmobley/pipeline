@@ -43,6 +43,8 @@ If a verdict file exists whose topic matches the spec (by name or date proximity
 2. Extract: disposition, points of agreement, contested points, invalidated assumptions, risk register
 3. Inject these as a `## Debate Constraints` section — the plan must honor points of agreement and explicitly address contested points
 
+<!-- checkpoint:SHOULD plan-no-debate -->
+
 If no verdict found and the spec is LARGE+ (4+ files or new subsystem):
 
 ```
@@ -50,7 +52,11 @@ If no verdict found and the spec is LARGE+ (4+ files or new subsystem):
 `/pipeline:debate` first to stress-test assumptions before planning.
 
 Continue planning without debate? (Y/n)
+
+Risk of skipping: Plans without debate have historically required full rewrites for LARGE features.
 ```
+
+If the user accepts (continues without debate), log: `Debate prerequisite: skipped by user`
 
 If the user declines, stop with: "Run `/pipeline:debate` with your spec, then re-run `/pipeline:plan`."
 
@@ -78,6 +84,8 @@ Follow the architecture skill's **Silent Mode** (MEDIUM path):
 If the user has already run `/pipeline:architect` explicitly (decision records file exists), skip recon entirely — read the existing decisions and inject their Constraints Summary.
 
 ---
+
+<!-- checkpoint:MUST plan-coverage — enforced in skills/planning/SKILL.md -->
 
 Follow the planning skill exactly, passing the architectural constraints as context.
 

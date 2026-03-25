@@ -711,3 +711,29 @@ update task <id> github_issue <N>     # Link task to GitHub issue
 update task <id> readme_label "<text>" # Set README roadmap display label
 update task <id> category <value>     # roadmap | build | finding | internal
 ```
+
+## Checkpoints
+
+Every point where the pipeline requires or recommends a human decision is a **checkpoint**, classified into three tiers. See `skills/checkpoints/SKILL.md` for the full registry with rendering rules and contributor guide.
+
+| Tier | Behavior | Can Be Skipped? |
+|------|----------|-----------------|
+| **MUST** | Hard stop + rationalization prevention table | Never |
+| **SHOULD** | Prompted with `(Y/n)` default-yes | Yes — skip is logged |
+| **MAY** | Prompted with `(y/N)` default-no | Yes — skip is expected |
+
+| ID | Command | Tier | Description |
+|----|---------|------|-------------|
+| `finish-tests-pass` | finish | MUST | Tests must pass before merge options |
+| `finish-merge-verify` | finish | MUST | Re-run tests after merge |
+| `finish-discard-confirm` | finish | MUST | Type "discard" to delete branch |
+| `review-adversarial` | review | MUST | Must produce findings or clean certificate |
+| `plan-coverage` | plan | MUST | Every spec requirement traces to a task |
+| `build-qa-large` | build | SHOULD | QA verification for LARGE+ changes |
+| `debate-large` | debate | SHOULD | Design debate for LARGE+ specs |
+| `build-resume` | build | SHOULD | Confirm resume of interrupted build |
+| `plan-no-debate` | plan | SHOULD | Warn when LARGE+ has no debate verdict |
+| `remediate-proceed` | remediate | SHOULD | Confirm batch plan before executing fixes |
+| `build-completion` | build | SHOULD | Post-build option selection |
+| `finish-completion` | finish | SHOULD | Post-finish option selection |
+| `debate-medium` | debate | MAY | Design debate for MEDIUM specs |

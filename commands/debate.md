@@ -53,6 +53,8 @@ If TINY, stop here.
 
 Present the sell based on change size.
 
+<!-- checkpoint:MAY debate-medium -->
+
 **For MEDIUM:**
 
 ```
@@ -68,6 +70,8 @@ Your spec covers a MEDIUM change (2-3 files).
 
 Run the debate? (y/N — default: skip for MEDIUM)
 ```
+
+<!-- checkpoint:SHOULD debate-large -->
 
 **For LARGE or MILESTONE:**
 
@@ -90,7 +94,8 @@ Wait for user response.
 - **MEDIUM**: If user says nothing, presses enter, or says "n"/"no"/"skip" — debate is skipped. Only "y"/"yes" runs it.
 - **LARGE/MILESTONE**: If user says nothing, presses enter, or says "y"/"yes" — debate runs. Only "n"/"no"/"skip" skips it.
 
-If user declines: "Debate skipped. Proceed to `/pipeline:plan`." and stop.
+If user declines a LARGE/MILESTONE debate: "Design debate: skipped by user. Proceed to `/pipeline:plan`." and stop.
+If user declines a MEDIUM debate (default behavior): "Debate skipped. Proceed to `/pipeline:plan`." and stop. No skip logging needed for MAY checkpoints.
 
 ### Step 4: Dispatch agents
 

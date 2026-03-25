@@ -193,10 +193,14 @@ Write to `docs/findings/triage-YYYY-MM-DD.md`:
 
 **Not remediated:** [N] LOW/INFO findings tracked but not auto-fixed.
 
-Proceed? (Y/n)
+<!-- checkpoint:SHOULD remediate-proceed -->
+
+Proceed with remediation? (Y/n)
+
+Risk of skipping: findings remain unfixed. Re-run /pipeline:remediate when ready.
 ```
 
-If user declines, stop.
+If user declines, log `Remediation plan review: skipped by user` and stop.
 
 ---
 

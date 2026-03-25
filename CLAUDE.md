@@ -59,6 +59,8 @@ All `[PLACEHOLDER]` substitutions in prompt templates must be wrapped in `<DATA 
 
 ## Destructive Operation Guards
 
+All destructive operations are registered as MUST checkpoints — see `skills/checkpoints/SKILL.md` for the full registry and checkpoint taxonomy (MUST/SHOULD/MAY).
+
 **HARD STOP.** Before executing any destructive operation, you MUST:
 
 1. **Name the action explicitly** — "I am about to DROP TABLE findings" or "I am about to force-push to main"

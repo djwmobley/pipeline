@@ -11,6 +11,8 @@ Locate and read the building skill file:
 
 ### Resume detection
 
+<!-- checkpoint:SHOULD build-resume -->
+
 Check for an existing build state file at `.claude/build-state.json`:
 
 **If it exists:**
@@ -132,14 +134,21 @@ git diff --name-only [BASELINE_SHA] HEAD | wc -l
    ```
 5. If any check fails, flag it in the completion message but do NOT block — the user decides
 
+<!-- checkpoint:SHOULD build-qa-large -->
+
 **If LARGE+ (4+ files):** Run full QA verification by default. The user can skip if they want to verify manually:
 
 ```
 Build complete. Running QA verification with parallel workers and seam testing...
 Skip with 'n' if you want to verify manually. Run QA verify? (Y/n)
+
+Risk of skipping: LARGE changes have higher regression risk. QA catches integration
+failures across seams that unit tests miss.
 ```
 
-If the user accepts (or doesn't respond, defaulting to Y): invoke `/pipeline:qa verify` following the QA skill's "Verify Mode — Full" process. If the user declines: skip and proceed to completion message.
+If the user accepts (or doesn't respond, defaulting to Y): invoke `/pipeline:qa verify` following the QA skill's "Verify Mode — Full" process. If the user declines: skip and proceed to completion message. Log: `QA verification: skipped by user`
+
+<!-- checkpoint:SHOULD build-completion -->
 
 **Completion message:** When all tasks are done (and auto-verify/QA verify if applicable), present options:
 

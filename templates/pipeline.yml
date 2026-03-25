@@ -121,6 +121,12 @@ debate:
   default_for_medium: false    # Offer but default to skip (y/N)
   default_for_large: true      # Offer and default to run (Y/n)
 
+# Human-in-the-loop checkpoints
+# See skills/checkpoints/SKILL.md for the full registry.
+# All checkpoints use their default levels.
+# Config-driven overrides planned for a future version.
+checkpoints: {}
+
 # Purple team verification
 # Run /pipeline:purpleteam after a red team + remediation cycle
 # Verifies aggregate security posture, not individual fixes

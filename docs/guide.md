@@ -585,4 +585,29 @@ The most complete option is always the default. If you say "finish it", "ship it
 
 This applies to `/pipeline:build` (review + commit + finish), `/pipeline:remediate` (review + commit + push), and `/pipeline:finish` (merge + push + cleanup).
 
+## Checkpoints
+
+Pipeline classifies every human decision point into three tiers:
+
+| Tier | Behavior | Example |
+|------|----------|---------|
+| **MUST** | Hard stop. Cannot be skipped. Includes rationalization prevention. | Tests must pass before merge |
+| **SHOULD** | Prompted with `(Y/n)`. User can decline. Skip is logged. | QA verification for LARGE+ changes |
+| **MAY** | Prompted with `(y/N)`. Default is to skip. | Design debate for MEDIUM changes |
+
+MUST checkpoints protect against data loss, broken deploys, and security bypass. They are never configurable.
+
+SHOULD checkpoints are recommended checks. When skipped, the command logs the skip for traceability (e.g., `QA verification: skipped by user`).
+
+MAY checkpoints are optional enhancements. Skipping is the default and expected behavior.
+
+The full registry of all 13 checkpoints — with IDs, commands, tiers, rationale, rendering rules, and the contributor guide for adding new checkpoints — is in `skills/checkpoints/SKILL.md`.
+
+```yaml
+# pipeline.yml — checkpoint config placeholder
+# All checkpoints use their default levels.
+# Config-driven overrides planned for a future version.
+checkpoints: {}
+```
+
 Back to the [README](../README.md).

@@ -11,6 +11,8 @@ Guide completion of development work by presenting clear options and handling th
 
 Read `.claude/pipeline.yml` for `commands.test`, `project.branch`, `integrations.github.enabled`, `integrations.github.issue_tracking`, `project.repo`, `docs.plans_dir`, and `dashboard.enabled`.
 
+<!-- checkpoint:MUST finish-tests-pass -->
+
 Run the test suite. If tests fail:
 ```
 Tests failing (N failures). Must fix before completing:
@@ -48,6 +50,8 @@ If the current branch IS the base branch (e.g., `main`), report: "You are on the
 
 ### Step 3 — Present options
 
+<!-- checkpoint:SHOULD finish-completion -->
+
 ```
 Implementation complete. Tests passing. What would you like to do?
 
@@ -67,22 +71,37 @@ Which option? (default: 1)
 ### Step 4 — Execute choice
 
 **Option 1: Commit + merge + push (full workflow)**
+
+<!-- checkpoint:MUST finish-merge-verify -->
+
 ```bash
 git checkout [base-branch]
 git pull
 git merge [feature-branch]
-# Run tests on merged result
+# Run tests on merged result — MUST pass before push
 git push
 git branch -d [feature-branch]
 ```
+
+If tests fail on the merged result, do NOT push. Report the failure and stop.
+
+| Rationalization | Reality |
+|---|---|
+| "Tests passed on the branch, so they'll pass after merge" | Merge can introduce conflicts or interact with changes landed on the base branch. Verify. |
+| "I'll fix it after pushing" | A broken main branch blocks everyone. Fix before push. |
+| "The merge was clean, no conflicts" | Clean merges can still break tests — semantic conflicts exist. |
+
 Then cleanup worktree (Step 5).
 
 **Option 2: Commit + merge locally (no push)**
+
+<!-- checkpoint:MUST finish-merge-verify (same checkpoint as Option 1) -->
+
 ```bash
 git checkout [base-branch]
 git pull
 git merge [feature-branch]
-# Run tests on merged result
+# Run tests on merged result — MUST pass before proceeding
 git branch -d [feature-branch]
 ```
 Then cleanup worktree (Step 5).
@@ -114,10 +133,13 @@ EOF
 Then cleanup worktree (Step 5).
 
 **Option 4: Keep as-is**
-Report: "Keeping branch [name]. Worktree preserved at [path]."
+Report: "Keeping branch [name]. Worktree preserved at [path]. Finish checkpoint: branch kept, no merge."
 Don't cleanup.
 
 **Option 5: Discard**
+
+<!-- checkpoint:MUST finish-discard-confirm -->
+
 Confirm first:
 ```
 This will permanently delete:

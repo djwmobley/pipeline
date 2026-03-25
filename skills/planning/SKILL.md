@@ -118,7 +118,15 @@ git commit -m "feat: add specific feature"
 
 ## Build Sequence
 
+<!-- checkpoint:MUST plan-coverage -->
+
 Every requirement from the spec MUST trace to at least one task. Missing requirements are a plan failure — do not proceed to review until every spec requirement is covered.
+
+| Rationalization | Reality |
+|---|---|
+| "This requirement is implied by another task" | If it is not explicitly traced, it will be dropped. Make the trace explicit. |
+| "We can add it in a follow-up" | Follow-ups are where requirements go to die. Cover it now. |
+| "The requirement is too vague to trace" | Then clarify the requirement. Vague requirements produce vague implementations. |
 
 After tasks, include an ordered build sequence:
 
