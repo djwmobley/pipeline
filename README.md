@@ -254,7 +254,6 @@ Tracked items for future development. Checked items are shipped.
 - [ ] **Full lifecycle visual diagram** — The pipeline flow crosses multiple context windows: PM → UX → orchestrator → engineer → QA → red team → orchestrator → engineer → QA → purple team → engineer → git. Needs a visual representation showing all agents, decision gates, loop-back points, and state handoffs.
 - [ ] **Dashboard screenshot in README** — Visual proof of what the dashboard looks like.
 - [ ] **Workflow chaining** — Chain commands together for fire-and-forget execution. Example: `/pipeline:brainstorm` → `/pipeline:plan` → `/pipeline:build` → `/pipeline:review` → `/pipeline:commit` as a single invocation.
-- [ ] **Human-in-the-loop guidance** — Distinguish what SHOULD be checked by a human (recommended review points) from what MUST be checked (safety-critical decisions, destructive operations, security sign-offs).
 - [ ] **Alpha and beta testing and feedback loops** — Structured process for collecting user feedback during pre-release phases, graduating from alpha to beta to stable release.
 
 ### Shipped
