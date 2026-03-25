@@ -157,6 +157,32 @@ To skip tests entirely, set `commands.test: null` in `pipeline.yml`.
 
 ---
 
+### "No red team report found in `docs/findings/`. Run `/pipeline:redteam` first."
+
+**Commands:** `/pipeline:compliance`
+
+**Why:** Compliance mapping requires red team findings with CWE IDs to map against regulatory controls. No red team report exists in the findings directory.
+
+**Fix:** Run `/pipeline:redteam` first to generate a red team report, then retry `/pipeline:compliance`.
+
+---
+
+### "Compliance mapping is not enabled."
+
+**Commands:** `/pipeline:compliance`
+
+**Why:** `compliance.enabled` is false or not present in `.claude/pipeline.yml`.
+
+**Fix:** Add `compliance.enabled: true` to your config file:
+
+```yaml
+compliance:
+  enabled: true
+  frameworks: [nist_800_53, pci_dss, iso27001, nist_csf, soc2, gdpr, hipaa]
+```
+
+---
+
 ### "Purple team requires both a red team report and a remediation summary."
 
 **Commands:** `/pipeline:purpleteam`

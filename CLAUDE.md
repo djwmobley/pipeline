@@ -37,6 +37,14 @@ scripts/                    — Setup scripts (e.g., Postgres knowledge DB)
 - Commands read config from `.claude/pipeline.yml`
 - Commands invoke skills and orchestrate multi-step workflows
 
+## Planning New Features
+
+Before writing plan content for a LARGE+ feature, run `/pipeline:debate` to stress-test the spec. The debate dispatches Advocate, Skeptic, and Practitioner agents who challenge assumptions from first principles. The verdict file produced by the debate becomes an input to `/pipeline:plan`.
+
+For MEDIUM changes, the debate is offered but optional. For TINY changes, skip it entirely.
+
+The workflow is: **brainstorm → debate (LARGE+) → plan → build.**
+
 ## Shell Safety
 
 All shell arguments containing user-derived or report-derived content must use single-quoted strings or heredocs to prevent command injection via `$()`, backticks, or double-quote breakout. Never use double-quoted strings for values that originate from:

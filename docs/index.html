@@ -318,6 +318,7 @@ hr {
 <table>
 <thead><tr><th>Command</th><th>What It Does</th></tr></thead>
 <tbody>
+<tr><td><code>/pipeline:debate</code></td><td>Stress-test spec with Advocate, Skeptic, and Practitioner agents</td></tr>
 <tr><td><code>/pipeline:architect</code></td><td>Technology decisions — parallel domain specialists produce decision records</td></tr>
 <tr><td><code>/pipeline:qa plan</code></td><td>Risk-driven test strategy with work packages and seam tests</td></tr>
 <tr><td><code>/pipeline:qa verify</code></td><td>Parallel QA workers execute the test plan, seam pass verifies boundaries</td></tr>
@@ -352,7 +353,8 @@ hr {
 <tr><td><code>/pipeline:redteam</code></td><td>Parallel security specialists with framework-specific checklists</td></tr>
 <tr><td><code>/pipeline:remediate</code></td><td>Triage findings, create tickets, fix with verification</td></tr>
 <tr><td><code>/pipeline:purpleteam</code></td><td>Verify fixes actually closed attack vectors</td></tr>
-<tr><td><code>/pipeline:security</code></td><td>All three in sequence with human review gates</td></tr>
+<tr><td><code>/pipeline:compliance</code></td><td>Map findings to regulatory controls (NIST 800-53, PCI DSS, ISO 27001, etc.)</td></tr>
+<tr><td><code>/pipeline:security</code></td><td>Full loop with human review gates (includes compliance when enabled)</td></tr>
 </tbody>
 </table>
 
@@ -500,6 +502,8 @@ Run /pipeline:review, apply all fixes, then /pipeline:commit reviewed:✓</code>
 <tr><td><code>integrations</code></td><td>What tools are available (auto-detected by init)</td></tr>
 <tr><td><code>redteam</code></td><td>Security assessment mode, specialists, recon patterns</td></tr>
 <tr><td><code>remediate</code></td><td>Issue thresholds, verification strategies, batch order</td></tr>
+<tr><td><code>compliance</code></td><td>Framework selection, HTML report, remediation status inclusion</td></tr>
+<tr><td><code>debate</code></td><td>Sell step defaults for MEDIUM and LARGE+ changes</td></tr>
 <tr><td><code>dashboard</code></td><td>Auto-regeneration toggle, current milestone label</td></tr>
 </tbody>
 </table>
@@ -573,7 +577,7 @@ Run /pipeline:review, apply all fixes, then /pipeline:commit reviewed:✓</code>
 <thead><tr><th>Resource</th><th>What It Covers</th></tr></thead>
 <tbody>
 <tr><td><a href="https://github.com/djwmobley/pipeline" style="color: var(--accent)">GitHub Repository</a></td><td>Source code, README, issues</td></tr>
-<tr><td><a href="https://github.com/djwmobley/pipeline/blob/main/docs/reference.md" style="color: var(--accent)">Command Reference</a></td><td>All 25 commands with arguments, output formats, token costs</td></tr>
+<tr><td><a href="https://github.com/djwmobley/pipeline/blob/main/docs/reference.md" style="color: var(--accent)">Command Reference</a></td><td>All 27 commands with arguments, output formats, token costs</td></tr>
 <tr><td><a href="https://github.com/djwmobley/pipeline/blob/main/docs/guide.md" style="color: var(--accent)">Configuration Guide</a></td><td>Every config option with examples</td></tr>
 <tr><td><a href="https://github.com/djwmobley/pipeline/blob/main/docs/security.md" style="color: var(--accent)">Security Overview</a></td><td>Security agents explained for non-engineers</td></tr>
 <tr><td><a href="https://github.com/djwmobley/pipeline/blob/main/docs/prerequisites.md" style="color: var(--accent)">Full Prerequisites</a></td><td>Step-by-step setup for all optional tools</td></tr>

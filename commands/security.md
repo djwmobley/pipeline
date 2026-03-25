@@ -163,9 +163,49 @@ Capture:
 
 ---
 
+### Step 4.5 — Phase 4: Compliance (optional)
+
+If `compliance.enabled` is true in the config:
+
+Present Gate 3:
+
+```
+## Phase 3 Complete: Purple Team
+
+**Posture:** [POSTURE_RATING]
+[PT_VERIFIED] verified, [PT_INCOMPLETE] incomplete, [PT_REGRESSION] regressions
+
+## Compliance Framework Mapping (Optional)
+
+Maps your red team findings to regulatory controls across [FRAMEWORK_COUNT] frameworks.
+This is compliance preparation — not a compliance assessment.
+
+Continue to compliance framework mapping? (Y/n)
+```
+
+If accepted:
+
+Locate and read the compliance command:
+1. If `$PIPELINE_DIR` is set: read `$PIPELINE_DIR/commands/compliance.md`
+2. Otherwise: use Glob `**/pipeline/commands/compliance.md` to find it
+
+Read the file in full. Follow every step from Step 0 through the final report, including all internal user approval gates. Honor those gates — do not skip them.
+
+After the compliance report is generated and saved:
+
+Capture:
+- `COMPLIANCE_REPORT_FILE` — path to the generated report
+- `COMPLIANCE_FRAMEWORK_COUNT` — number of frameworks assessed
+- `COMPLIANCE_FINDING_COUNT` — findings mapped
+- `COMPLIANCE_CWE_COUNT` — unique CWEs
+
+If declined: skip with "Compliance mapping skipped."
+
+---
+
 ### Step 5 — Final Summary
 
-After all three phases complete, present:
+After all phases complete, present:
 
 ```
 ## Security Assessment Complete
@@ -180,15 +220,22 @@ After all three phases complete, present:
 **Posture:** [POSTURE_RATING]
 [PT_VERIFIED] verified, [PT_INCOMPLETE] incomplete, [PT_REGRESSION] regressions
 
+### Compliance (if run)
+**Frameworks assessed:** [COMPLIANCE_FRAMEWORK_COUNT]
+**Findings mapped:** [COMPLIANCE_FINDING_COUNT] across [COMPLIANCE_CWE_COUNT] CWEs
+
 ### Reports
 - Red team: `[REDTEAM_REPORT_FILE]`
 - Remediation: `[REMEDIATION_SUMMARY_FILE]`
 - Purple team: `[PURPLETEAM_REPORT_FILE]`
+[If compliance ran: "- Compliance: `[COMPLIANCE_REPORT_FILE]`"]
 
 ### What next?
 a) Push all changes
 b) Run another remediation cycle for regressions/incompletes
-c) Leave as-is
+[If compliance not run and compliance.enabled: "c) Run `/pipeline:compliance` for regulatory mapping"]
+[If compliance ran: "c) Share compliance report with GRC team"]
+d) Leave as-is
 ```
 
 If the user says "finish it", "ship it", "push it", or similar — execute option a without further prompting.

@@ -134,7 +134,7 @@ Generates a self-contained HTML project status report at `docs/dashboard.html`.
 **Arguments:**
 - No arguments — generates dashboard from current state
 
-**Auto-regeneration:** State-changing commands (`/pipeline:build`, `/pipeline:review`, `/pipeline:commit`, `/pipeline:remediate`, `/pipeline:audit`, `/pipeline:redteam`, `/pipeline:ui-review`, `/pipeline:release`, `/pipeline:brainstorm`, `/pipeline:plan`, `/pipeline:markdown-review`) regenerate the dashboard as a final step when `dashboard.enabled` is true.
+**Auto-regeneration:** State-changing commands (`/pipeline:build`, `/pipeline:review`, `/pipeline:commit`, `/pipeline:remediate`, `/pipeline:audit`, `/pipeline:redteam`, `/pipeline:ui-review`, `/pipeline:release`, `/pipeline:brainstorm`, `/pipeline:plan`, `/pipeline:markdown-review`, `/pipeline:compliance`) regenerate the dashboard as a final step when `dashboard.enabled` is true.
 
 **Dashboard sections:**
 - **Health summary** — one-line status for executive glance
@@ -420,9 +420,70 @@ Aggregate security verification after a red team + remediation cycle. Verifies t
 
 ---
 
+### `/pipeline:compliance`
+
+Maps red team findings (CWE IDs) to regulatory compliance controls and produces a coverage scope analysis. This is compliance preparation — not a compliance assessment.
+
+**What it does:**
+1. Locates the latest red team report in `docs/findings/`
+2. Parses findings and extracts CWE IDs
+3. Launches parallel framework agents (haiku) — one per enabled framework
+4. Synthesis agent (opus) produces cross-framework analysis with scope analysis and evidence narrative
+5. Generates markdown report + optional standalone HTML artifact
+6. Persists to knowledge tier
+7. Creates GitHub issues for Tier 1 coverage gaps (unmapped control families within automated scope)
+
+**Prerequisites:** A red team report must exist in `docs/findings/`. `compliance.enabled` must be true in config.
+
+**Supported frameworks:**
+- **Tier 1** (official CWE crosswalks): NIST SP 800-53 Rev 5, PCI DSS 4.0
+- **Tier 2** (inference-based): ISO/IEC 27001:2022, NIST CSF 2.0
+- **Tier 3** (limited scope): SOC 2, GDPR, HIPAA
+
+**Output vocabulary:** MAPPED (direct CWE→control match), RELATED (addresses related concern), OUTSIDE_AUTOMATED_SCOPE (requires organizational assessment). Never uses TESTED/UNTESTED/PASS/FAIL.
+
+**Config:** `compliance.*` in pipeline.yml. See the [configuration guide](guide.md#compliance).
+
+**Token cost:** ~(15K × framework count) + 25K synthesis [+ 7K HTML]. A 7-framework run is ~155K tokens.
+
+**Output:** `docs/findings/compliance-[date].md` (+ `.html` if `compliance.html_report` is true)
+
+---
+
+### `/pipeline:debate`
+
+Antagonistic design debate — stress-tests a spec with three parallel agents before planning. Dispatches Advocate, Skeptic, and Domain Practitioner to challenge assumptions from first principles.
+
+**What it does:**
+1. Reads the spec (from brainstorm output or user-specified path)
+2. Presents the sell step with cost, benefit, and risk of skipping
+3. Dispatches 3 parallel agents (sonnet):
+   - **Advocate** — steelmans the design, argues against alternatives
+   - **Skeptic** — attacks feasibility, scope creep, token economics, failure modes
+   - **Practitioner** — grounds in real-world usage, existing tools, ecosystem expectations
+4. Synthesizes into a structured verdict: disposition, points of agreement, contested points, invalidated assumptions, risk register
+5. Saves verdict to `docs/findings/debate-[date]-[topic].md`
+
+**Disposition outcomes:**
+- `proceed` — design is sound, plan can begin
+- `proceed-with-constraints` — design needs specific constraints (included in verdict)
+- `rethink` — fundamental issues found, recommend re-running brainstorm
+
+**Sell step defaults:**
+- MEDIUM changes: offered but defaults to skip (y/N)
+- LARGE+ changes: offered and defaults to run (Y/n)
+
+**Integration with `/pipeline:plan`:** Plan reads the verdict file when present and injects debate constraints. For LARGE+ specs without a verdict, plan warns and offers to continue without debate.
+
+**Config:** `debate.*` in pipeline.yml. See the [configuration guide](guide.md#debate).
+
+**Token cost:** ~15-30K tokens (~$0.05-0.10), 30-60 seconds
+
+---
+
 ### `/pipeline:security`
 
-Full security assessment loop. Orchestrates red team → remediate → purple team with user review gates between each phase.
+Full security assessment loop. Orchestrates red team → remediate → purple team [→ compliance] with user review gates between each phase.
 
 **What it does:**
 1. Runs `/pipeline:redteam` (find vulnerabilities)
@@ -430,14 +491,15 @@ Full security assessment loop. Orchestrates red team → remediate → purple te
 3. Runs `/pipeline:remediate --source redteam` (fix confirmed findings)
 4. Presents fixes for review
 5. Runs `/pipeline:purpleteam` (verify fixes, assess posture)
+6. If `compliance.enabled`: offers `/pipeline:compliance` (map findings to regulatory controls)
 
 **Prerequisites:** Same as red team + remediate + purple team combined.
 
-**User gates:** Three explicit approval points — after red team, after remediation, after purple team. You can stop at any gate and resume manually with the individual commands.
+**User gates:** Three or four explicit approval points — after red team, after remediation, after purple team, and optionally before compliance. You can stop at any gate and resume manually with the individual commands.
 
-**When to use:** Before beta or production releases. Replaces running the three commands separately.
+**When to use:** Before beta or production releases. Replaces running the commands separately.
 
-**Output:** All three reports in `docs/findings/` plus GitHub issue updates.
+**Output:** All reports in `docs/findings/` plus GitHub issue updates.
 
 ---
 
@@ -622,6 +684,8 @@ Every state-changing command automatically persists its outputs to the configure
 | `/pipeline:redteam` | Session + gotchas + decision | Gotchas (HIGH/CRITICAL only) + decision |
 | `/pipeline:remediate` | Decision + gotchas + finding status | Gotchas (HIGH only) |
 | `/pipeline:purpleteam` | Finding status + gotchas + decision | Gotchas (HIGH only) + decision |
+| `/pipeline:compliance` | Session + decision | Decision (compliance mapping summary) |
+| `/pipeline:debate` | Nothing — verdict in `docs/findings/` | Nothing — verdict in `docs/findings/` |
 | `/pipeline:markdown-review` | Findings + decision | Nothing — findings in `docs/findings/` |
 
 **If neither tier is configured**, the persistence block is a no-op. Commands still write their reports to `docs/findings/` as normal.

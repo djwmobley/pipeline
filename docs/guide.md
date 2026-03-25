@@ -309,6 +309,63 @@ Controls `/pipeline:purpleteam` — aggregate security verification after remedi
 
 **Dependency audit:** Uses `commands.security_audit` (see commands section above). Null to skip.
 
+### compliance
+
+Controls `/pipeline:compliance` — regulatory framework mapping against red team findings.
+
+```yaml
+compliance:
+  enabled: false
+  frameworks:
+    - "nist_800_53"    # Tier 1 — NIST SP 800-53 Rev 5 (also covers FedRAMP)
+    - "pci_dss"        # Tier 1 — PCI DSS 4.0
+    - "iso27001"       # Tier 2 — ISO/IEC 27001:2022 Annex A
+    - "nist_csf"       # Tier 2 — NIST Cybersecurity Framework 2.0
+    - "soc2"           # Tier 3 — SOC 2 Trust Services Criteria
+    - "gdpr"           # Tier 3 — EU General Data Protection Regulation
+    - "hipaa"          # Tier 3 — HIPAA Security Rule
+  html_report: true
+  include_remediation: true
+```
+
+| Field | Default | What It Does |
+|-------|---------|-------------|
+| `enabled` | `false` | Enable compliance framework mapping |
+| `frameworks` | *(all 7)* | Which frameworks to map against. Remove any you don't need to reduce token cost. |
+| `html_report` | `true` | Generate a standalone HTML report alongside the markdown report |
+| `include_remediation` | `true` | Include remediation/purple team status in compliance mappings (if reports exist) |
+
+**Framework tiers:**
+
+| Tier | Frameworks | Mapping Quality | Token Cost |
+|------|-----------|----------------|-----------|
+| 1 | nist_800_53, pci_dss | Official CWE crosswalks — high confidence | ~15K each |
+| 2 | iso27001, nist_csf | Inference-based — moderate confidence, chains documented | ~15K each |
+| 3 | soc2, gdpr, hipaa | Limited software-relevant scope — prominent disclaimers | ~15K each |
+
+**Model routing:** Framework agents use `models.cheap` (haiku). Synthesis uses `models.architecture` (opus). HTML report uses `models.cheap` (haiku).
+
+**Prerequisites:** Requires `compliance.enabled: true` and a red team report in `docs/findings/`. Run `/pipeline:redteam` first.
+
+### debate
+
+Controls `/pipeline:debate` — antagonistic design debate to stress-test specs before planning.
+
+```yaml
+debate:
+  default_for_medium: false    # Offer but default to skip (y/N)
+  default_for_large: true      # Offer and default to run (Y/n)
+```
+
+| Field | Default | What It Does |
+|-------|---------|-------------|
+| `default_for_medium` | `false` | For MEDIUM changes: debate is offered with default to skip (y/N) |
+| `default_for_large` | `true` | For LARGE+ changes: debate is offered with default to run (Y/n) |
+
+**Model routing:** All 3 debate agents use `models.review` (sonnet). Synthesis runs in the main context.
+
+**Integration:** `/pipeline:plan` reads debate verdict files when present and injects constraints. For LARGE+ specs without a verdict, plan warns and offers to continue without debate.
+
 ### markdown_review
 
 Controls `/pipeline:markdown-review` — full markdown health check with automated fixes.

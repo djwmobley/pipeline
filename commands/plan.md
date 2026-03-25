@@ -30,6 +30,32 @@ If no config file exists, report: "No `.claude/pipeline.yml` found. Run `/pipeli
 
 ---
 
+### Debate Verdict (if available)
+
+Check for a debate verdict file matching the spec being planned:
+
+```bash
+ls -t docs/findings/debate-*-*.md 2>/dev/null | head -5
+```
+
+If a verdict file exists whose topic matches the spec (by name or date proximity):
+1. Read the verdict file
+2. Extract: disposition, points of agreement, contested points, invalidated assumptions, risk register
+3. Inject these as a `## Debate Constraints` section — the plan must honor points of agreement and explicitly address contested points
+
+If no verdict found and the spec is LARGE+ (4+ files or new subsystem):
+
+```
+**Note:** No debate verdict found for this spec. For LARGE+ changes, consider running
+`/pipeline:debate` first to stress-test assumptions before planning.
+
+Continue planning without debate? (Y/n)
+```
+
+If the user declines, stop with: "Run `/pipeline:debate` with your spec, then re-run `/pipeline:plan`."
+
+---
+
 ### Architecture Recon (silent — runs automatically)
 
 Before planning, run architecture recon to understand the codebase's existing patterns and conventions. This is invisible to the builder — no separate command, no extra step.

@@ -98,6 +98,29 @@ remediate:
     ui-review: "screenshot"            # Re-capture and analyze screenshot
     external: "none"                   # Skip — run appropriate command manually
 
+# Compliance framework mapping
+# Run /pipeline:compliance after red team to map findings to regulatory controls
+# Produces coverage scope analysis — compliance preparation, not compliance assessment
+compliance:
+  enabled: false
+  frameworks:
+    - "nist_800_53"    # Tier 1 — NIST SP 800-53 Rev 5 (also covers FedRAMP)
+    - "pci_dss"        # Tier 1 — PCI DSS 4.0
+    - "iso27001"       # Tier 2 — ISO/IEC 27001:2022 Annex A
+    - "nist_csf"       # Tier 2 — NIST Cybersecurity Framework 2.0
+    - "soc2"           # Tier 3 — SOC 2 Trust Services Criteria
+    - "gdpr"           # Tier 3 — EU General Data Protection Regulation
+    - "hipaa"          # Tier 3 — HIPAA Security Rule
+  html_report: true
+  include_remediation: true  # Include remediation/purple team status in mappings
+
+# Antagonistic design debate
+# Run /pipeline:debate to stress-test a spec before planning
+# Dispatches Advocate, Skeptic, and Practitioner agents in parallel
+debate:
+  default_for_medium: false    # Offer but default to skip (y/N)
+  default_for_large: true      # Offer and default to run (Y/n)
+
 # Purple team verification
 # Run /pipeline:purpleteam after a red team + remediation cycle
 # Verifies aggregate security posture, not individual fixes
@@ -191,7 +214,7 @@ integrations:
     use_in: [brainstorm]
   github:
     enabled: false
-    use_in: [brainstorm, plan, architect, build, qa, review, redteam, commit, finish, remediate, purpleteam]
+    use_in: [brainstorm, debate, plan, architect, build, qa, review, redteam, commit, finish, remediate, purpleteam, compliance]
     issue_tracking: true  # Create/link issues across lifecycle. false = only commit/finish/remediate use GitHub.
   chrome_devtools:
     enabled: false

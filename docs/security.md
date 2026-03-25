@@ -190,12 +190,89 @@ If no lockfile is found, the SBOM falls back to direct dependencies only (from t
 
 ---
 
-## 8. When to Run Each Command
+## 8. Compliance Framework Mapping
+
+After red team findings are generated, you can map them to regulatory compliance controls. This tells you which controls your security testing addresses and which require organizational or procedural assessment.
+
+> **This is compliance preparation, not a compliance assessment.** Mappings help teams understand control coverage. They are not audit evidence, certification artifacts, or compliance assertions. Verify all mappings with your compliance team before use in audit preparation.
+
+### Supported Frameworks
+
+| Framework | Tier | Mapping Source | Software-Testable Scope |
+|-----------|------|----------------|------------------------|
+| NIST SP 800-53 Rev 5 | 1 | Official MITRE/NIST CWE crosswalk | ~12-15% of controls |
+| PCI DSS 4.0 | 1 | PCI SSC guidance + CWE references | ~20-25% of requirements |
+| ISO/IEC 27001:2022 | 2 | Inference from Annex A control descriptions | ~20% of controls |
+| NIST CSF 2.0 | 2 | Chained via 800-53 informative references | ~35-40% of subcategories |
+| SOC 2 TSC | 3 | Limited to CC6/CC7 software-relevant criteria | <8% of criteria |
+| GDPR | 3 | Articles 25 and 32 only | <5% of articles |
+| HIPAA Security Rule | 3 | Technical Safeguards (164.312) only | <8% of standards |
+
+**Tier 1** frameworks have official CWE-to-control crosswalks. Every mapping has a direct reference chain. High confidence.
+
+**Tier 2** frameworks require inference from control descriptions or chaining through Tier 1 frameworks. Moderate confidence — inference chains are documented.
+
+**Tier 3** frameworks are primarily organizational, procedural, or legal. Only a small subset of controls are software-testable. Prominent disclaimers accompany all Tier 3 output.
+
+### How CWE Mapping Works
+
+Red team findings include CWE IDs (Common Weakness Enumeration) — standardized identifiers for software weakness types. For example, CWE-89 is SQL Injection and CWE-79 is Cross-Site Scripting.
+
+Compliance frameworks define controls that address security concerns. Some controls map directly to CWE categories (e.g., NIST 800-53 SI-10 "Information Input Validation" maps to CWE-89). Pipeline uses these mappings to connect your red team findings to the controls they address.
+
+### Output Vocabulary
+
+| Verdict | Meaning |
+|---------|---------|
+| **MAPPED** | A red team finding directly maps to this control via CWE crosswalk |
+| **RELATED** | A finding addresses a related concern but not the exact control requirement |
+| **OUTSIDE_AUTOMATED_SCOPE** | This control requires organizational, procedural, or infrastructure assessment |
+
+Pipeline does NOT use TESTED, UNTESTED, PASS, or FAIL. These imply compliance assertions it cannot make.
+
+### Coverage Scope Analysis
+
+Instead of a gap analysis (which implies controls are "untested"), Pipeline produces a coverage scope analysis with three categories:
+
+1. **Within automated scope, with mapped findings** — control families where red team findings provide direct CWE evidence
+2. **Within automated scope, without mapped findings** — control families that code analysis CAN address but where no finding currently maps. This is the actionable insight for expanding future red team coverage.
+3. **Outside automated scope** — control families requiring organizational, procedural, or infrastructure assessment. Route these to your GRC team or compliance platform.
+
+### Running It
+
+```
+/pipeline:compliance
+```
+
+Or as part of the full security loop:
+
+```
+/pipeline:security    (includes compliance as optional Phase 4 when enabled)
+```
+
+**Prerequisites:** A red team report must exist in `docs/findings/`. Run `/pipeline:redteam` first.
+
+**Configuration:** Enable in `pipeline.yml`:
+
+```yaml
+compliance:
+  enabled: true
+  frameworks: [nist_800_53, pci_dss, iso27001, nist_csf, soc2, gdpr, hipaa]
+  html_report: true
+  include_remediation: true
+```
+
+**Output:** `docs/findings/compliance-[date].md` (+ `.html` if `html_report` is true)
+
+---
+
+## 9. When to Run Each Command
 
 | Situation | Command | When |
 |---|---|---|
 | New feature complete | `/pipeline:redteam` | Before shipping — find what's wrong |
 | After reviewing red team findings | `/pipeline:remediate --source redteam` | Fix what needs fixing |
 | After remediation complete | `/pipeline:purpleteam` | Verify the fixes work |
+| After purple team | `/pipeline:compliance` | Map findings to regulatory controls |
 | Pre-release check | `/pipeline:redteam` then full loop | Final security sweep |
 | Dependency update | `/pipeline:purpleteam` | Check if new vulnerabilities appeared |
