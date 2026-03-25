@@ -214,6 +214,33 @@ Follow the dashboard skill to regenerate `docs/dashboard.html` with current proj
 
 ---
 
+### Step 7 — Next steps
+
+Check if on a feature branch:
+
+```bash
+CURRENT=$(git branch --show-current)
+```
+
+Compare `$CURRENT` against `project.branch` from config (default: `main`).
+
+**If on a feature branch** (`$CURRENT` != base branch):
+
+```
+Committed and pushed to [branch].
+
+Next: run /pipeline:finish to merge, create a PR, or manage the branch.
+/pipeline:finish handles: merge verification, ship transition (Postgres + GitHub), and dashboard regeneration.
+```
+
+**If on the base branch** (`$CURRENT` == base branch):
+
+```
+Committed and pushed to [branch]. Done.
+```
+
+---
+
 ### Safety rules (always enforced)
 
 - Never stage or commit files matching `commit.never_stage` patterns

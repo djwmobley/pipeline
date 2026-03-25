@@ -33,6 +33,8 @@ If `lint_agents.enabled` is true and agent prompt templates changed, runs determ
 
 **Skips all preflight** if only markdown files changed (no source files).
 
+**After commit:** On feature branches, suggests `/pipeline:finish` for merge, PR, ship transition (Postgres + GitHub), and dashboard regeneration. On the base branch, reports done.
+
 ---
 
 ### `/pipeline:review`

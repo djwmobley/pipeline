@@ -322,3 +322,11 @@ Locate and read the dashboard skill:
 2. Otherwise: use Glob `**/pipeline/skills/dashboard/SKILL.md` to find it
 
 Follow the dashboard skill to regenerate `docs/dashboard.html` with current project state.
+
+---
+
+### What's Next
+
+After applying fixes: `/pipeline:commit` → `/pipeline:finish` (if on a feature branch).
+
+`/pipeline:finish` handles merge verification, ship transition (Postgres task closure + GitHub issue close), and dashboard regeneration. Do not manually merge — finish keeps the three stores in sync.
