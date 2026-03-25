@@ -302,8 +302,8 @@ hr {
 <p>Pipeline works whether you're starting fresh or maintaining something.</p>
 
 <h3><span class="layer-tag layer-2">NEW</span> Building something new?</h3>
-<pre><code>/pipeline:brainstorm → /pipeline:plan → /pipeline:build → /pipeline:commit</code></pre>
-<p>Brainstorm asks clarifying questions, proposes approaches, and writes a spec. Plan turns the spec into bite-sized tasks. Build dispatches a fresh subagent per task with automatic review after each. Commit runs preflight gates and ships it.</p>
+<pre><code>/pipeline:brainstorm → /pipeline:plan → /pipeline:build → /pipeline:finish</code></pre>
+<p>Brainstorm asks clarifying questions, proposes approaches, and writes a spec. Plan turns the spec into bite-sized tasks. Build dispatches a fresh subagent per task with automatic review after each. Finish merges, creates a PR, and updates the project dashboard.</p>
 <table>
 <thead><tr><th>Command</th><th>What It Does</th></tr></thead>
 <tbody>
@@ -314,6 +314,15 @@ hr {
 </tbody>
 </table>
 <p>You can enter at any point — skip brainstorm if you already know the design, skip plan if you want to build ad hoc.</p>
+<p>For LARGE and MILESTONE changes, additional commands activate automatically:</p>
+<table>
+<thead><tr><th>Command</th><th>What It Does</th></tr></thead>
+<tbody>
+<tr><td><code>/pipeline:architect</code></td><td>Technology decisions — parallel domain specialists produce decision records</td></tr>
+<tr><td><code>/pipeline:qa plan</code></td><td>Risk-driven test strategy with work packages and seam tests</td></tr>
+<tr><td><code>/pipeline:qa verify</code></td><td>Parallel QA workers execute the test plan, seam pass verifies boundaries</td></tr>
+</tbody>
+</table>
 
 <h3><span class="layer-tag layer-1">EXISTING</span> Working on existing code?</h3>
 <pre><code># make your changes, then:
@@ -359,7 +368,7 @@ hr {
 <tr><td><code>/pipeline:ui-review</code></td><td>Screenshot capture + visual analysis</td></tr>
 <tr><td><code>/pipeline:markdown-review</code></td><td>Markdown health check — file hygiene, info architecture</td></tr>
 <tr><td><code>/pipeline:worktree</code></td><td>Isolated git worktree for feature isolation</td></tr>
-<tr><td><code>/pipeline:dashboard</code></td><td>Static HTML project status report (auto-regenerates)</td></tr>
+<tr><td><code>/pipeline:dashboard</code></td><td>Static HTML project dashboard — phase tracking, epic status, security lifecycle</td></tr>
 <tr><td><code>/pipeline:update</code></td><td>Change config after setup</td></tr>
 <tr><td><code>/pipeline:knowledge</code></td><td>Direct access to session history and search</td></tr>
 </tbody>
@@ -399,15 +408,19 @@ Run /pipeline:review, apply all fixes, then /pipeline:commit reviewed:✓</code>
 <h3>You build a new feature (LARGE change)</h3>
 <p>You describe what you want. Pipeline routes you through:</p>
 <ol>
-<li><code>/pipeline:brainstorm</code> — asks clarifying questions one at a time, proposes 2-3 approaches, writes a spec</li>
-<li><code>/pipeline:plan</code> — turns the spec into bite-sized tasks with specific files, functions, and types</li>
+<li><code>/pipeline:brainstorm</code> — asks clarifying questions one at a time, proposes 2-3 approaches, writes a spec. If GitHub issue tracking is enabled, creates a feature epic.</li>
+<li><code>/pipeline:architect</code> — parallel domain specialists assess your technology choices and produce decision records</li>
+<li><code>/pipeline:plan</code> — turns the spec into bite-sized tasks with specific files, functions, and types. Includes an inline QA strategy.</li>
 <li><code>/pipeline:build</code> — dispatches a fresh subagent for each task. Each agent gets only its task and relevant files — no accumulated context, so quality doesn't degrade over a 15-task build.</li>
+<li><code>/pipeline:qa verify</code> — parallel QA workers execute test scenarios, a seam pass verifies integration boundaries</li>
 <li><code>/pipeline:review --since abc123</code> — reviews everything built since the baseline commit</li>
-<li><code>/pipeline:commit reviewed:✓</code> — preflight gates, commit, push</li>
+<li><code>/pipeline:finish</code> — merge, PR, dashboard update</li>
 </ol>
+<p>Each step comments on the GitHub feature epic, so you can track progress from a single issue thread.</p>
 
 <h3>You finish a feature (MILESTONE)</h3>
 <p><code>/pipeline:audit</code> splits your codebase into sectors (configured per project) and dispatches parallel review agents — one per sector. A synthesis agent then traces crash paths across sectors, finds dead exports, flags duplication, and escalates severity.</p>
+<p>For MILESTONE changes, <code>/pipeline:qa plan</code> generates a standalone test plan with a builder risk interview — 5-7 questions about what you're least confident about, what existing functionality could break, and where the boundaries are. QA verify then dispatches parallel workers per work package with a fix-and-rerun cycle.</p>
 </section>
 
 <hr>
@@ -528,7 +541,7 @@ Run /pipeline:review, apply all fixes, then /pipeline:commit reviewed:✓</code>
 <tbody>
 <tr><td>PostgreSQL</td><td>Searchable session history, structured task tracking</td><td>Markdown files (works fine, no search)</td></tr>
 <tr><td>Ollama</td><td>Vector similarity search (local, no API keys)</td><td>Keyword search only</td></tr>
-<tr><td>GitHub CLI</td><td>PR creation from the terminal</td><td>Push and use the browser</td></tr>
+<tr><td>GitHub CLI</td><td>PR creation, feature epics, lifecycle issue tracking</td><td>Push and use the browser, no issue tracking</td></tr>
 <tr><td>Chrome / Playwright</td><td>Automatic screenshots for UI review</td><td>Provide screenshots yourself</td></tr>
 <tr><td>Sentry</td><td>Auto-pull recent errors during debug</td><td>Describe the error yourself</td></tr>
 <tr><td>Google Stitch</td><td>AI-generated design mockups during brainstorming</td><td>Simple HTML wireframes</td></tr>
@@ -560,7 +573,7 @@ Run /pipeline:review, apply all fixes, then /pipeline:commit reviewed:✓</code>
 <thead><tr><th>Resource</th><th>What It Covers</th></tr></thead>
 <tbody>
 <tr><td><a href="https://github.com/djwmobley/pipeline" style="color: var(--accent)">GitHub Repository</a></td><td>Source code, README, issues</td></tr>
-<tr><td><a href="https://github.com/djwmobley/pipeline/blob/main/docs/reference.md" style="color: var(--accent)">Command Reference</a></td><td>All 24 commands with arguments, output formats, token costs</td></tr>
+<tr><td><a href="https://github.com/djwmobley/pipeline/blob/main/docs/reference.md" style="color: var(--accent)">Command Reference</a></td><td>All 25 commands with arguments, output formats, token costs</td></tr>
 <tr><td><a href="https://github.com/djwmobley/pipeline/blob/main/docs/guide.md" style="color: var(--accent)">Configuration Guide</a></td><td>Every config option with examples</td></tr>
 <tr><td><a href="https://github.com/djwmobley/pipeline/blob/main/docs/security.md" style="color: var(--accent)">Security Overview</a></td><td>Security agents explained for non-engineers</td></tr>
 <tr><td><a href="https://github.com/djwmobley/pipeline/blob/main/docs/prerequisites.md" style="color: var(--accent)">Full Prerequisites</a></td><td>Step-by-step setup for all optional tools</td></tr>

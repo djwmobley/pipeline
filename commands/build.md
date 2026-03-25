@@ -132,24 +132,28 @@ git diff --name-only [BASELINE_SHA] HEAD | wc -l
    ```
 5. If any check fails, flag it in the completion message but do NOT block — the user decides
 
-**If LARGE+ (4+ files):** Suggest QA verify but don't auto-run the full parallel worker orchestration:
+**If LARGE+ (4+ files):** Run full QA verification by default. The user can skip if they want to verify manually:
+
 ```
-Build produced [N] file changes — recommend running /pipeline:qa verify for full test coverage with parallel workers and seam testing.
+Build complete. Running QA verification with parallel workers and seam testing...
+Skip with 'n' if you want to verify manually. Run QA verify? (Y/n)
 ```
 
-**Completion message:** When all tasks are done (and auto-verify if applicable), present options:
+If the user accepts (or doesn't respond, defaulting to Y): invoke `/pipeline:qa verify` following the QA skill's "Verify Mode — Full" process. If the user declines: skip and proceed to completion message.
+
+**Completion message:** When all tasks are done (and auto-verify/QA verify if applicable), present options:
 
 ```
 Build complete. [N] tasks executed. Baseline: [BASELINE_SHA]
 [Auto-verify: PASS/FAIL/SKIPPED]
+[QA verify: PASS/FAIL/PARTIAL/SKIPPED]
 
 What next?
 
 1. Review + commit + finish  (full workflow — review, commit, merge/push)
 2. Review only  (/pipeline:review --since [BASELINE_SHA])
-3. Run QA verify  (/pipeline:qa verify — parallel workers + seam testing)
-4. Skip review, commit directly  (/pipeline:commit reviewed:✓)
-5. Leave as-is  (I'll handle it)
+3. Skip review, commit directly  (/pipeline:commit reviewed:✓)
+4. Leave as-is  (I'll handle it)
 
 Which option? (default: 1)
 ```

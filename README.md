@@ -55,15 +55,17 @@ Every finding has a severity (🔴 HIGH / 🟡 MEDIUM / 🔵 LOW), a confidence 
 
 ### You build a new feature (LARGE change)
 
-You describe what you want. Pipeline routes you through:
+You describe what you want. Pipeline routes you through the full workflow:
 
-1. **`/pipeline:brainstorm`** — asks clarifying questions one at a time, proposes 2-3 approaches, writes a spec
-2. **`/pipeline:plan`** — runs silent architecture recon, turns the spec into bite-sized tasks with architectural constraints and a QA strategy section
-3. **`/pipeline:build`** — dispatches a fresh subagent for each task with architectural constraints injected. Each agent gets only its task and relevant files — no accumulated context, so quality doesn't degrade over a 15-task build. A reviewer agent checks each task before moving to the next. Auto-verify runs targeted QA checks after build completes.
-4. **`/pipeline:review --since abc123`** — reviews everything built since the baseline commit
-5. **`/pipeline:commit reviewed:✓`** — preflight gates, commit, push
+1. **`/pipeline:brainstorm`** — asks clarifying questions one at a time, proposes 2-3 approaches, writes a spec. Creates a GitHub feature epic if issue tracking is enabled.
+2. **`/pipeline:architect`** — parallel domain specialists assess your technology choices and produce decision records that constrain the build
+3. **`/pipeline:plan`** — turns the spec into bite-sized tasks with architectural constraints and a QA strategy. For LARGE/MILESTONE, generates a standalone QA test plan with work packages.
+4. **`/pipeline:build`** — dispatches a fresh subagent for each task with architectural constraints injected. Each agent gets only its task and relevant files — no accumulated context, so quality doesn't degrade over a 15-task build. A reviewer agent checks each task before moving to the next.
+5. **`/pipeline:qa verify`** — parallel QA workers execute the test plan, a seam pass verifies integration boundaries
+6. **`/pipeline:review --since abc123`** — reviews everything built since the baseline commit
+7. **`/pipeline:finish`** — merge, PR, dashboard update
 
-For LARGE/MILESTONE changes, you can also run `/pipeline:architect` (explicit technology decisions with parallel domain specialists) and `/pipeline:qa plan` + `/pipeline:qa verify` (full test plan with parallel workers and seam testing). For MEDIUM changes, these capabilities run invisibly inside plan and build.
+Architect and QA activate automatically for LARGE/MILESTONE changes — you can skip them if you've already made your technology choices or want to handle QA yourself. For MEDIUM changes, these capabilities run invisibly inside plan and build.
 
 ### You finish a feature (MILESTONE)
 
@@ -114,10 +116,12 @@ Pipeline works whether you're starting fresh or maintaining something.
 ### Building something new?
 
 ```
-/pipeline:brainstorm → /pipeline:plan → /pipeline:build → /pipeline:commit
+/pipeline:brainstorm → /pipeline:architect → /pipeline:plan → /pipeline:build → /pipeline:finish
 ```
 
-Brainstorm asks clarifying questions, proposes approaches, and writes a spec. Plan turns the spec into bite-sized tasks with specific files and functions. Build dispatches a fresh subagent per task with automatic review after each. Commit runs preflight gates and ships it.
+Brainstorm asks clarifying questions, proposes approaches, and writes a spec. Architect assesses technology choices with parallel domain specialists. Plan turns the spec into bite-sized tasks with QA strategy. Build dispatches a fresh subagent per task with automatic review and QA verification. Finish merges, creates a PR, and updates the dashboard.
+
+For LARGE and MILESTONE changes, architect and QA activate automatically. You can skip them if you've already made your technology choices or want to handle QA yourself.
 
 | Command | What It Does |
 |---------|-------------|
@@ -171,7 +175,7 @@ A full security lifecycle with structured verification:
 | `/pipeline:ui-review` | Screenshot capture + visual analysis |
 | `/pipeline:markdown-review` | Markdown health check — file hygiene, info architecture |
 | `/pipeline:worktree` | Isolated git worktree for feature isolation |
-| `/pipeline:dashboard` | Static HTML project status report (auto-regenerates) |
+| `/pipeline:dashboard` | Static HTML project dashboard — phase tracking, epic status, security lifecycle |
 | `/pipeline:update` | Change config after setup |
 | `/pipeline:knowledge` | Direct access to session history and search |
 

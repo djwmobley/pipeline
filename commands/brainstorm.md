@@ -144,3 +144,39 @@ Locate and read the dashboard skill:
 2. Otherwise: use Glob `**/pipeline/skills/dashboard/SKILL.md` to find it
 
 Follow the dashboard skill to regenerate `docs/dashboard.html` with current project state.
+
+---
+
+### What's Next
+
+After the spec is saved, present size-aware routing to the user:
+
+**If the spec describes a LARGE or MILESTONE change** (3+ components, cross-cutting concerns, new technology choices):
+
+```
+Spec saved to [path].
+
+Next steps for a change this size:
+1. /pipeline:architect — technology decisions with parallel domain specialists
+2. /pipeline:plan — implementation tasks with QA strategy
+
+Or skip straight to /pipeline:plan if you've already made your technology choices.
+```
+
+**If the spec describes a MEDIUM change** (1-2 components, familiar tech):
+
+```
+Spec saved to [path].
+
+Next: /pipeline:plan
+```
+
+**If the spec describes a TINY change:**
+
+```
+Spec saved to [path].
+
+This might not need a full plan. You can implement directly and /pipeline:commit.
+```
+
+Determine the size from the spec's scope — component count, file count estimates, whether new technology choices are needed. When in doubt, recommend the larger workflow.

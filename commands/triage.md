@@ -60,8 +60,8 @@ If the user described a task but hasn't started yet, estimate from the descripti
 |------|----------|----------|
 | **TINY** | ≤ `tiny_max_files` files AND ≤ `tiny_max_lines` lines | read → implement → `/pipeline:commit` |
 | **MEDIUM** | ≤ `medium_max_files` files, known pattern | grep patterns → implement → `/pipeline:review` → fix → `/pipeline:commit` |
-| **LARGE** | New feature, multi-file, new flow | `/pipeline:brainstorm` → `/pipeline:plan` → `/pipeline:build` → `/pipeline:review` → `/pipeline:simplify` (if flagged) → `/pipeline:commit` |
-| **MILESTONE** | End of feature, full codebase review | `/pipeline:audit` → fix 🔴 → fix 🟡 → `/pipeline:commit reviewed:✓` |
+| **LARGE** | New feature, multi-file, new flow | `/pipeline:brainstorm` → `/pipeline:architect` → `/pipeline:plan` → `/pipeline:build` → `/pipeline:qa verify` → `/pipeline:review` → `/pipeline:finish` |
+| **MILESTONE** | End of feature, full codebase review | `/pipeline:brainstorm` → `/pipeline:architect` → `/pipeline:plan` (includes QA plan) → `/pipeline:build` → `/pipeline:qa verify` → `/pipeline:review` → `/pipeline:audit` → `/pipeline:finish` |
 
 ---
 

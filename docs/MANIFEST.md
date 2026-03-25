@@ -15,6 +15,7 @@ Every documentation file, its content scope, and what triggers updates. When a f
 | `docs/prerequisites.md` | Install requirements, fast track, optional tools | Users setting up Pipeline |
 | `docs/attribution.md` | Source project credits, what was adopted/adapted/rejected, what's original | Contributors, people evaluating originality |
 | `docs/big-4.md` | Big 4 framework concept — functionality, usability, performance, security | Anyone understanding Pipeline's design philosophy |
+| `docs/index.html` | Static documentation site — install, command tables, scenarios, security lifecycle, config overview | Users browsing docs via GitHub Pages or locally |
 | `docs/MANIFEST.md` | This file — docs inventory and change triggers | Contributors maintaining docs |
 
 ---
@@ -29,6 +30,7 @@ When you ship a feature, check which docs are affected.
 |-----|---------------|
 | `docs/reference.md` | Add/update command section with arguments, output format, token cost |
 | `README.md` | Add to command table in relevant layer, update walkthrough if user-facing behavior changes |
+| `docs/index.html` | Add to relevant command table, update scenarios if user-facing workflow changes, update command count in footer |
 | `docs/guide.md` | Add config section if the command introduces new pipeline.yml keys |
 | `docs/security.md` | Update if the command is part of the security lifecycle (redteam, remediate, purpleteam, security) |
 
@@ -69,12 +71,14 @@ When you ship a feature, check which docs are affected.
 | `docs/guide.md` | Add to integrations table with detection method and what it enables |
 | `docs/prerequisites.md` | Add to optional tools table |
 | `README.md` | Add to requirements table |
+| `docs/index.html` | Add to requirements table |
 
 ### Adding a Differentiator or Original Feature
 
 | Doc | What to Update |
 |-----|---------------|
 | `README.md` | Add to "What's Original to Pipeline" section |
+| `docs/index.html` | Update if it changes user-facing messaging or feature highlights |
 | `docs/attribution.md` | Add to "What Pipeline Contributed Originally" section |
 
 ### Shipping a Roadmap Item
@@ -90,6 +94,7 @@ When you ship a feature, check which docs are affected.
 | `docs/security.md` | Primary — update relevant sections |
 | `docs/reference.md` | Update command sections for affected security commands |
 | `README.md` | Update security walkthrough if user-facing behavior changes |
+| `docs/index.html` | Update security lifecycle section if user-facing behavior changes |
 
 ### Shipping a Release
 
@@ -107,6 +112,7 @@ When you ship a feature, check which docs are affected.
 | `docs/guide.md` | Update `integrations.github` section and integrations table |
 | `docs/reference.md` | Update GitHub tracking mentions in affected command sections |
 | `README.md` | Update requirements table GitHub CLI row |
+| `docs/index.html` | Update requirements table GitHub CLI row, update LARGE scenario if workflow changes |
 | `templates/pipeline.yml` | Update `integrations.github` defaults |
 
 ### Changing Knowledge Tier Behavior

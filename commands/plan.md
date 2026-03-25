@@ -89,9 +89,11 @@ The QA section includes:
 
 Build agents will see this section alongside their tasks and write tests that map to it.
 
-**LARGE/MILESTONE auto-invoke:** If the change is LARGE or MILESTONE sized (determined by file count and scope from the plan), suggest running `/pipeline:qa plan` for a standalone test plan with work packages. Do not auto-invoke — present the option:
+**LARGE/MILESTONE auto-invoke:** If the change is LARGE or MILESTONE sized (determined by file count and scope from the plan), generate a standalone QA test plan by default. The user can skip if they want to handle QA themselves:
 
-> "This is a LARGE change with [N] tasks across [M] files. A standalone QA test plan with parallel work packages would provide better coverage. Run `/pipeline:qa plan` now? (Y/n)"
+> "This is a LARGE change with [N] tasks across [M] files. Generating a standalone QA test plan with parallel work packages for better coverage. Skip with 'n' if you want to handle QA yourself. Generate QA test plan? (Y/n)"
+
+If the user accepts (or doesn't respond, defaulting to Y): invoke the QA planner following the QA skill's "Plan Mode — Standalone" process. If the user declines: skip and proceed to knowledge tier persistence.
 
 ---
 

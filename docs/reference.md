@@ -231,19 +231,19 @@ Build never silently skips a failed task.
 
 **Cost note:** Build dispatches 2 agents per task (implementer + reviewer). A 10-task plan is ~20 subagent calls. Audit dispatches N sector agents + 1 synthesis agent. Keep this in mind for larger plans — the quality is high but so is the token usage.
 
-**Auto-verify (MEDIUM+):** After all tasks complete, build runs targeted QA verification automatically if `qa.auto_verify` is true. MEDIUM changes get 3-5 inline checks from the plan's QA strategy section. LARGE+ changes get a recommendation to run `/pipeline:qa verify` for full parallel workers + seam testing.
+**Auto-verify (MEDIUM+):** After all tasks complete, build runs targeted QA verification automatically if `qa.auto_verify` is true. MEDIUM changes get 3-5 inline checks from the plan's QA strategy section. LARGE+ changes auto-invoke `/pipeline:qa verify` by default (parallel workers + seam testing, skippable with 'n').
 
 **Output:**
 ```
 Build complete. 8 tasks executed. Baseline: abc1234
 Auto-verify: PASS
+QA verify: PASS
 
 What next?
 1. Review + commit + finish
 2. Review only
-3. Run QA verify
-4. Skip review, commit directly
-5. Leave as-is
+3. Skip review, commit directly
+4. Leave as-is
 ```
 
 ---
