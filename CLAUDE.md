@@ -118,5 +118,5 @@ Pipeline tracks work across three stores. **Postgres is the master.** Always que
 ## Testing
 
 After modifying any command or skill:
-1. Run `claude plugin validate C:\Users\djwmo\dev\pipeline\` to verify plugin structure
+1. Run `claude plugin validate .` from the plugin root to verify plugin structure
 2. Test the modified command in a real project with a `.claude/pipeline.yml`

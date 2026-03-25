@@ -1,8 +1,7 @@
 {
   "name": "pipeline",
   "owner": {
-    "name": "DJ Mobley",
-    "email": "djwmobley@gmail.com"
+    "name": "DJ Mobley"
   },
   "plugins": [
     {
