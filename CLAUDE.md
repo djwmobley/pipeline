@@ -67,6 +67,8 @@ All `[PLACEHOLDER]` substitutions in prompt templates must be wrapped in `<DATA 
 - Review findings that require fixes create sub-issues linked to the original epic
 - When developing Pipeline itself, create the GitHub issue BEFORE starting work and track progress via issue comments, not conversation
 
+Issue comments are a **log of outcomes**, not a live stream. Post findings, verdicts, and ship summaries. Never post status updates like "Research started" or "Working on this" — that is noise.
+
 See `skills/github-tracking/SKILL.md` for the full cross-cutting mandate, comment formats, and command-by-command requirements.
 
 | Rationalization | Reality |

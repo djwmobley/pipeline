@@ -119,7 +119,9 @@ If the epic is closed or deleted, log a warning and skip. Do not create a new ep
 
 ## Comment Format
 
-Epic comments should be concise summaries, not full reports. The full report lives in `docs/findings/` or `docs/plans/`.
+### What to post
+
+Epic comments are a **log of outcomes** — what was decided, what was found, what shipped. Each comment must contain substantive content: metrics, verdicts, finding counts, or completion summaries.
 
 ```markdown
 ## [Phase Name]
@@ -130,6 +132,19 @@ Epic comments should be concise summaries, not full reports. The full report liv
 
 Report: `[path to full report]`
 ```
+
+### What NOT to post
+
+Do not post status updates, progress announcements, or activity signals. These are noise.
+
+| Do NOT post | Why |
+|-------------|-----|
+| "Research phase started" | Nobody cares that you started. Post findings when you have them. |
+| "Beginning implementation" | The first comment should be the first result, not an announcement. |
+| "Working on task 3 of 7" | Progress tracking belongs in build state files, not issue comments. |
+| "Looking into this" | Say nothing until you have something to report. |
+
+**Rule:** Every issue comment must answer the question "what happened?" — not "what is happening?"
 
 ## Deduplication
 
