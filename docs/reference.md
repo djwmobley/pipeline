@@ -29,7 +29,7 @@ Runs preflight gates, then commits and pushes.
 - `status` — show branch state, commits ahead/behind
 
 **Preflight step 3e — Agent template lint:**
-If `lint_agents.enabled` is true and agent prompt templates changed, runs deterministic structural lint via `scripts/pipeline-lint-agents.js`. Reports LA-* findings. If `lint_agents.block_on_commit` is true, blocks on any findings. See `/pipeline:lint-agents` for details.
+If `lint_agents.enabled` is true and agent prompt templates changed, runs deterministic structural lint via `scripts/pipeline-lint-agents.js`. Reports LA-* findings. If `lint_agents.block_on_commit` is true, HIGH severity findings block the commit. See `/pipeline:lint-agents` for details.
 
 **Skips all preflight** if only markdown files changed (no source files).
 
@@ -145,7 +145,7 @@ Deterministic structural lint for agent prompt templates. Runs 7 checks across 3
 
 **Token cost:** ~500 tokens. No LLM dispatch — `scripts/pipeline-lint-agents.js` runs outside context as a deterministic script.
 
-**Integration:** Integrated into `/pipeline:commit` Step 3e. When `lint_agents.block_on_commit` is true, any LA-* findings block the commit.
+**Integration:** Integrated into `/pipeline:commit` Step 3e. When `lint_agents.block_on_commit` is true, HIGH severity LA-* findings block the commit.
 
 ---
 
