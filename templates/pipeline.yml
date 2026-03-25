@@ -149,6 +149,14 @@ purpleteam:
   chain_verification: true       # Verify exploit chains (uses opus)
   posture_report: true           # Generate before/after posture comparison
 
+# Agent template linting
+# Run /pipeline:lint-agents for standalone structural validation
+# Integrated into commit (Step 3e) when editing prompt templates
+lint_agents:
+  enabled: true
+  block_on_commit: true            # HIGH findings block commit
+  exclude: []                      # Glob patterns to skip
+
 # Markdown review
 # Run /pipeline:markdown-review for full markdown health check
 # Reviews plugin instruction files AND user-generated markdown

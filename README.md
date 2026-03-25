@@ -176,6 +176,7 @@ A full security lifecycle with structured verification:
 |---------|-------------|
 | `/pipeline:audit` | Full codebase review with parallel sector agents |
 | `/pipeline:debug` | Systematic 4-phase root-cause diagnosis |
+| `/pipeline:lint-agents` | Structural lint for agent prompt templates — 7 deterministic checks |
 | `/pipeline:test` | Structured test report |
 | `/pipeline:simplify` | Targeted simplification of flagged files |
 | `/pipeline:release` | Changelog + version bump + tag |

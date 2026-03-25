@@ -120,6 +120,19 @@ Warnings are OK.
 
 Run the test command. If failures → do NOT commit. Report failures. Stop.
 
+**3e. Agent template lint** (skip if `lint_agents.enabled` is false OR no `*-prompt.md` in changed files)
+
+Check if any changed file matches `skills/**/*-prompt.md`:
+```bash
+git diff --name-only HEAD | grep -E '\-prompt\.md$'
+```
+
+If matches found AND `lint_agents.enabled` is true (default):
+1. Resolve `$SCRIPTS_DIR` (same method as `/pipeline:knowledge` Step 0)
+2. Run: `PIPELINE_DIR='[plugin_root]' node '[scripts_dir]/pipeline-lint-agents.js' lint --changed`
+3. If exit code 1 (HIGH findings) AND `lint_agents.block_on_commit` is true → do NOT commit. Report findings. Stop.
+4. MEDIUM findings → report as warnings, do not block.
+
 ---
 
 ### Step 4 — Stage and Commit
