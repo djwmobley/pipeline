@@ -21,7 +21,7 @@ Read `.claude/pipeline.yml` from the project root. Extract:
 - `project.name`, `project.profile`
 - `qa.*` (auto_verify, workers, browser_testing, db_verification, api_testing, flake_retries)
 - `routing.source_dirs`
-- `commands.test`, `commands.test_verbose`
+- `commands.test`
 - `models.architecture`, `models.qa`, `models.cheap`
 - `docs.plans_dir`, `docs.specs_dir`
 - `knowledge.tier`
@@ -57,16 +57,9 @@ PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js query "SELECT topic, decis
 
 ### Step 2 — Builder risk interview (MILESTONE only)
 
-If the change is MILESTONE-sized (determined by file count from the implementation plan or user indication), conduct a brief interview:
+If the change is MILESTONE-sized (determined by file count from the implementation plan or user indication), conduct a brief interview.
 
-Ask the builder 5-7 questions:
-1. What's fragile in the areas this feature touches?
-2. What changed recently that you're nervous about?
-3. Where are the seams between systems that this feature crosses?
-4. Any known data edge cases?
-5. What would a customer notice first if this breaks?
-6. (If applicable) Are there timing-sensitive operations?
-7. (If applicable) Any third-party integrations that are flaky?
+Follow the builder risk interview questions defined in the QA skill's "Builder Risk Interview" section. Ask questions one at a time.
 
 Record responses as additional context for the planner.
 

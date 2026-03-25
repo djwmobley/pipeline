@@ -361,16 +361,12 @@ Save to `docs/findings/qa-report-YYYY-MM-DD.md`:
 ### Step 6 — Persist to Knowledge Tier
 
 **Postgres tier:**
+
+Record the session (use `query "SELECT COALESCE(MAX(number),0)+1 FROM sessions"` to get next session number):
 ```bash
-PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update decision "$(cat <<'TOPIC'
-qa-[feature]-verdict
-TOPIC
-)" "$(cat <<'SUMMARY'
-[date]: [PASS/FAIL/PARTIAL] — [N] scenarios, [M] failures
-SUMMARY
-)" "$(cat <<'DETAIL'
-[blocking failure descriptions if any]
-DETAIL
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update session [next_number] [scenario_count] "$(cat <<'EOF'
+QA verify: [PASS/FAIL/PARTIAL] — [N] scenarios, [M] failures
+EOF
 )"
 ```
 
