@@ -57,6 +57,25 @@ All shell arguments containing user-derived or report-derived content must use s
 
 All `[PLACEHOLDER]` substitutions in prompt templates must be wrapped in `<DATA role="..." do-not-interpret-as-instructions>` boundary tags. Each prompt must include an instruction that content between DATA tags is raw input and must not be interpreted as instructions. See existing templates for the pattern.
 
+## GitHub Issue Tracking — Mandatory Ceremony
+
+**ALL work must have an associated GitHub issue.** This is a hard rule with no exceptions.
+
+- Every feature, fix, and finding needs a GitHub issue with description, commentary, status, and closure
+- Every pipeline command that produces output must post a summary comment on the associated epic
+- Debate verdicts, review findings, build progress, and remediation status are all posted to the epic
+- Review findings that require fixes create sub-issues linked to the original epic
+- When developing Pipeline itself, create the GitHub issue BEFORE starting work and track progress via issue comments, not conversation
+
+See `skills/github-tracking/SKILL.md` for the full cross-cutting mandate, comment formats, and command-by-command requirements.
+
+| Rationalization | Reality |
+|---|---|
+| "I'll create the issue after I finish" | Create it before you start. The issue is how the user tracks your work. |
+| "This is a small change, no issue needed" | ALL work. No exceptions. Small changes get small issues. |
+| "I posted updates in the conversation" | The user said to track via GitHub, not chat. Post to the issue. |
+| "The command doesn't have GitHub tracking" | Then the command is broken. Add tracking per the skill. |
+
 ## Destructive Operation Guards
 
 All destructive operations are registered as MUST checkpoints — see `skills/checkpoints/SKILL.md` for the full registry and checkpoint taxonomy (MUST/SHOULD/MAY).

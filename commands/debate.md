@@ -190,6 +190,30 @@ Report: "Verdict saved to `[path]`. The plan command will read this automaticall
 
 ---
 
+### GitHub Epic Tracking
+
+If `integrations.github.enabled` AND `integrations.github.issue_tracking`:
+
+1. Read `github_epic: N` from the spec file's YAML frontmatter (same spec being debated).
+2. If found, post a summary comment on the epic:
+   ```bash
+   gh issue comment [N] --repo '[project.repo]' --body "$(cat <<'EOF'
+   ## Design Debate
+
+   **Disposition:** [proceed / proceed-with-constraints / rethink]
+   **Points of agreement:** [count]
+   **Contested points:** [count]
+   **Invalidated assumptions:** [count]
+   **Risks identified:** [count]
+
+   Verdict: `[path to verdict file]`
+   EOF
+   )"
+   ```
+3. If no `github_epic` found in spec, skip — not all specs are tied to an epic.
+
+---
+
 ### Persist to knowledge tier
 
 **Resolve `$SCRIPTS_DIR`:** Locate the pipeline plugin's `scripts/` directory:

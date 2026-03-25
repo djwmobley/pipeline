@@ -17,6 +17,9 @@ Read `.claude/pipeline.yml` from the project root. Extract:
 - `commit.co_author`, `commit.never_stage`, `commit.push_after_commit`, `commit.post_commit_hooks`
 - `routing.source_dirs`, `routing.review_gate_threshold`
 - `knowledge.tier`
+- `integrations.github.enabled`, `integrations.github.issue_tracking`
+- `project.repo`
+- `docs.plans_dir` — for epic reference resolution
 
 If no config file exists, report: "No `.claude/pipeline.yml` found. Run `/pipeline:init` first." and stop.
 
@@ -131,8 +134,11 @@ type(scope): summary
 - change 1
 - change 2
 
+[If epic available: Part of #[EPIC_N]]
 Co-Authored-By: [value from commit.co_author in pipeline.yml]
 ```
+
+**Epic reference in commit body:** If `integrations.github.enabled` AND `integrations.github.issue_tracking`, check the most recent plan file in `docs.plans_dir` for `github_epic: N`. If found, include `Part of #[N]` in the commit body before the co-author line. This links commits to the feature epic for traceability.
 
 **co_author validation:** Validate `commit.co_author` matches the format `Name <email>` (no newlines, no shell metacharacters). Strip any newlines or control characters before use in the commit message.
 

@@ -268,6 +268,13 @@ Find the epic number: check the most recent plan file in `docs.plans_dir` for `g
 
 🟡 and 🔵 findings do NOT get issues — they stay in `docs/findings/` only.
 
+3. Update the epic status checklist — read the current issue body, replace `- [ ] Review` with `- [x] Review`, and update the issue:
+   ```bash
+   BODY=$(gh issue view [N] --repo '[project.repo]' --json body -q '.body')
+   UPDATED=$(echo "$BODY" | sed 's/- \[ \] Review/- [x] Review/')
+   gh issue edit [N] --repo '[project.repo]' --body "$UPDATED"
+   ```
+
 If no epic found: skip — review works without GitHub tracking.
 
 ---
