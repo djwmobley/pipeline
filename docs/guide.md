@@ -49,6 +49,17 @@ security:
   - { check: "Network call?", rule: "TLS only, AbortController, no embedded secrets" }
   - { check: "Renders user content?", rule: "Sanitize HTML — never render raw user input" }
 
+static_analysis:
+  semgrep:
+    enabled: "auto"
+    rulesets: []
+    custom_rules: true
+  severity_mapping:
+    error: "high"
+    warning: "medium"
+    info: "low"
+  grep_fallback: true
+
 redteam:
   mode: "white-box"
   url: null
@@ -214,6 +225,24 @@ Controls the `/pipeline:qa` test planning and verification.
 - **MEDIUM:** QA section generated inside implementation plan. Auto-verify runs 3-5 targeted checks after build.
 - **LARGE:** Standalone test plan via `/pipeline:qa plan`. Full parallel workers + seam pass via `/pipeline:qa verify`.
 - **MILESTONE:** Same as LARGE plus builder risk interview (5-7 questions) and fix-and-rerun cycle.
+
+### static_analysis
+
+Controls deterministic SAST scanning via semgrep during `/pipeline:review` Step 2b.
+
+| Field | Default | What It Does |
+|-------|---------|-------------|
+| `semgrep.enabled` | `"auto"` | `"auto"` probes for the semgrep binary at runtime. `true` expects it. `false` skips SAST entirely. |
+| `semgrep.rulesets` | `[]` | Additional semgrep configs to run alongside pipeline's built-in rules (e.g., `["p/trailofbits"]`) |
+| `semgrep.custom_rules` | `true` | Include pipeline's `rules/semgrep/` directory. Set `false` to use only external rulesets. |
+| `severity_mapping.error` | `"high"` | Maps semgrep ERROR severity to pipeline finding severity |
+| `severity_mapping.warning` | `"medium"` | Maps semgrep WARNING severity to pipeline finding severity |
+| `severity_mapping.info` | `"low"` | Maps semgrep INFO severity to pipeline finding severity |
+| `grep_fallback` | `true` | When semgrep is unavailable, run `redteam.recon_patterns` as grep-based security checks |
+
+**Built-in rules (5):** SQL injection (CWE-89), XSS/innerHTML (CWE-79), command injection (CWE-78), hardcoded token patterns (CWE-798), path traversal (CWE-22).
+
+**Graceful degradation:** If semgrep is not installed and `grep_fallback` is true, the review falls back to running `redteam.recon_patterns` as grep patterns. If both are unavailable, SAST is skipped with a note in the report header. No errors, no warnings on every run.
 
 ### redteam
 

@@ -20,6 +20,11 @@ Pipeline's security agents find these before your users do. Two agents, two jobs
 ## 2. How the Security Loop Works
 
 ```
+0. SAST Scan (automatic during /pipeline:review)
+   → Semgrep runs 5 deterministic security rules (SQL injection, XSS, command injection, hardcoded secrets, path traversal)
+   → Catches known-dangerous patterns every time, at zero token cost
+   → Falls back to grep-based patterns when semgrep is not installed
+
 1. Red Team Assessment (/pipeline:redteam)
    → 12 specialist agents scan your code for vulnerabilities
    → Produces a findings report with severity ratings

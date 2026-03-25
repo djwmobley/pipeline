@@ -39,12 +39,13 @@ Reviews changed code with severity tiers and confidence levels.
 **What it does:**
 1. Loads non-negotiable decisions from config (never flagged)
 2. Runs typecheck — type errors are automatic red findings
-3. Gets the diff (staged + unstaged changes)
-4. Runs lint on changed files only
-5. Reads each changed file in full for context
-6. Reviews against configured criteria
-7. Reports findings in red/yellow/blue format with confidence
-8. If GitHub issue tracking enabled: creates issues for 🔴 Must Fix findings and comments verdict on epic
+3. Runs SAST scan (semgrep with 5 built-in security rules, or grep fallback) — security findings are automatic red
+4. Gets the diff (staged + unstaged changes)
+5. Runs lint on changed files only
+6. Reads each changed file in full for context
+7. Reviews against configured criteria
+8. Reports findings in red/yellow/blue format with confidence
+9. If GitHub issue tracking enabled: creates issues for 🔴 Must Fix findings and comments verdict on epic
 
 **Arguments:**
 - No arguments — reviews uncommitted changes (`git diff`)

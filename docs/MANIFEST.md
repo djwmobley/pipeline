@@ -43,6 +43,15 @@ When you ship a feature, check which docs are affected.
 | `docs/reference.md` | Reference in the command that uses the config |
 | `docs/guide.md` (example config) | Add to the full config example at the top if it's a common key |
 
+### Adding or Changing SAST Rules
+
+| Doc | What to Update |
+|-----|---------------|
+| `docs/guide.md` | Update `static_analysis` config section |
+| `docs/reference.md` | Update `/pipeline:review` section — note SAST step and rule count |
+| `docs/security.md` | Update if SAST changes the security lifecycle (e.g., red team recon integration) |
+| `rules/semgrep/*.yml` | Add/modify semgrep rule YAML files |
+
 ### Adding a Specialist Domain or Recon Feature
 
 | Doc | What to Update |
@@ -146,6 +155,12 @@ These directories contain generated output, not maintained documentation:
 | `docs/plans/` | `/pipeline:plan`, `/pipeline:architect`, `/pipeline:qa plan` | Implementation plans, architectural decision records, test plans |
 | `docs/findings/` | `/pipeline:redteam`, `/pipeline:audit`, `/pipeline:review`, `/pipeline:remediate`, `/pipeline:purpleteam`, `/pipeline:qa verify` | Security reports, audit findings, SBOM artifacts, remediation summaries, QA reports |
 | `docs/sessions/` | Auto-persistence | Session logs (files tier only, rotated to last 5) |
+
+## Rule Directories
+
+| Directory | Purpose | Contents |
+|-----------|---------|----------|
+| `rules/semgrep/` | SAST security rules | Semgrep YAML rule files — shipped with the plugin, run during review Step 2b |
 
 ## Other Tracked Files
 

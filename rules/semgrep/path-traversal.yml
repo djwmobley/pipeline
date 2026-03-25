@@ -1,0 +1,50 @@
+rules:
+  - id: pipeline-path-traversal
+    mode: taint
+    languages:
+      - javascript
+      - typescript
+    message: >-
+      User-controlled input flows into a filesystem operation without
+      path validation (CWE-22). Resolve the path and verify it stays
+      within the intended directory:
+      const safe = path.resolve(baseDir, userInput);
+      if (!safe.startsWith(baseDir)) throw new Error('path traversal');
+    severity: HIGH
+    pattern-sources:
+      - pattern-either:
+          - pattern: req.query
+          - pattern: req.body
+          - pattern: req.params
+          - pattern: req.query.$X
+          - pattern: req.body.$X
+          - pattern: req.params.$X
+    pattern-sinks:
+      - pattern-either:
+          - pattern: fs.readFile($SINK, ...)
+          - pattern: fs.readFileSync($SINK, ...)
+          - pattern: fs.writeFile($SINK, ...)
+          - pattern: fs.writeFileSync($SINK, ...)
+          - pattern: fs.unlink($SINK, ...)
+          - pattern: fs.unlinkSync($SINK, ...)
+          - pattern: fs.readdir($SINK, ...)
+          - pattern: fs.readdirSync($SINK, ...)
+          - pattern: fs.stat($SINK, ...)
+          - pattern: fs.statSync($SINK, ...)
+          - pattern: fs.access($SINK, ...)
+          - pattern: fs.accessSync($SINK, ...)
+          - pattern: fs.createReadStream($SINK, ...)
+          - pattern: fs.createWriteStream($SINK, ...)
+          - pattern: $FSP.readFile($SINK, ...)
+          - pattern: $FSP.writeFile($SINK, ...)
+          - pattern: $FSP.unlink($SINK, ...)
+          - pattern: $FSP.readdir($SINK, ...)
+          - pattern: $FSP.stat($SINK, ...)
+          - pattern: $FSP.access($SINK, ...)
+    pattern-sanitizers:
+      - pattern: path.basename($X)
+    metadata:
+      cwe: "CWE-22: Improper Limitation of a Pathname to a Restricted Directory"
+      category: security
+      confidence: HIGH
+      pipeline-rule: true

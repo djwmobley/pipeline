@@ -1,0 +1,24 @@
+rules:
+  - id: pipeline-sql-string-concat
+    languages:
+      - javascript
+      - typescript
+    message: >-
+      SQL query built via string concatenation. This is a SQL injection
+      vector (CWE-89). Use parameterized queries instead:
+      db.query('SELECT * FROM users WHERE id = $1', [userId])
+    severity: HIGH
+    pattern-either:
+      - pattern: $DB.query("..." + $X + "...", ...)
+      - pattern: $DB.query(`...${$X}...`, ...)
+      - pattern: $DB.raw("..." + $X + "...", ...)
+      - pattern: $DB.raw(`...${$X}...`, ...)
+      - pattern: $POOL.query("..." + $X + "...", ...)
+      - pattern: $POOL.query(`...${$X}...`, ...)
+      - pattern: $CONN.execute("..." + $X + "...", ...)
+      - pattern: $CONN.execute(`...${$X}...`, ...)
+    metadata:
+      cwe: "CWE-89: Improper Neutralization of Special Elements used in an SQL Command"
+      category: security
+      confidence: HIGH
+      pipeline-rule: true

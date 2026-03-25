@@ -1,0 +1,20 @@
+rules:
+  - id: pipeline-exec-interpolation
+    languages:
+      - javascript
+      - typescript
+    message: >-
+      Shell command built with string interpolation or concatenation
+      (CWE-78). Use execFile or spawn with an argument array instead
+      to bypass the shell and prevent command injection.
+    severity: HIGH
+    pattern-either:
+      - pattern: $CP.exec(`...${$X}...`, ...)
+      - pattern: $CP.execSync(`...${$X}...`, ...)
+      - pattern: $CP.exec("..." + $X + "...", ...)
+      - pattern: $CP.execSync("..." + $X + "...", ...)
+    metadata:
+      cwe: "CWE-78: Improper Neutralization of Special Elements used in an OS Command"
+      category: security
+      confidence: HIGH
+      pipeline-rule: true

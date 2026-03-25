@@ -40,6 +40,20 @@ security:
   - { check: "User input?", rule: "Sanitize before storage" }
   - { check: "Network call?", rule: "TLS only, AbortController, no embedded secrets" }
 
+# Static analysis (SAST)
+# Deterministic security scanning via semgrep — complements agent-driven red team
+# Semgrep is detected at runtime; if absent, grep fallback patterns run instead
+static_analysis:
+  semgrep:
+    enabled: "auto"           # "auto" (probe for binary) | true | false
+    rulesets: []              # Additional semgrep configs (e.g., "p/trailofbits")
+    custom_rules: true        # Include pipeline's rules/semgrep/ directory
+  severity_mapping:
+    error: "high"             # semgrep ERROR -> pipeline HIGH
+    warning: "medium"         # semgrep WARNING -> pipeline MEDIUM
+    info: "low"               # semgrep INFO -> pipeline LOW
+  grep_fallback: true         # Run grep equivalents when semgrep is unavailable
+
 # Red team security assessment
 # Run /pipeline:redteam before beta/production releases
 redteam:

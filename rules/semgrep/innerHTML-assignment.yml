@@ -1,0 +1,24 @@
+rules:
+  - id: pipeline-innerHTML-assignment
+    languages:
+      - javascript
+      - typescript
+    message: >-
+      Assigning unsanitized data to innerHTML or outerHTML can cause
+      cross-site scripting (CWE-79). Use textContent for plain text,
+      or sanitize with DOMPurify.sanitize() before assignment.
+    severity: HIGH
+    patterns:
+      - pattern-either:
+          - pattern: $EL.innerHTML = $DATA
+          - pattern: $EL.outerHTML = $DATA
+          - pattern: <$EL dangerouslySetInnerHTML={{__html: $DATA}} />
+      - pattern-not: $EL.innerHTML = DOMPurify.sanitize($DATA)
+      - pattern-not: $EL.outerHTML = DOMPurify.sanitize($DATA)
+      - pattern-not: $EL.innerHTML = ""
+      - pattern-not: $EL.outerHTML = ""
+    metadata:
+      cwe: "CWE-79: Improper Neutralization of Input During Web Page Generation"
+      category: security
+      confidence: MEDIUM
+      pipeline-rule: true

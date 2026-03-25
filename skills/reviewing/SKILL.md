@@ -31,10 +31,77 @@ If you catch yourself thinking "this looks fine" — that thought is a red flag.
 
 1. Load non-negotiable decisions from `review.non_negotiable[]` in pipeline.yml
 2. Run static analysis (typecheck + lint) — tool findings are automatic 🔴 HIGH
-3. Get the diff — understand what changed
-4. Read each changed file in full — understand context
-5. Review against `review.criteria[]` — apply each configured criterion
-6. Report with severity tiers — 🔴 HIGH / 🟡 MEDIUM / 🔵 LOW format
+3. Run SAST scan (Step 2b) — see Static Analysis (SAST) section below
+4. Get the diff — understand what changed
+5. Read each changed file in full — understand context
+6. Review against `review.criteria[]` — apply each configured criterion
+7. Report with severity tiers — 🔴 HIGH / 🟡 MEDIUM / 🔵 LOW format
+
+## Static Analysis (SAST) — Step 2b
+
+Deterministic security scanning via semgrep. Runs between typecheck/lint and diff read.
+Configured via `static_analysis` in pipeline.yml.
+
+### Execution
+
+1. **Check config:** Read `static_analysis.semgrep.enabled` from pipeline.yml.
+   - `false` → skip SAST entirely
+   - `"auto"` → probe for semgrep binary (see step 2)
+   - `true` → require semgrep (warn if missing, but continue)
+
+2. **Probe for semgrep:**
+   ```bash
+   command -v semgrep
+   ```
+   If not found and `static_analysis.grep_fallback` is true, fall back to grep patterns (step 5).
+   If not found and grep_fallback is false, skip with note in report header.
+
+3. **Run semgrep on changed files:**
+   Locate the pipeline plugin's `rules/semgrep/` directory:
+   - If `$PIPELINE_DIR` is set: `$PIPELINE_DIR/rules/semgrep/`
+   - Otherwise: search for `rules/semgrep/` under the plugin installation path
+
+   Build the semgrep command:
+   ```bash
+   semgrep scan --json --timeout 30 \
+     --config '[rules_dir]/' \
+     [--config 'user_ruleset' for each entry in static_analysis.semgrep.rulesets] \
+     --include '[file1]' --include '[file2]' ...
+   ```
+   Scope to changed source files only (from the diff). Pass `--include` for each changed file.
+
+4. **Map findings to review format:**
+   Parse the JSON output. For each finding:
+   - Map severity using `static_analysis.severity_mapping` (error→high, warning→medium, info→low)
+   - Tag with source `sast:semgrep`
+   - Include the rule ID, file path, line number, and semgrep's message
+   - SAST findings at HIGH are automatic 🔴 HIGH (same treatment as typecheck/lint failures)
+
+5. **Grep fallback** (when semgrep is unavailable):
+   Run `redteam.recon_patterns` from pipeline.yml as grep patterns against changed files.
+   These contain security-specific patterns (eval, innerHTML, exec, SQL concat, etc.)
+   and serve as the zero-dependency fallback for the same security signals.
+   Tag findings with source `sast:grep-fallback`.
+
+6. **Deduplicate:** If both semgrep and grep patterns ran (unlikely but possible with
+   custom configs), suppress grep findings for lines already flagged by semgrep.
+
+### Report Header
+
+Include a static analysis summary at the top of the review report:
+
+```
+## Static Analysis
+Tools: semgrep v[version] | grep fallback: [active/inactive]
+Rules: [N] custom security [+ M user rulesets]
+Findings: [count] ([HIGH count] high, [MEDIUM count] medium, [LOW count] low)
+```
+
+If SAST was skipped entirely, report:
+```
+## Static Analysis
+Skipped: [reason — disabled in config / semgrep not found, no grep fallback]
+```
 
 ## Severity Calibration
 

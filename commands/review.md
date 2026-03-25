@@ -1,5 +1,5 @@
 ---
-allowed-tools: Bash(git*), Bash(cd*), Bash(npx*), Bash(npm*), Bash(cargo*), Bash(go*), Read(*), Glob(*), Grep(*)
+allowed-tools: Bash(git*), Bash(cd*), Bash(npx*), Bash(npm*), Bash(cargo*), Bash(go*), Bash(semgrep*), Bash(command*), Read(*), Glob(*), Grep(*)
 description: Per-change quality review — evaluates code quality with severity tiers and config-driven criteria
 ---
 
@@ -31,6 +31,11 @@ Read `.claude/pipeline.yml` from the project root. Extract:
 - `review.non_negotiable` — intentional decisions to never flag
 - `review.criteria` — categories to review against
 - `routing.source_dirs` — directories containing source code
+- `static_analysis.semgrep.enabled` — SAST toggle ("auto", true, false)
+- `static_analysis.semgrep.rulesets` — additional semgrep configs
+- `static_analysis.semgrep.custom_rules` — include pipeline rules
+- `static_analysis.severity_mapping` — semgrep severity to pipeline severity
+- `static_analysis.grep_fallback` — use grep patterns when semgrep unavailable
 - `integrations.github.enabled`, `integrations.github.issue_tracking`
 - `project.repo` — GitHub repo (owner/repo)
 
@@ -52,6 +57,30 @@ intentional patterns.
 
 If `commands.typecheck` is not null, run it. Type errors are automatic 🔴 Must fix.
 Record all findings before proceeding.
+
+---
+
+### Step 2b — Run SAST scan
+
+Follow the "Static Analysis (SAST) — Step 2b" section in the reviewing skill.
+
+1. Check `static_analysis.semgrep.enabled`:
+   - `false` → skip entirely, note in report header
+   - `"auto"` → probe: `command -v semgrep`
+   - `true` → expect semgrep, warn if missing
+
+2. If semgrep is available:
+   - Locate the pipeline plugin's `rules/semgrep/` directory
+   - Get the changed file list from `git diff --cached --name-only` and `git diff --name-only`
+   - Run semgrep scoped to changed files with JSON output
+   - Parse findings, map severity per `static_analysis.severity_mapping`
+   - Tag each finding with source `sast:semgrep`
+
+3. If semgrep is NOT available and `static_analysis.grep_fallback` is true:
+   - Run `redteam.recon_patterns` from config as grep patterns against changed files
+   - Tag findings with source `sast:grep-fallback`
+
+4. SAST findings at HIGH severity are automatic 🔴 Must fix (same treatment as typecheck failures).
 
 ---
 
@@ -119,6 +148,11 @@ Use severity tiers as defined in the reviewing skill. Use exactly this output te
 
 ```
 ## Code Review
+
+### Static Analysis
+Tools: [semgrep v1.x | grep fallback | skipped: reason]
+Rules: [N] custom security [+ M user rulesets]
+Findings: [count] ([high] high, [medium] medium, [low] low)
 
 ### Files reviewed
 [list each file]
