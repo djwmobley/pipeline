@@ -185,6 +185,7 @@ async function cmdUpdate(args) {
       } else {
         const [fieldOrStatus, ...valueParts] = taskRest;
         const taskId = parseInt(idOrNew);
+        if (isNaN(taskId)) { console.error('Task ID must be a number.'); process.exit(1); }
 
         // Field-specific updates: update task <id> github_issue|readme_label|category <value>
         if (fieldOrStatus === 'github_issue') {

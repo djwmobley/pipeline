@@ -221,7 +221,10 @@ PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update task [task_id] defe
 1. Read the plan file for `github_epic: N` in its metadata
 2. Query for a parent roadmap task:
    ```bash
-   PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js query 'SELECT * FROM tasks WHERE github_issue = [N] AND category = '\''roadmap'\'''
+   PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js query "$(cat <<'SQL'
+   SELECT * FROM tasks WHERE github_issue = [N] AND category = 'roadmap'
+   SQL
+   )"
    ```
 3. If a roadmap task is found AND its status is `'pending'`, update it to `in_progress`:
    ```bash

@@ -147,20 +147,14 @@ Using the same `SCRIPTS_DIR` resolved earlier for the locked-decisions query:
 
 Create a task linked to the epic:
 ```bash
-PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update task new '$(cat <<'FNAME'
-[feature name]
-FNAME
-)' 'design' [github_issue_number]
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update task new '[feature name]' 'design' [github_issue_number]
 ```
 
 **Case 2 — GitHub is NOT enabled but Postgres IS (no issue number):**
 
 Create a task without the GitHub link:
 ```bash
-PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update task new '$(cat <<'FNAME'
-[feature name]
-FNAME
-)' 'design'
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update task new '[feature name]' 'design'
 ```
 
 **In either case**, capture the new task ID from the output (it prints `Task #N ...`), then set the task as a roadmap item:
@@ -168,10 +162,7 @@ FNAME
 PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update task [new_id] category roadmap
 ```
 ```bash
-PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update task [new_id] readme_label '$(cat <<'LABEL'
-[feature name]
-LABEL
-)'
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update task [new_id] readme_label '[feature name]'
 ```
 
 Report: "Created Postgres task #[new_id] for [feature name] (linked to epic #[N])" — or without the epic reference if GitHub was skipped.

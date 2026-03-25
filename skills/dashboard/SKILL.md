@@ -360,12 +360,14 @@ Sort the results into two groups:
 1. **Open items** — rows where `status` is NOT `done` and NOT `deferred`, sorted by `id` ASC
 2. **Shipped items** — rows where `status` is `done`, sorted by `updated_at` DESC
 
+If `readme_label` is null, fall back to `title` for display.
+
 Render each item as a markdown checkbox line:
 
 - **Open:** `- [ ] **[readme_label]** — [title]`
 - **Shipped:** `- [x] [readme_label] — [title]`
 
-If `readme_label` equals `title`, omit the ` — [title]` suffix (no need to repeat):
+If `readme_label` equals `title` (or `readme_label` was null and fell back to `title`), omit the ` — [title]` suffix (no need to repeat):
 
 - **Open (label = title):** `- [ ] **[title]**`
 - **Shipped (label = title):** `- [x] [title]`
