@@ -241,7 +241,6 @@ Tracked items for future development. Checked items are shipped.
 ### Open
 
 - [ ] **Full lifecycle visual diagram** — The pipeline flow crosses multiple context windows: PM → UX → orchestrator → engineer → QA → red team → orchestrator → engineer → QA → purple team → engineer → git. Needs a visual representation showing all agents, decision gates, loop-back points, and state handoffs.
-- [ ] **Error handling guide** — What happens when gates fail, tools are missing, or Postgres is down? Users need to know recovery paths.
 - [ ] **Dashboard screenshot in README** — Visual proof of what the dashboard looks like.
 - [ ] **Compliance framework testing** — Test red team findings against FedRAMP, SOC 1/2, NIST CSF 2.0, GDPR, PCI DSS 4.0, HIPAA, ISO 27001 certification specifications. Map CWE findings to compliance controls and flag gaps.
 - [ ] **Workflow chaining** — Chain commands together for fire-and-forget execution. Example: `/pipeline:brainstorm` → `/pipeline:plan` → `/pipeline:build` → `/pipeline:review` → `/pipeline:commit` as a single invocation.
@@ -256,6 +255,7 @@ Tracked items for future development. Checked items are shipped.
 - [x] Build crash recovery — `.claude/build-state.json` checkpoints after each task, resume on restart (GSD-2 inspired)
 - [x] Worktree lifecycle management — health check detects merged, stale, dirty, and orphaned worktrees (GSD-2 inspired)
 - [x] Pre-inlined context for subagent dispatch — decision register, prior task summaries, framework detection in implementer prompts (GSD-2 inspired)
+- [x] Error handling guide — recovery paths for gate failures, missing tools, and graceful degradation model
 - [x] Cross-domain destructive operation guards
 - [x] Severity labels on all emoji indicators (terminal accessibility)
 - [x] DATA boundary tags on all prompt templates (prompt injection prevention)

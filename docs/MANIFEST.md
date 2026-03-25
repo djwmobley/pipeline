@@ -16,6 +16,7 @@ Every documentation file, its content scope, and what triggers updates. When a f
 | `docs/attribution.md` | Source project credits, what was adopted/adapted/rejected, what's original | Contributors, people evaluating originality |
 | `docs/big-4.md` | Big 4 framework concept — functionality, usability, performance, security | Anyone understanding Pipeline's design philosophy |
 | `docs/index.html` | Static documentation site — install, command tables, scenarios, security lifecycle, config overview | Users browsing docs via GitHub Pages or locally |
+| `docs/errors.md` | Error messages, recovery paths, graceful degradation model | Users operating Pipeline who hit an error |
 | `docs/MANIFEST.md` | This file — docs inventory and change triggers | Contributors maintaining docs |
 
 ---
@@ -114,6 +115,12 @@ When you ship a feature, check which docs are affected.
 | `README.md` | Update requirements table GitHub CLI row |
 | `docs/index.html` | Update requirements table GitHub CLI row, update LARGE scenario if workflow changes |
 | `templates/pipeline.yml` | Update `integrations.github` defaults |
+
+### Adding or Changing Error Behavior
+
+| Doc | What to Update |
+|-----|---------------|
+| `docs/errors.md` | Add/update error entry with message, cause, and fix |
 
 ### Changing Knowledge Tier Behavior
 
