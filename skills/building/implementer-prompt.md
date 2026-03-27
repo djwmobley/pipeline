@@ -161,7 +161,7 @@ Task tool (general-purpose, model: {{MODEL}}):
     - "The existing code does it this way" → Existing patterns are not always correct. Check the spec.
     - "The arch plan doesn't apply here" → If you're touching code in a module the arch plan covers, it applies.
     - "I'll read the context later" → Read ALL context sources before writing any code.
-    - "Postgres/GitHub is down, I'll skip reporting" → Postgres write and build-state are always required. GitHub comment is skippable only if GitHub is disabled.
+    - "Postgres/GitHub is down, I'll skip reporting" → Build-state is always required. If Postgres is unreachable, log it for the orchestrator to retry. GitHub comment is skippable only if GitHub is disabled in config.
     </ANTI-RATIONALIZATION>
 
     ## Reporting Contract
@@ -174,7 +174,7 @@ Task tool (general-purpose, model: {{MODEL}}):
 
     Record implementation result in the knowledge DB:
     ```bash
-    PROJECT_ROOT=$(git rev-parse --show-toplevel) node "$PROJECT_ROOT/scripts/pipeline-db.js" insert knowledge \
+    PROJECT_ROOT=$(git rev-parse --show-toplevel) node '[SCRIPTS_DIR]/pipeline-db.js' insert knowledge \
       --category 'build' \
       --label 'task-[TASK_NUMBER]-impl' \
       --body "$(cat <<'BODY'
@@ -204,10 +204,13 @@ Task tool (general-purpose, model: {{MODEL}}):
     Update `.claude/build-state.json` — set this task's status to `done` (or
     `blocked`/`needs_context`) and record the commit SHA.
 
-    ### Fallback (GitHub disabled)
+    ### Fallback
 
-    If `[TASK_ISSUE]` is empty (GitHub disabled), skip the issue comment.
-    Postgres write and build state update are always required.
+    - **GitHub disabled** (`[TASK_ISSUE]` is empty): skip the issue comment.
+    - **Postgres unreachable**: log the failure in your report to the orchestrator.
+      The orchestrator will retry the write. Build-state update is always required
+      regardless of Postgres availability.
+    - **Build-state write**: always required — this is the crash-recovery mechanism.
 
     ## Report Format (to orchestrator)
 

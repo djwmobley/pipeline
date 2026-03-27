@@ -114,17 +114,21 @@ If no arch plan exists, skip compliance checks silently.
 All three stores, every time. This is the A2A contract — the post-task reviewer
 reads implementation results to understand what was built and where to focus.
 
-**Runtime placeholders** (resolved by the build command before dispatching):
+**Runtime placeholders** (resolved by the build command before dispatching).
+Full substitution checklist is in the prompt template — these are the key placeholders:
 - `[TASK_NUMBER]` — task number from the plan.
 - `[TASK_NAME]` — task name from the plan.
+- `[TASK_DESCRIPTION]` — full task text from the plan.
 - `[TASK_ISSUE]` — GitHub issue number for this task. Empty if GitHub disabled.
 - `[GITHUB_REPO]` — `integrations.github.repo` from pipeline.yml. Empty if GitHub disabled.
+- `[SCRIPTS_DIR]` — absolute path to the pipeline plugin's scripts/ directory.
+- `[DIRECTORY]` — working directory path.
 
 ### 1. Postgres Write
 
 Record implementation result in the knowledge DB:
 ```
-PROJECT_ROOT=$(git rev-parse --show-toplevel) node "$PROJECT_ROOT/scripts/pipeline-db.js" insert knowledge \
+PROJECT_ROOT=$(git rev-parse --show-toplevel) node '[SCRIPTS_DIR]/pipeline-db.js' insert knowledge \
   --category 'build' \
   --label 'task-[TASK_NUMBER]-impl' \
   --body "$(cat <<'BODY'
@@ -150,10 +154,11 @@ EOF
 
 Update `.claude/build-state.json` with task status and commit SHA for crash recovery.
 
-### Fallback (GitHub disabled)
+### Fallback
 
-If GitHub is not enabled, skip the issue comment.
-Postgres write and build state update are always required.
+- **GitHub disabled**: skip the issue comment.
+- **Postgres unreachable**: agent logs the failure in its report. The orchestrator retries the write on next dispatch.
+- **Build-state write**: always required — crash-recovery mechanism.
 
 ## Prompt Templates
 
