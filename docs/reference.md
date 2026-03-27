@@ -819,7 +819,7 @@ Every point where the pipeline requires or recommends a human decision is a **ch
 
 ## Plugin Hooks
 
-Pipeline registers hooks via `hooks/hooks.json` in the plugin manifest.
+Pipeline registers hooks via `hooks/hooks.json`. The plugin manifest (`plugin.json`) declares `"hooks": "./hooks/"` — pointing to the hooks directory, from which the runtime loads `hooks.json`.
 
 ### `SessionStart` — Cache Sync
 

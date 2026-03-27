@@ -35,8 +35,9 @@ If you catch yourself thinking "this looks fine" — that thought is a red flag.
 4. Get the diff — understand what changed
 5. Read each changed file in full — understand context
 6. **Always-on checks** — apply the Big 4 dimensions, branch/boundary analysis, intra-file contract verification, and cross-file contract verification to every review regardless of config
-7. **Config criteria** — additionally apply each criterion from `review.criteria[]` (e.g., dead-code, simplicity, SOLID)
-8. Report with severity tiers — 🔴 HIGH / 🟡 MEDIUM / 🔵 LOW format
+7. Report with severity tiers — 🔴 HIGH / 🟡 MEDIUM / 🔵 LOW format
+
+The review command (`commands/review.md`) defines the authoritative step sequence including config criteria (between steps 6 and 7), post-report persistence (steps 8, 8b, 8c), and simplify handoff. This skill defines the criteria and calibration for steps 2-7.
 
 ## Static Analysis (SAST) — Step 2b
 

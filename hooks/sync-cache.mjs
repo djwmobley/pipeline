@@ -15,6 +15,7 @@ import { execFileSync } from 'child_process';
 import { join, resolve } from 'path';
 
 const HOME = process.env.HOME || process.env.USERPROFILE;
+if (!HOME) process.exit(0); // HOME/USERPROFILE not set — not a standard user environment
 const REGISTRY_PATH = join(HOME, '.claude', 'plugins', 'installed_plugins.json');
 const CACHE_ROOT = join(HOME, '.claude', 'plugins', 'cache', 'pipeline', 'pipeline');
 const PLUGIN_ID = 'pipeline@pipeline';

@@ -245,7 +245,7 @@ Then: "Run `/pipeline:remediate --source review` to batch-fix 🔴 findings, or 
 
 For each 🔴 or 🟡 finding, persist as a structured record:
 ```bash
-PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update finding new "$(cat <<'EOF'
+PROJECT_ROOT=$(pwd) node '[SCRIPTS_DIR]/pipeline-db.js' update finding new "$(cat <<'EOF'
 {"id":"[FINDING_ID]","source":"review","severity":"[high|medium]","confidence":"[HIGH|MEDIUM|LOW]","location":"[file:line]","category":"[review criterion]","description":"[one-line description]","impact":"[why it matters]","remediation":"[fix description]","effort":"[quick|medium|large]"}
 EOF
 )"
@@ -253,7 +253,7 @@ EOF
 
 Record the verdict:
 ```bash
-PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update decision 'code-review' "$(cat <<'SUMMARY'
+PROJECT_ROOT=$(pwd) node '[SCRIPTS_DIR]/pipeline-db.js' update decision 'code-review' "$(cat <<'SUMMARY'
 Review [date]: [verdict]. [N] findings ([M] 🔴 / [P] 🟡 / [Q] 🔵)
 SUMMARY
 )" "$(cat <<'DETAIL'
