@@ -13,8 +13,8 @@ Give them bite-sized tasks. DRY. YAGNI. TDD. Frequent commits.
 
 ## Scope Check
 
-If the spec covers multiple independent subsystems, it should have been broken into sub-project
-specs during brainstorming. If it wasn't, suggest breaking into separate plans — one per subsystem.
+If the spec covers multiple independent subsystems, suggest breaking into separate plans — one
+per subsystem. Do not send the user back to brainstorm — offer to split the plan here.
 
 ## File Structure
 
@@ -127,6 +127,8 @@ Every requirement from the spec MUST trace to at least one task. Missing require
 | "This requirement is implied by another task" | If it is not explicitly traced, it will be dropped. Make the trace explicit. |
 | "We can add it in a follow-up" | Follow-ups are where requirements go to die. Cover it now. |
 | "The requirement is too vague to trace" | Then clarify the requirement. Vague requirements produce vague implementations. |
+| "This TBD needs brainstorm" | Resolve it here. Ask the user, decompose it, or spike it. Never send back to brainstorm. |
+| "The user can decide later" | Deferred decisions become deferred bugs. Resolve now or make it an explicit spike task. |
 
 After tasks, include an ordered build sequence:
 

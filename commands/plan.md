@@ -95,7 +95,16 @@ Follow the planning skill exactly, passing the architectural constraints as cont
 - Every data model change has field names and types
 - Every API endpoint has method, path, and payload shape
 
-If the spec is too vague to produce this level of detail, stop and report: "Spec lacks detail for implementation-ready planning. Run `/pipeline:brainstorm` first or clarify: [specific questions]."
+**Inline TBD resolution:** If the spec contains TBDs, ambiguities, or underspecified areas, resolve them inline during planning. Do NOT send the user back to brainstorm. Instead:
+
+1. **List each TBD** with its context from the spec
+2. **For each TBD**, present options and ask the user to choose:
+   - If the user is indecisive, ask WHY — the indecision often reveals a hidden constraint or missing information that, once surfaced, makes the choice obvious
+   - If the TBD is decomposable (e.g., "TBD: auth strategy"), break it into concrete sub-decisions (session storage, token format, middleware placement) and resolve each
+   - If the TBD genuinely cannot be resolved without research, mark it as a spike task in the plan with a clear deliverable
+3. **Never stop planning** because of TBDs — resolve or spike each one and continue
+
+If the spec is so vague that MORE than half the requirements are TBDs, report: "This spec needs more detail before planning. Specific gaps: [list]. Consider re-running `/pipeline:brainstorm` to flesh these out, or answer the questions above to continue."
 
 **Save plans to:** `{docs.plans_dir}/YYYY-MM-DD-{feature-name}.md` (use `date +%Y-%m-%d` via Bash for today's date)
 
@@ -128,6 +137,33 @@ Build agents will see this section alongside their tasks and write tests that ma
 > "This is a LARGE change with [N] tasks across [M] files. Generating a standalone QA test plan with parallel work packages for better coverage. Skip with 'n' if you want to handle QA yourself. Generate QA test plan? (Y/n)"
 
 If the user accepts (or doesn't respond, defaulting to Y): invoke the QA planner following the QA skill's "Plan Mode — Standalone" process. If the user declines: skip and proceed to knowledge tier persistence.
+
+---
+
+### Post-Plan Debate Offer (LARGE+ only)
+
+After the plan is complete (tasks + QA strategy written, review loop passed), if the change
+is LARGE or MILESTONE and no debate verdict already exists for this spec:
+
+```
+## Debate This Plan?
+
+Your plan makes [N] concrete architecture decisions. Running a debate now challenges
+these decisions BEFORE implementation — when changes are cheap.
+
+**Decisions that would be debated:**
+[list 3-5 key decisions from the plan: technology choices, patterns, scope cuts]
+
+Run `/pipeline:debate` on this plan? (y/N — default: skip, proceed to build)
+```
+
+If the user accepts: stop here, they will run `/pipeline:debate` and then re-run `/pipeline:plan`
+with the debate constraints. The plan re-run incorporates debate findings automatically.
+
+If the user declines or skips (default): continue to persistence and execution handoff.
+
+If a debate verdict already exists (was loaded in the Debate Verdict section above): skip this
+offer entirely — the plan already incorporates debate constraints.
 
 ---
 
