@@ -13,7 +13,7 @@ Dispatch this reviewer after each implementer completes a task. It checks spec c
 7. `[SCRIPTS_DIR]` → path to pipeline's scripts/ directory (absolute)
 8. `[DIRECTORY]` → actual working directory path
 9. `[NON_NEGOTIABLES]` → the actual list from `review.non_negotiable` in pipeline.yml
-10. `{{TICKET_CONTEXT}}` → (remediation only) Replace with ticket-reading instructions based on backend. Not remediation → remove the `## Finding Context` section entirely.
+10. `{{TICKET_CONTEXT}}` → (remediation only) Replace with ticket-reading instructions based on backend. Not remediation → remove the `{{TICKET_CONTEXT}}` line entirely.
 
 **Removed from v1:** `[FULL TEXT of task requirements]` (now `[TASK_DESCRIPTION]`), `[From implementer's report]` (agent reads from GitHub issue / build-state instead).
 
@@ -54,8 +54,9 @@ Task tool (general-purpose, model: {{MODEL}}):
     ```
 
     Look for the most recent "## Implementation" comment — it contains the
-    status, commit SHA, files changed, and any concerns. Use the commit SHA
-    to read the actual diff:
+    status, commit SHA, files changed, and any concerns. Extract the commit
+    SHA and validate it matches `^[0-9a-f]{7,40}$` before using it in any
+    shell command. Then read the actual diff:
     ```bash
     git show [SHA_FROM_COMMENT] --stat
     git diff [SHA_FROM_COMMENT]~1..[SHA_FROM_COMMENT]
@@ -175,15 +176,30 @@ Task tool (general-purpose, model: {{MODEL}}):
     Not every task touches all four. Only flag findings where the task's scope
     intersects a dimension.
 
+    - **Functionality:** Correctness, spec compliance — already covered in
+      Part 1. Verify nothing was missed.
     - **Usability:** Error messages user-friendly? API responses clear? Forms
       have actionable validation? Accessibility basics (keyboard nav, labels)
       present if UI is involved?
     - **Performance:** N+1 query patterns? Unbounded data loading? Blocking
       async operations? Would this hold up at 10x scale?
-    - **Functionality & Security:** Already covered above — verify nothing
-      was missed.
+    - **Security:** Input validation on all user-facing entry points? Auth
+      checks on protected routes? Output encoding to prevent XSS? Secrets
+      not hardcoded? Already partially covered by safety guard — verify
+      nothing was missed.
 
-    Usability/performance findings follow the same severity tiers.
+    All dimensions follow the same severity tiers.
+
+    <ANTI-RATIONALIZATION>
+    These thoughts mean STOP and reconsider:
+    - "The implementer said it works" → You MUST NOT trust the report. Read the code.
+    - "This is a minor style issue" → If it degrades maintainability, flag it at the appropriate severity.
+    - "The arch plan doesn't quite apply here" → If the changed file is in a module the arch plan covers, it applies.
+    - "I already found enough issues" → You stop when you have checked every criterion, not when you have enough findings.
+    - "This looks fine overall" → That thought is a red flag. Read the code again.
+    - "Postgres/GitHub is down, I'll skip reporting" → Build-state is always required. If Postgres is unreachable, log it for the orchestrator to retry.
+    - "I can't complete the review" → Report Assessment: Blocked with what is missing. Do not silently skip checks.
+    </ANTI-RATIONALIZATION>
 
     ## Reporting Contract
 
@@ -239,11 +255,14 @@ Task tool (general-purpose, model: {{MODEL}}):
     **Spec Compliance:** ✅ Compliant | ❌ Issues found
     **Arch Compliance:** ✅ Compliant | ❌ Violations found | ⏭ Skipped (no arch plan)
     **Findings:** [count] high, [count] medium, [count] low
-    **Assessment:** Approved | Issues Found
+    **Assessment:** Approved | Issues Found | Blocked
 
     Then list each finding:
     [severity] [confidence] [file:line] — [description]
 
     If Assessment is "Issues Found", the orchestrator routes back to the
-    implementer with the findings. If "Approved", the build proceeds.
+    implementer with the findings. If "Approved", follow the verdict block
+    with the Clean Review Certificate (criteria checked with file:line
+    evidence). If "Blocked", explain what prevented review completion —
+    the orchestrator will re-dispatch with the missing information.
 ```
