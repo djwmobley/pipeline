@@ -1,6 +1,6 @@
 # Pipeline
 
-> **Alpha (v0.1.0-alpha)** — This plugin is under active development. Commands, config keys, and behavior may change between releases. [Feedback welcome.](https://github.com/djwmobley/pipeline/issues)
+> **Alpha (v0.2.0-alpha)** — This plugin is under active development. Commands, config keys, and behavior may change between releases. [Feedback welcome.](https://github.com/djwmobley/pipeline/issues)
 
 <p align="center">
   <img src="docs/assets/hero.png" alt="Pipeline — one plugin, full pipeline" width="700">
