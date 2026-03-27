@@ -18,6 +18,7 @@ Every documentation file, its content scope, and what triggers updates. When a f
 | `docs/index.html` | Static documentation site — install, command tables, scenarios, security lifecycle, config overview | Users browsing docs via GitHub Pages or locally |
 | `docs/errors.md` | Error messages, recovery paths, graceful degradation model | Users operating Pipeline who hit an error |
 | `docs/workflow-reference.md` | Exhaustive 13-step pipeline workflow — steps, agents, routing, failure paths, three-store contracts | Contributors, architects, anyone understanding the orchestrated pipeline |
+| `docs/troubleshooting.md` | Plugin install, cache sync, and common issues | Users and contributors diagnosing plugin problems |
 | `docs/MANIFEST.md` | This file — docs inventory and change triggers | Contributors maintaining docs |
 
 ---
@@ -111,6 +112,15 @@ All three stores update automatically on merge. No manual intervention needed.
 | `docs/security.md` | Update if security steps (redteam, purple) routing changes |
 | `docs/index.html` | Update workflow overview if user-facing workflow changes |
 | `scripts/orchestrator.js` | Source of truth — doc must match code |
+
+### Changing Plugin Infrastructure (hooks, plugin.json, marketplace.json)
+
+| Doc | What to Update |
+|-----|---------------|
+| `docs/troubleshooting.md` | Update if cache sync behavior, install flow, or enable/disable mechanics change |
+| `docs/reference.md` | Update if new hooks are added or hook behavior changes |
+| `.claude-plugin/plugin.json` | Source of truth for commands, hooks, and version |
+| `.claude-plugin/marketplace.json` | Source of truth for marketplace metadata and version |
 
 ### Changing the Security Lifecycle
 
