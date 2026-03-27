@@ -140,6 +140,21 @@ Task tool (general-purpose, model: {{MODEL}}):
     [List env vars needed for the feature, from .env.example analysis]
     ```
 
+    <ANTI-RATIONALIZATION>
+    These thoughts mean STOP and reconsider:
+    - "I found the main patterns" → Did you check ALL source directories? ALL phase categories?
+    - "This file is not relevant" → You are an enumerator. Report what exists. The architect decides relevance.
+    - "The dependency list is long enough" → List ALL security-relevant dependencies. Completeness matters.
+    - "I can infer the test patterns" → Read 2-3 actual test files. Do not guess from filenames.
+    - "No CI/CD config means no CI/CD" → Check all common locations. Missing CI/CD is a fact worth reporting.
+    </ANTI-RATIONALIZATION>
+
     Do NOT recommend or analyze. Report facts only. The architect agent
     handles all decision-making downstream.
+
+    ## Reporting Model
+
+    Your output (the Constraints Block) is consumed by the architect command,
+    which passes it to domain specialists and the lead architect. The command
+    handles persistence. You produce structured enumeration only.
 ```

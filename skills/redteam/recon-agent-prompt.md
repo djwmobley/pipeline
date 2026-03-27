@@ -15,6 +15,7 @@ Use this template when dispatching a recon agent to enumerate the attack surface
 10. `[DIFF_FILES]` → output of `git diff --name-only main...HEAD -- [SOURCE_DIRS]`. List of files changed on the feature branch. If empty (no branch or no changes), replace with "FULL_SCAN" to scan all source dirs.
 11. `[GITHUB_REPO]` → `integrations.github.repo` from pipeline.yml. If GitHub disabled, replace with empty string.
 12. `[GITHUB_ISSUE]` → task issue number for this red team phase. If GitHub disabled, replace with empty string.
+13. `[SCRIPTS_DIR]` → path to pipeline's scripts/ directory (absolute)
 
 ```
 Task tool (general-purpose, model: {{MODEL}}):
@@ -198,6 +199,15 @@ Task tool (general-purpose, model: {{MODEL}}):
 
     **Important:** For large lockfiles (500+ packages), read the file in chunks if needed and write the SBOM JSON incrementally. The SBOM file may be large — that is expected. If the lockfile exceeds your context capacity, generate the SBOM for as many packages as you can process and add a top-level property `"properties": [{ "name": "pipeline:truncated", "value": "true" }]` to indicate the inventory is incomplete.
 
+    <ANTI-RATIONALIZATION>
+    These thoughts mean STOP and reconsider:
+    - "I found enough entry points" → You stop when you have enumerated EVERY entry point, not when you have enough.
+    - "This framework handles auth automatically" → Verify. Run the grep patterns against the actual code.
+    - "The lockfile is too large" → Read it in chunks. SBOM completeness matters. Use truncation marker if needed.
+    - "This file is not security-relevant" → You are an enumerator, not an analyst. Report what exists. The specialists decide relevance.
+    - "Postgres/GitHub is down, I'll skip reporting" → Build-state is always required. If Postgres is unreachable, log it for the orchestrator to retry.
+    </ANTI-RATIONALIZATION>
+
     ## Output Format
 
     Produce the following structured Attack Surface Map exactly:
@@ -270,7 +280,7 @@ Task tool (general-purpose, model: {{MODEL}}):
 
     Record the recon summary in the knowledge DB:
     ```
-    PROJECT_ROOT=$(git rev-parse --show-toplevel) node "$PROJECT_ROOT/scripts/pipeline-db.js" insert knowledge \
+    PROJECT_ROOT=$(git rev-parse --show-toplevel) node '[SCRIPTS_DIR]/pipeline-db.js' insert knowledge \
       --category 'redteam' \
       --label 'recon-attack-surface' \
       --body "$(cat <<'BODY'
@@ -303,8 +313,10 @@ Task tool (general-purpose, model: {{MODEL}}):
 
     Update `build-state.json` with recon completion status for crash recovery.
 
-    ### Fallback (GitHub disabled)
+    ### Fallback
 
-    If [GITHUB_REPO] is empty, skip the issue comment.
-    Postgres write, build state update, and the text report are always required.
+    - **GitHub disabled** (`[GITHUB_REPO]` is empty): skip the issue comment.
+    - **Postgres unreachable**: log the failure in your report. The orchestrator
+      will retry the write.
+    - **Build-state write**: always required — crash-recovery mechanism.
 ```

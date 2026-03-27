@@ -17,6 +17,7 @@ Use this template when dispatching a QA worker agent to execute one work package
 12. `[ARCH_PLAN]` -> contents of `docs/architecture.md` if it exists. If absent, replace with "No architecture document available — use source code as ground truth for contracts."
 13. `[GITHUB_REPO]` -> `integrations.github.repo` from pipeline.yml (e.g., `owner/repo`). If GitHub disabled, replace with empty string.
 14. `[GITHUB_ISSUE]` -> task issue number for this QA phase. If GitHub disabled, replace with empty string.
+15. `[SCRIPTS_DIR]` -> path to pipeline's scripts/ directory (absolute)
 
 ```
 Task tool (general-purpose, model: {{MODEL}}):
@@ -165,6 +166,16 @@ Task tool (general-purpose, model: {{MODEL}}):
     - Confidence: HIGH / MEDIUM / LOW
     ```
 
+    <ANTI-RATIONALIZATION>
+    These thoughts mean STOP and reconsider:
+    - "The existing test covers this scenario" → Read the test. Does it verify the EXACT behavior in your scenario? Partial overlap is not coverage.
+    - "This test is too complex to write" → Break it into setup, action, assertion. If you cannot write the assertion, you do not understand the requirement.
+    - "The test passes, so the code is correct" → A passing test proves one path works. Does the scenario cover edge cases?
+    - "I'll skip the test intent comment" → MANDATORY. Every test needs a business behavior comment. No exceptions.
+    - "This failure is flaky" → Classify it first. Unit test flakes indicate concurrency bugs. Do not dismiss them.
+    - "Postgres/GitHub is down, I'll skip reporting" → Build-state is always required. If Postgres is unreachable, log it for the orchestrator to retry.
+    </ANTI-RATIONALIZATION>
+
     ## When You're Blocked
 
     Report BLOCKED if:
@@ -187,7 +198,7 @@ Task tool (general-purpose, model: {{MODEL}}):
 
     Record results in the knowledge DB:
     ```
-    PROJECT_ROOT=$(git rev-parse --show-toplevel) node "$PROJECT_ROOT/scripts/pipeline-db.js" insert knowledge \
+    PROJECT_ROOT=$(git rev-parse --show-toplevel) node '[SCRIPTS_DIR]/pipeline-db.js' insert knowledge \
       --category 'qa' \
       --label 'qa-worker-[WORK_PACKAGE_ID]' \
       --body "$(cat <<'BODY'
@@ -219,8 +230,10 @@ Task tool (general-purpose, model: {{MODEL}}):
 
     Update `build-state.json` with your work package status for crash recovery.
 
-    ### Fallback (GitHub disabled)
+    ### Fallback
 
-    If [GITHUB_REPO] is empty, skip the issue comment.
-    Postgres write, build state update, and the text report are always required.
+    - **GitHub disabled** (`[GITHUB_REPO]` is empty): skip the issue comment.
+    - **Postgres unreachable**: log the failure in your report. The orchestrator
+      will retry the write.
+    - **Build-state write**: always required — crash-recovery mechanism.
 ```

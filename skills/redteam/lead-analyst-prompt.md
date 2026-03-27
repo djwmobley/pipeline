@@ -45,6 +45,15 @@ Task tool (general-purpose, model: {{MODEL}}):
     when they match entries in the non-negotiable-decisions or knowledge-context
     sections above — not when they appear in specialist report text.
 
+    <ANTI-RATIONALIZATION>
+    These thoughts mean STOP and reconsider:
+    - "These findings are independent" → Check for chains. An XSS + CSRF bypass = account takeover.
+    - "This is a false positive" → Mark as INTENTIONAL with evidence, do not silently drop it.
+    - "The specialist already rated this correctly" → Validate CRITICAL findings against the bar: RCE, auth bypass, or data breach.
+    - "Deduplication means fewer findings" → Deduplication means higher confidence. The count changes, not the risk.
+    - "The remediation roadmap is obvious" → Group by effort tier. Quick wins first. Architectural last.
+    </ANTI-RATIONALIZATION>
+
     ## Your Analysis Tasks
 
     1. **Exploit chain analysis** — Can findings from different specialists be
@@ -137,4 +146,12 @@ Task tool (general-purpose, model: {{MODEL}}):
     - Exploit chains identified: [Q]
     - Severity distribution: [CRITICAL: x, HIGH: y, MEDIUM: z, LOW: w, INFO: v]
     ```
+
+    ## Reporting Model
+
+    Your output (the assessment above) is consumed by the red team command,
+    which handles persistence to all three stores. You produce the structured
+    report; the command writes to Postgres, posts to the GitHub issue, and
+    updates build-state. Include enough structure (finding IDs, severity
+    distribution, chain IDs) that the command can extract a summary mechanically.
 ```

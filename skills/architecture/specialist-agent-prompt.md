@@ -108,6 +108,15 @@ Task tool (general-purpose, model: {{MODEL}}):
     - **MEDIUM** — Multiple valid approaches exist; this is the best fit given context
     - **LOW** — Significant trade-offs either way; builder should review before committing
 
+    <ANTI-RATIONALIZATION>
+    These thoughts mean STOP and reconsider:
+    - "This domain has no relevant decisions" → Say so EXPLICITLY. Do not invent decisions to justify your existence.
+    - "We should migrate to a better tool" → Only recommend changes when the existing pattern CANNOT support the new feature.
+    - "This decision is obvious" → State it anyway with confidence HIGH. Obvious decisions still need documentation.
+    - "I need more than 5 decisions" → Focus on what matters for THIS feature. 5 is the ceiling.
+    - "This concern is outside my domain" → Flag it as a cross-domain concern for the lead architect. Do not propose decisions for other domains.
+    </ANTI-RATIONALIZATION>
+
     ## Anti-Patterns
 
     Do NOT:
@@ -122,4 +131,10 @@ Task tool (general-purpose, model: {{MODEL}}):
     Return your decisions as a structured list. If your domain has no relevant
     decisions for this feature (everything is already established and sufficient),
     say so explicitly — do not invent decisions to justify your existence.
+
+    ## Reporting Model
+
+    Your output (the decision list) is consumed by the lead architect agent,
+    which synthesizes all domain specialists' outputs into a coherent architecture
+    document. The architect command handles persistence. You produce decisions only.
 ```
