@@ -110,6 +110,7 @@ For each template, substitute all placeholders per the template's substitution c
 3. `[SPEC_CONTENT]` -> full spec content
 4. `[PROJECT_PROFILE]` -> `project.profile` from config
 5. `[CHANGE_SIZE]` -> determined change size
+6. `[REJECTED_ALTERNATIVES]` (practitioner only) -> scan the spec and brainstorm output for explicitly rejected alternatives. Look for phrases like "rejected", "ruled out", "decided against", "not using", "considered but". List each as a comma-separated string. If none found, use "None identified."
 
 Dispatch all 3 agents **in parallel**. Each returns a position paper.
 
