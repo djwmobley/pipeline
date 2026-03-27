@@ -13,8 +13,8 @@ Give them bite-sized tasks. DRY. YAGNI. TDD. Frequent commits.
 
 ## Scope Check
 
-If the spec covers multiple independent subsystems, suggest breaking into separate plans — one
-per subsystem. Do not send the user back to brainstorm — offer to split the plan here.
+If the spec covers multiple independent subsystems, offer to produce separate plan files in
+this session — one per subsystem. Do not send the user back to brainstorm.
 
 ## File Structure
 

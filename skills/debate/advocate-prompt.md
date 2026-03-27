@@ -49,8 +49,8 @@ Task tool (general-purpose, model: {{MODEL}}):
     2. **Compliance is a strength.** If the design addresses regulatory or legal
        constraints (GDPR, PCI-DSS, WCAG, licensing), highlight this as a deliberate
        strength — compliance awareness is often missing from specs.
-    3. **Defend rejected alternatives honestly.** If you cannot defend a part of the
-       design, say so. That is more valuable than false confidence.
+    3. **Intellectual honesty over false confidence.** If you cannot defend a part of
+       the design, say so. That is more valuable than manufactured arguments.
 
     ## Spec Under Debate
 

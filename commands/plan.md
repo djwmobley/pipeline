@@ -95,18 +95,18 @@ Follow the planning skill exactly, passing the architectural constraints as cont
 - Every data model change has field names and types
 - Every API endpoint has method, path, and payload shape
 
-**Inline TBD resolution:** If the spec contains TBDs, ambiguities, or underspecified areas, resolve them inline during planning. Do NOT send the user back to brainstorm. Instead:
+**Inline TBD resolution:** If the spec contains TBDs, ambiguities, or underspecified areas, resolve them inline during planning. Do NOT send the user back to brainstorm.
+
+**First, assess TBD density.** Count top-level spec requirements that cannot be resolved to concrete implementation steps without additional user input (i.e., neither decomposable into sub-decisions nor spikeable to a research task). If more than half fall into this category, report: "This spec needs more detail before planning. Specific gaps: [list]. Consider re-running `/pipeline:brainstorm` to flesh these out, or answer the questions above to continue."
+
+**Otherwise, resolve each TBD inline** — never stop planning for individual TBDs:
 
 1. **List each TBD** with its context from the spec
 2. **For each TBD**, present options and ask the user to choose:
    - If the user is indecisive, ask WHY — the indecision often reveals a hidden constraint or missing information that, once surfaced, makes the choice obvious
    - If the TBD is decomposable (e.g., "TBD: auth strategy"), break it into concrete sub-decisions (session storage, token format, middleware placement) and resolve each
-   - If the TBD genuinely cannot be resolved without research, mark it as a spike task in the plan with a clear deliverable
-3. **Never stop planning** because of TBDs — resolve or spike each one and continue
-
-If the spec is so vague that MORE than half the requirements are TBDs, report: "This spec needs more detail before planning. Specific gaps: [list]. Consider re-running `/pipeline:brainstorm` to flesh these out, or answer the questions above to continue."
-
-**Save plans to:** `{docs.plans_dir}/YYYY-MM-DD-{feature-name}.md` (use `date +%Y-%m-%d` via Bash for today's date)
+   - If the user remains unable to decide after the WHY question, treat the TBD as genuinely unresolvable and mark it as a spike task in the plan with a clear deliverable
+   - If the TBD genuinely cannot be resolved without research, mark it as a spike task with a clear deliverable
 
 ---
 
@@ -140,32 +140,39 @@ If the user accepts (or doesn't respond, defaulting to Y): invoke the QA planner
 
 ---
 
-### Post-Plan Debate Offer (LARGE+ only)
+### Post-Plan Debate Offer (LARGE+)
 
-After the plan is complete (tasks + QA strategy written, review loop passed), if the change
-is LARGE or MILESTONE and no debate verdict already exists for this spec:
+After the plan is complete (tasks + QA strategy written, review loop passed) but **before
+saving the plan file**, if the change is LARGE+ and no debate verdict already exists:
 
 ```
 ## Debate This Plan?
 
-Your plan makes [N] concrete architecture decisions. Running a debate now challenges
-these decisions BEFORE implementation — when changes are cheap.
+Running a debate now challenges your key decisions BEFORE implementation — when
+changes are cheap.
 
-**Decisions that would be debated:**
-[list 3-5 key decisions from the plan: technology choices, patterns, scope cuts]
+**Key decisions that would be debated:**
+[list 3-5 key decisions from the plan: technology choices, patterns, scope cuts.
+ Count DECISION-NNN entries from Architectural Constraints, plus any technology
+ or pattern choices made during TBD resolution.]
 
 Run `/pipeline:debate` on this plan? (y/N — default: skip, proceed to build)
 ```
 
-If the user accepts: stop here, they will run `/pipeline:debate` and then re-run `/pipeline:plan`
-with the debate constraints. The plan re-run incorporates debate findings automatically.
+If the user accepts: do NOT save the plan file. Stop here. The user will run
+`/pipeline:debate`, then re-run `/pipeline:plan`. On re-run, the Debate Verdict
+section (at the top of this command) will load the verdict and inject constraints.
 
-If the user declines or skips (default): continue to persistence and execution handoff.
+If the user declines or skips (default): proceed to save and persistence.
 
 If a debate verdict already exists (was loaded in the Debate Verdict section above): skip this
 offer entirely — the plan already incorporates debate constraints.
 
 ---
+
+### Save and persist
+
+**Save plans to:** `{docs.plans_dir}/YYYY-MM-DD-{feature-name}.md` (use `date +%Y-%m-%d` via Bash for today's date)
 
 ### Persist to knowledge tier
 
