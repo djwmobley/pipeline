@@ -264,3 +264,19 @@ Locate and read the dashboard skill:
 2. Otherwise: use Glob `**/pipeline/skills/dashboard/SKILL.md` to find it
 
 Follow the dashboard skill to regenerate `docs/dashboard.html` with current project state.
+
+---
+
+### Orchestrator
+
+Record step completion after all plan tasks are built:
+
+```bash
+node '[SCRIPTS_DIR]/orchestrator.js' complete build PASS
+```
+
+If the build failed (tasks incomplete, tests failing, or user abandoned):
+
+```bash
+node '[SCRIPTS_DIR]/orchestrator.js' complete build FAIL
+```

@@ -519,3 +519,21 @@ The final markdown report follows this structure:
 ```
 
 End with: "Run `/pipeline:remediate --source redteam` to batch-fix findings, or `/pipeline:remediate` to auto-detect the latest report."
+
+---
+
+### Orchestrator
+
+Record step completion with the report file as the output artifact:
+
+```bash
+node '[SCRIPTS_DIR]/orchestrator.js' complete redteam PASS '[report file path]'
+```
+
+**If redteam was skipped** (project security policy doesn't require it), still record a PASS so the orchestrator can advance:
+
+```bash
+node '[SCRIPTS_DIR]/orchestrator.js' complete redteam PASS 'skipped'
+```
+
+Without this call, the workflow will be stuck — the orchestrator does not auto-skip optional steps whose inputs are met.

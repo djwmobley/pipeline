@@ -428,3 +428,23 @@ c) Leave as-is
 
 (default: a if all VERIFIED, b if any REGRESSION or INCOMPLETE exist)
 ```
+
+---
+
+### Orchestrator
+
+Record step completion based on the posture rating:
+
+- HARDENED or IMPROVED → `PASS`
+- PARTIAL with accepted risk → `PASS`
+- UNCHANGED or regressions remain → `FAIL` (loopback: 2+ fails routes to architect)
+
+```bash
+node '[SCRIPTS_DIR]/orchestrator.js' complete purple [PASS|FAIL]
+```
+
+**If purple was skipped** (redteam was skipped or project doesn't require verification), still record a PASS:
+
+```bash
+node '[SCRIPTS_DIR]/orchestrator.js' complete purple PASS 'skipped'
+```

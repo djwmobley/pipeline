@@ -223,6 +223,12 @@ Committed [short SHA] to [branch]. [N] files changed.
 [One-line conventional commit summary]
 ```
 
+Record step completion — commit always records PASS (if it reached this point, the commit succeeded):
+
+```bash
+node '[SCRIPTS_DIR]/orchestrator.js' complete commit PASS
+```
+
 The orchestrator handles what happens next (finish, deploy, etc.).
 Do NOT present a "What next?" menu or suggest follow-up commands.
 

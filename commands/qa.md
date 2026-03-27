@@ -271,3 +271,16 @@ If no epic found: skip — QA works without GitHub tracking.
 If `dashboard.enabled` is true in pipeline.yml:
 
 Locate and read the dashboard skill, then regenerate `docs/dashboard.html`.
+
+---
+
+### Orchestrator
+
+Record step completion based on the QA verdict:
+
+- All scenarios pass or all failures triaged as test-is-wrong → `PASS`
+- Any code-is-wrong failure remains → `FAIL` (orchestrator routes back to build via onFail)
+
+```bash
+node '[SCRIPTS_DIR]/orchestrator.js' complete qa [PASS|FAIL]
+```

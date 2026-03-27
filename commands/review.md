@@ -330,6 +330,19 @@ Follow the dashboard skill to regenerate `docs/dashboard.html` with current proj
 
 ---
 
+### Orchestrator
+
+Record step completion based on the review verdict:
+
+- All findings fixed or no HIGH+ findings → `PASS`
+- HIGH+ findings remain unfixed → `FAIL` (orchestrator routes back to build via onFail)
+
+```bash
+node '[SCRIPTS_DIR]/orchestrator.js' complete review [PASS|FAIL]
+```
+
+---
+
 ### What's Next
 
 After applying fixes: `/pipeline:commit` → `/pipeline:finish` (if on a feature branch).

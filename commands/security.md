@@ -239,3 +239,15 @@ d) Leave as-is
 ```
 
 If the user says "finish it", "ship it", "push it", or similar — execute option a without further prompting.
+
+---
+
+### Orchestrator
+
+The security meta-command spans three orchestrator steps. Each sub-command (redteam, remediate, purpleteam) records its own step completion when invoked via their respective command files. Do NOT double-record — the orchestrator calls are in the individual commands.
+
+If the user skips a phase (e.g., skips purple after remediation), record a skip for the skipped step:
+
+```bash
+node '[SCRIPTS_DIR]/orchestrator.js' complete purple PASS 'skipped'
+```

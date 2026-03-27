@@ -399,6 +399,22 @@ Follow the dashboard skill to regenerate `docs/dashboard.html` with current proj
 
 ---
 
+### Orchestrator
+
+Record step completion after the merge is done and all three stores are updated:
+
+```bash
+node '[SCRIPTS_DIR]/orchestrator.js' complete finish PASS
+```
+
+If finish failed (tests failed, merge conflict, user abandoned):
+
+```bash
+node '[SCRIPTS_DIR]/orchestrator.js' complete finish FAIL
+```
+
+---
+
 ### Safety rules
 
 - Never proceed with failing tests
