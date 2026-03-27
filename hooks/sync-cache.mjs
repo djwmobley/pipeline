@@ -18,6 +18,7 @@ const HOME = process.env.HOME || process.env.USERPROFILE;
 if (!HOME) process.exit(0); // HOME/USERPROFILE not set — not a standard user environment
 const REGISTRY_PATH = join(HOME, '.claude', 'plugins', 'installed_plugins.json');
 const CACHE_ROOT = join(HOME, '.claude', 'plugins', 'cache', 'pipeline', 'pipeline');
+const MARKETPLACE_ROOT = join(HOME, '.claude', 'plugins', 'marketplaces', 'pipeline');
 const PLUGIN_ID = 'pipeline@pipeline';
 
 // Directories and files to sync from source to cache.
@@ -105,6 +106,23 @@ try {
     const src = join(projectPath, item);
     if (existsSync(src)) {
       cpSync(src, join(newCachePath, item), { recursive: true });
+    }
+  }
+
+  // --- 6b. Sync marketplace directory ----------------------------------------
+  // Claude Code reads commands from the marketplace directory, not the cache.
+  // Sync the same items so newly added commands appear as slash commands.
+  if (existsSync(MARKETPLACE_ROOT)) {
+    for (const item of SYNC_ITEMS) {
+      const src = join(projectPath, item);
+      const dst = join(MARKETPLACE_ROOT, item);
+      if (existsSync(src)) {
+        // Remove old copy first for a clean sync
+        if (existsSync(dst)) {
+          rmSync(dst, { recursive: true, force: true });
+        }
+        cpSync(src, dst, { recursive: true });
+      }
     }
   }
 

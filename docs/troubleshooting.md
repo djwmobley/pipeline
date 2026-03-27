@@ -97,8 +97,9 @@ This will:
 1. Compare the current git HEAD SHA to the cached SHA
 2. Delete the stale cache directory
 3. Copy current source files to a new cache directory matching the current version
-4. Update `installed_plugins.json` with the new path, version, and SHA
-5. Enable the plugin if it was disabled
+4. Sync files to the marketplace directory (where Claude Code reads commands from)
+5. Update `installed_plugins.json` with the new path, version, and SHA
+6. Enable the plugin if it was disabled
 
 ---
 
@@ -112,8 +113,9 @@ The `hooks/sync-cache.mjs` script runs on `SessionStart` (startup and resume eve
 4. If they differ, deletes the old cache and copies these items from source:
    - `.claude-plugin/`, `commands/`, `hooks/`, `rules/`, `scripts/`, `skills/`, `templates/`
    - `CLAUDE.md`, `LICENSE`, `README.md`
-5. Updates the registry with the new version, SHA, and install path
-6. Ensures the plugin is enabled in `.claude/settings.json`
+5. Also syncs items to the **marketplace directory** (`~/.claude/plugins/marketplaces/pipeline/`) — Claude Code reads commands from the marketplace directory, not the cache
+6. Updates the registry with the new version, SHA, and install path
+7. Ensures the plugin is enabled in `.claude/settings.json`
 
 **Important:** The hook only syncs when you're working in the pipeline repo directory. When using the pipeline plugin in other projects, the cache is stable and doesn't change.
 
@@ -130,7 +132,7 @@ The `hooks/sync-cache.mjs` script runs on `SessionStart` (startup and resume eve
 1. **New session required** — plugin changes only load on session start
 2. **Plugin must be enabled** — check `.claude/settings.json` (project-level) or `~/.claude/settings.json` (global)
 3. **Cache must have `plugin.json`** — verify the cache directory contains `.claude-plugin/plugin.json` with a `commands` field
-4. **Commands must exist in cache** — verify the cache has a `commands/` directory with `.md` files
+4. **Commands must exist in marketplace directory** — verify `~/.claude/plugins/marketplaces/pipeline/commands/` has `.md` files (Claude Code reads commands from the marketplace directory, not the cache)
 
 ---
 
