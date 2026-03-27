@@ -147,11 +147,30 @@ Task tool (general-purpose, model: {{MODEL}}):
     - Severity distribution: [CRITICAL: x, HIGH: y, MEDIUM: z, LOW: w, INFO: v]
     ```
 
-    ## Reporting Model
+    ## Reporting Contract
 
-    Your output (the assessment above) is consumed by the red team command,
-    which handles persistence to all three stores. You produce the structured
-    report; the command writes to Postgres, posts to the GitHub issue, and
-    updates build-state. Include enough structure (finding IDs, severity
+    ### 1. Build State (you write this directly)
+
+    Before producing your report, record completion so the orchestrator can
+    detect "lead analyst completed" on crash recovery:
+
+    ```bash
+    node -e "
+      const fs = require('fs');
+      const p = '.claude/build-state.json';
+      const s = fs.existsSync(p) ? JSON.parse(fs.readFileSync(p,'utf8')) : {};
+      s.redteam_lead_analyst = { status: 'complete', timestamp: new Date().toISOString() };
+      fs.writeFileSync(p, JSON.stringify(s, null, 2));
+    "
+    ```
+
+    If the write fails, log the error and continue — your report is the
+    primary output and must not be blocked by a state write failure.
+
+    ### 2. Orchestrator persistence (you produce the data, orchestrator writes it)
+
+    The red team command handles persistence to Postgres and issue tracker
+    via `platform.js`. You produce the structured report; the command
+    extracts and routes it. Include enough structure (finding IDs, severity
     distribution, chain IDs) that the command can extract a summary mechanically.
 ```

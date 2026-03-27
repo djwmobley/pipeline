@@ -93,6 +93,26 @@ Task tool (general-purpose, model: {{MODEL}}):
     - Render the Assessment Metadata section as a footer
     - Include project name, date, specialist count, finding statistics
 
+    ## Reporting Contract
+
+    ### Build State (write before producing output)
+
+    Record completion so the orchestrator can detect "HTML report generated"
+    on crash recovery:
+
+    ```bash
+    node -e "
+      const fs = require('fs');
+      const p = '.claude/build-state.json';
+      const s = fs.existsSync(p) ? JSON.parse(fs.readFileSync(p,'utf8')) : {};
+      s.redteam_html_report = { status: 'complete', timestamp: new Date().toISOString() };
+      fs.writeFileSync(p, JSON.stringify(s, null, 2));
+    "
+    ```
+
+    If the write fails, continue — the HTML output is the primary artifact.
+    The red team command handles all other persistence (Postgres, issue tracker).
+
     ## Output
 
     Output ONLY the complete HTML file, starting with <!DOCTYPE html> and
