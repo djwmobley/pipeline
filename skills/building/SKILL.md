@@ -24,7 +24,7 @@ Agents read their own context from stores — the orchestrator passes references
 | Architecture plan | `docs/architecture.md` (file read) | Skip if missing |
 | Decisions | `pipeline-context.js decisions` (Postgres) | Skip if Postgres unavailable |
 | Gotchas | `pipeline-context.js gotchas` (Postgres) | Skip if Postgres unavailable |
-| Task issue | `gh issue view N` (GitHub) | Skip if GitHub disabled |
+| Task issue | `node '[SCRIPTS_DIR]/platform.js' issue view N` | Skip if platform.issue_tracker is `none` |
 | Prior tasks | `.claude/build-state.json` (file read) | First task in build |
 | Task description | Pasted in prompt (from plan) | Always available |
 
@@ -141,14 +141,15 @@ BODY
 
 Post implementation report on the task issue:
 ```
-gh issue comment [TASK_ISSUE] --repo '[GITHUB_REPO]' --body "$(cat <<'EOF'
+cat <<'EOF' | node '[SCRIPTS_DIR]/platform.js' issue comment [TASK_ISSUE] --stdin
 ## Implementation — Task [TASK_NUMBER]
 **Status:** [DONE/DONE_WITH_CONCERNS/BLOCKED/NEEDS_CONTEXT]
 **Commit:** [SHA]
 **Files changed:** [list]
 EOF
-)"
 ```
+
+If the command fails, notify the user with the error and ask for guidance.
 
 ### 3. Build State
 

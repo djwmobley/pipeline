@@ -218,15 +218,15 @@ If `integrations.github.enabled` AND `integrations.github.issue_tracking`:
    - Write `github_epic: [N]` into the plan file metadata (add after the first `---` line).
    - Comment on the epic:
      ```bash
-     gh issue comment [N] --repo '[project.repo]' --body "$(cat <<'EOF'
+     cat <<'EOF' | node '[SCRIPTS_DIR]/platform.js' issue comment [N] --stdin
      ## Plan Created
 
      **Tasks:** [count]
      **Plan:** `[plan file path]`
      [bulleted task title list]
      EOF
-     )"
      ```
+     If the command fails, notify the user with the error and ask for guidance.
    - Update the epic status checklist (edit the issue body to check `Plan`).
 3. If not found: skip — user may have started from plan directly or GitHub tracking was added after brainstorm.
 

@@ -88,21 +88,21 @@ If `integrations.github.enabled` AND `integrations.github.issue_tracking`:
 1. Read the plan file for `github_epic: N` in its metadata.
 2. If found, comment at build start:
    ```bash
-   gh issue comment [N] --repo '[project.repo]' --body "$(cat <<'EOF'
+   cat <<'EOF' | node '[SCRIPTS_DIR]/platform.js' issue comment [N] --stdin
    ## Build Started
    **Tasks:** [count] | **Baseline:** [BASELINE_SHA]
    EOF
-   )"
    ```
+   If the command fails, notify the user with the error and ask for guidance.
 3. At build completion (before presenting completion options), comment:
    ```bash
-   gh issue comment [N] --repo '[project.repo]' --body "$(cat <<'EOF'
+   cat <<'EOF' | node '[SCRIPTS_DIR]/platform.js' issue comment [N] --stdin
    ## Build Complete
    **Tasks executed:** [count]
    **Auto-verify:** [PASS/FAIL/SKIPPED]
    EOF
-   )"
    ```
+   If the command fails, notify the user with the error and ask for guidance.
    Update the epic status checklist (edit the issue body to check `Build`).
 4. If no epic found: skip — build works without GitHub tracking.
 
@@ -230,7 +230,7 @@ PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update task [task_id] defe
 2. Query for a parent roadmap task:
    ```bash
    PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js query "$(cat <<'SQL'
-   SELECT * FROM tasks WHERE github_issue = [N] AND category = 'roadmap'
+   SELECT * FROM tasks WHERE issue_ref = [N] AND category = 'roadmap'
    SQL
    )"
    ```

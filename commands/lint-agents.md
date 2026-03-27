@@ -71,7 +71,7 @@ If `integrations.github.enabled` AND `integrations.github.issue_tracking`:
 Check the most recent plan file in `docs.plans_dir` for `github_epic: N`. If found, post a summary comment:
 
 ```bash
-gh issue comment [N] --repo '[project.repo]' --body "$(cat <<'EOF'
+cat <<'EOF' | node '[SCRIPTS_DIR]/platform.js' issue comment [N] --stdin
 ## Agent Template Lint
 
 **Templates scanned:** [count]
@@ -80,8 +80,8 @@ gh issue comment [N] --repo '[project.repo]' --body "$(cat <<'EOF'
 
 [If findings: top 3 findings listed]
 EOF
-)"
 ```
+If the command fails, notify the user with the error and ask for guidance.
 
 ---
 

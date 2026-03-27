@@ -130,6 +130,18 @@ All three stores update automatically on merge. No manual intervention needed.
 | `scripts/package.json` | Update version field |
 | `README.md` | Move roadmap items from Open to Shipped |
 
+### Changing Platform Abstraction (issue tracking / code hosting)
+
+| Doc | What to Update |
+|-----|---------------|
+| `docs/guide.md` | Update platform config section, supported platforms table |
+| `docs/reference.md` | Update platform.js CLI reference |
+| `docs/workflow-reference.md` | Update three-store contract if operations change |
+| `docs/security.md` | Update credential management section (PAT scopes, storage) |
+| `docs/errors.md` | Add/update PLATFORM_TWO_STORE and platform auth errors |
+| `templates/pipeline.yml` | Update `platform` section defaults |
+| `scripts/platform.js` | Source of truth — docs must match code |
+
 ### Changing GitHub Integration Behavior
 
 | Doc | What to Update |

@@ -220,7 +220,7 @@ Preflight gate chain: review gate (hard stop on source file count) → typecheck
 | **Next** | deploy |
 | **On fail** | N/A (interactive — user resolves merge conflicts) |
 
-Merges PR via `gh pr merge`. Compiles single epic summary from Postgres (all phase results, 5K limit). Closes feature epic. Regenerates dashboard. Syncs README roadmap from Postgres.
+Merges PR via `platform.js pr merge`. Compiles single epic summary from Postgres (all phase results, 5K limit). Closes feature epic. Regenerates dashboard. Syncs README roadmap from Postgres.
 
 ### 13. Deploy (optional)
 
@@ -292,6 +292,19 @@ Every agent that produces output writes to all applicable stores. The orchestrat
 | Finish | Closes session, marks task done | Epic summary (compiled, 5K limit) | Cleanup | Compiles all phase results |
 | Deploy | N/A | N/A | Deploy status | Project-specific |
 
+### Platform Abstraction
+
+The "GitHub Issue" column above is platform-agnostic — it uses `scripts/platform.js` which routes to the configured backend (GitHub or Azure DevOps). The contract:
+
+| Interface | Operations | GitHub Backend | Azure DevOps Backend |
+|-----------|-----------|---------------|---------------------|
+| IssueTracker | create, comment, close, list, view, edit, reopen, search | `gh issue *` | `az boards work-item *` + WIQL |
+| CodeHost | create PR, merge PR, comment on PR, diff PR, view PR | `gh pr *` | `az repos pr *` + `az rest` (threads) |
+
+All verification (state transition succeeded, PR actually merged, issue ref returned) and retry logic (3 attempts, exponential backoff 2s/4s/8s) happens inside `platform.js` in Node.js code. Agents never parse platform responses or check status fields — they treat the command as pass/fail.
+
+---
+
 ## Orchestrator CLI Reference
 
 ```bash
@@ -342,4 +355,4 @@ PROJECT_ROOT=$(git rev-parse --show-toplevel) node '[SCRIPTS_DIR]/pipeline-conte
 - **Implementer, reviewer:** `decisions 10`, `gotchas` (via CLI). Also read `docs/architecture.md` and `.claude/build-state.json` directly as file reads.
 - **Dashboard:** `session` (via CLI)
 - **Debug/investigation:** `full` (via CLI)
-- Other agents read stores directly (e.g., `gh issue view`, `cat .claude/build-state.json`) rather than going through pipeline-context.js.
+- Other agents read stores directly (e.g., `node scripts/platform.js issue view`, `cat .claude/build-state.json`) rather than going through pipeline-context.js.

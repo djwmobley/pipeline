@@ -102,12 +102,7 @@ If `integrations.github.enabled` AND `integrations.github.issue_tracking`:
 
 1. Create the feature epic:
    ```bash
-   gh issue create --repo '[project.repo]' \
-     --title "$(cat <<'TITLE'
-   [Feature name from spec title]
-   TITLE
-   )" \
-     --body "$(cat <<'EOF'
+   cat <<'EOF' | node '[SCRIPTS_DIR]/platform.js' issue create --title '[Feature name from spec title]' --labels 'pipeline:epic' --stdin
    ## Feature Epic
 
    [2-3 sentence summary from spec]
@@ -123,9 +118,8 @@ If `integrations.github.enabled` AND `integrations.github.issue_tracking`:
    - [ ] Review
    - [ ] Ship
    EOF
-   )" \
-     --label "pipeline:epic"
    ```
+   If the command fails, notify the user with the error and ask for guidance.
 
 2. Store the returned issue number.
 3. Append `github_epic: [N]` to the spec file metadata (add after the first `---` line if YAML frontmatter exists, or add a metadata comment block at the top).
@@ -147,7 +141,7 @@ Using the same `SCRIPTS_DIR` resolved earlier for the locked-decisions query:
 
 Create a task linked to the epic:
 ```bash
-PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update task new '[feature name]' 'design' [github_issue_number]
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update task new '[feature name]' 'design' [issue_ref_number]
 ```
 
 **Case 2 — GitHub is NOT enabled but Postgres IS (no issue number):**

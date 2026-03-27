@@ -1,5 +1,5 @@
 ---
-allowed-tools: Bash(git*), Bash(cd*), Bash(npx*), Bash(npm*), Bash(cargo*), Bash(go*), Bash(semgrep*), Bash(command*), Read(*), Glob(*), Grep(*)
+allowed-tools: Bash(git*), Bash(cd*), Bash(npx*), Bash(npm*), Bash(cargo*), Bash(go*), Bash(semgrep*), Bash(command*), Bash(node*), Bash(cat*), Read(*), Glob(*), Grep(*)
 description: Per-change quality review — evaluates code quality with severity tiers and config-driven criteria
 ---
 
@@ -264,16 +264,11 @@ Find the epic number: check the most recent plan file in `docs.plans_dir` for `g
 
 1. For each 🔴 Must Fix finding, check for existing issue first:
    ```bash
-   gh issue list --repo '[project.repo]' --search '[FINDING_ID] in:title' --state open --json number --limit 1
+   node '[SCRIPTS_DIR]/platform.js' issue search '[FINDING_ID] in:title' --state open --limit 1
    ```
    If an issue already exists for this finding ID, skip creation. Otherwise:
    ```bash
-   gh issue create --repo '[project.repo]' \
-     --title "$(cat <<'TITLE'
-   [FINDING_ID]: [description]
-   TITLE
-   )" \
-     --body "$(cat <<'EOF'
+   cat <<'EOF' | node '[SCRIPTS_DIR]/platform.js' issue create --title '[FINDING_ID]: [description]' --labels 'review,high' --stdin
    ## Code Review Finding
 
    **Severity:** 🔴 Must Fix
@@ -285,29 +280,29 @@ Find the epic number: check the most recent plan file in `docs.plans_dir` for `g
 
    Linked to: #[EPIC_N]
    EOF
-   )" \
-     --label "review" --label "high"
    ```
+   If the command fails, notify the user with the error and ask for guidance.
 2. Comment the verdict summary on the epic:
    ```bash
-   gh issue comment [N] --repo '[project.repo]' --body "$(cat <<'EOF'
+   cat <<'EOF' | node '[SCRIPTS_DIR]/platform.js' issue comment [N] --stdin
    ## Code Review Verdict
 
    **Result:** [verdict]
    **Findings:** [M] 🔴 / [P] 🟡 / [Q] 🔵
    **Report:** `[report file path]`
    EOF
-   )"
    ```
+   If the command fails, notify the user with the error and ask for guidance.
 
 🟡 and 🔵 findings do NOT get issues — they stay in `docs/findings/` only.
 
 3. Update the epic status checklist — read the current issue body, replace `- [ ] Review` with `- [x] Review`, and update the issue:
    ```bash
-   BODY=$(gh issue view [N] --repo '[project.repo]' --json body -q '.body')
-   UPDATED=$(echo "$BODY" | sed 's/- \[ \] Review/- [x] Review/')
-   gh issue edit [N] --repo '[project.repo]' --body "$UPDATED"
+   BODY=$(node '[SCRIPTS_DIR]/platform.js' issue view [N] | node -p "JSON.parse(require('fs').readFileSync('/dev/stdin','utf8')).body")
+   UPDATED=$(printf '%s' "$BODY" | sed 's/- \[ \] Review/- [x] Review/')
+   printf '%s' "$UPDATED" | node '[SCRIPTS_DIR]/platform.js' issue edit [N] --stdin
    ```
+   If the command fails, notify the user with the error and ask for guidance.
 
 If no epic found: skip — review works without GitHub tracking.
 

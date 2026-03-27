@@ -100,18 +100,13 @@ For each finding where `CREATE_ISSUE` is true:
 
 **Dedup check:** Before creating a new issue, search for an existing one with the same finding ID:
 ```bash
-gh issue list --repo '[project.repo]' --search '[FINDING_ID] in:title' --state open --json number --limit 1
+node '[SCRIPTS_DIR]/platform.js' issue search '[FINDING_ID] in:title' --state open --limit 1
 ```
-If found: reuse that issue number instead of creating a duplicate. Skip the `gh issue create` below.
+If found: reuse that issue number instead of creating a duplicate. Skip the `issue create` below.
 
 If not found, create:
 ```bash
-gh issue create --repo '[project.repo]' \
-  --title "$(cat <<'TITLE'
-[ID]: [one-line description]
-TITLE
-)" \
-  --body "$(cat <<'EOF'
+cat <<'EOF' | node '[SCRIPTS_DIR]/platform.js' issue create --title '[ID]: [one-line description]' --labels '[SOURCE_TYPE],[severity-lowercase]' --stdin
 ## Finding
 
 **ID:** [ID]
@@ -133,9 +128,9 @@ TITLE
 ### Source Report
 `[report path]`
 EOF
-)" \
-  --label "[SOURCE_TYPE]" --label "[severity-lowercase]"
 ```
+
+If the command fails, notify the user with the error and ask for guidance.
 
 Store: `finding_id → issue_number`.
 
@@ -149,7 +144,7 @@ node scripts/pipeline-db.js update finding new '{"id":"[ID]","source":"[SOURCE_T
 
 If a GitHub issue was also created, link it:
 ```bash
-node scripts/pipeline-db.js update finding [ID] github_issue [N]
+node scripts/pipeline-db.js update finding [ID] issue_ref [N]
 ```
 
 #### If files only (no GitHub, no Postgres)
@@ -235,7 +230,7 @@ Prepare the `{{TICKET_CONTEXT}}` substitution based on backend:
   ## Finding Context
 
   Read the GitHub issue for full requirements:
-  gh issue view [N] --repo '[repo]' --json title,body,labels,comments
+  node '[SCRIPTS_DIR]/platform.js' issue view [N]
 
   Affected files from LOCATION: [paths]
   ```
@@ -290,14 +285,14 @@ EOF
 
 - **GitHub:** Post comment and close:
   ```bash
-  gh issue comment [N] --repo '[repo]' --body "$(cat <<'EOF'
+  cat <<'EOF' | node '[SCRIPTS_DIR]/platform.js' issue comment [N] --stdin
   Fixed in [SHA].
 
   Changes: [brief summary of what was changed]
   EOF
-  )"
-  gh issue close [N] --repo '[repo]'
+  node '[SCRIPTS_DIR]/platform.js' issue close [N]
   ```
+  If the command fails, notify the user with the error and ask for guidance.
 
 - **Postgres:**
   ```bash
@@ -311,7 +306,7 @@ EOF
 
 Prepare `{{TICKET_CONTEXT}}` for reviewer based on backend:
 
-- **GitHub:** `"Read the GitHub issue for requirements: gh issue view [N] --repo '[repo]' --json title,body,labels,comments. Read the fix diff: git show [SHA]"`
+- **GitHub:** `"Read the GitHub issue for requirements: node '[SCRIPTS_DIR]/platform.js' issue view [N]. Read the fix diff: git show [SHA]"`
 - **Postgres:** `"Read the finding: node scripts/pipeline-db.js get finding [ID]. Read the fix diff: git show [SHA]"`
 - **Files (fallback):** Inline requirements from triage + include the diff
 

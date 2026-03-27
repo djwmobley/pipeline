@@ -179,6 +179,99 @@ If no source directories were detected (greenfield), defer resolution to Step 5 
 
 ---
 
+### Step 1c — Platform detection
+
+Detect the code hosting and issue tracking platform from the git remote URL. This determines which CLI backend `scripts/platform.js` uses for all issue and PR operations.
+
+**Platform detection from git remote:**
+
+| Remote URL pattern | Platform |
+|-------------------|----------|
+| `github.com` | `github` |
+| `dev.azure.com` or `*.visualstudio.com` | `azure-devops` |
+| Other / none | Default to `github` if `gh` CLI authenticated, otherwise `none` |
+
+**If quick mode:** Detect from remote URL, apply defaults silently, log decision. Skip to Step 2.
+
+**If github detected:**
+
+Verify `gh` CLI is available and authenticated:
+```bash
+gh auth status 2>&1 | head -1
+```
+If not authenticated: "GitHub CLI not authenticated. Run: `gh auth login`"
+
+Set in pipeline.yml:
+```yaml
+platform:
+  code_host: "github"
+  issue_tracker: "github"
+```
+
+**If azure-devops detected:**
+
+1. Extract org and project from remote URL:
+   - `https://dev.azure.com/{org}/{project}/_git/{repo}` → org, project
+   - `https://{org}.visualstudio.com/{project}/_git/{repo}` → org, project
+
+2. Verify `az devops` CLI extension is available:
+```bash
+az extension show --name azure-devops --query version --output tsv 2>/dev/null
+```
+If not installed: "Azure CLI DevOps extension required. Install with: `az extension add --name azure-devops`"
+
+3. Verify authentication:
+```bash
+az account show --query name --output tsv 2>/dev/null
+```
+If not authenticated: "Azure authentication required. Run: `az login` or set `AZURE_DEVOPS_EXT_PAT` environment variable"
+
+4. Verify project access:
+```bash
+az devops project show --project '{project}' --org 'https://dev.azure.com/{org}' --query name --output tsv 2>/dev/null
+```
+If fails: "Azure DevOps access denied. Verify your PAT has Work Items (Read & Write) and Code (Read & Write) scopes."
+
+5. Detect process template:
+```bash
+az devops project show --project '{project}' --org 'https://dev.azure.com/{org}' --query 'capabilities.processTemplate.templateName' --output tsv
+```
+
+6. Resolve state names from process template:
+
+| Process Template | done_state | active_state |
+|-----------------|------------|-------------|
+| Basic | Done | Doing |
+| Agile | Closed | Active |
+| Scrum | Done | Committed |
+| CMMI | Closed | Active |
+
+7. Set defaults:
+```bash
+az devops configure --defaults organization='https://dev.azure.com/{org}' project='{project}'
+```
+
+8. Set in pipeline.yml:
+```yaml
+platform:
+  code_host: "azure-devops"
+  issue_tracker: "azure-devops"
+  azure_devops:
+    organization: "{org}"
+    project: "{project}"
+    process_template: "{detected}"
+    work_item_type: "Task"
+    done_state: "{resolved}"
+    active_state: "{resolved}"
+```
+
+**If no remote or unrecognized host:**
+
+Set both to `none`. Issue tracking and PR operations will be skipped. Warn the user:
+> "No recognized platform detected. Issue tracking and PR workflows will be disabled. Add a git remote and re-run `/pipeline:init` to enable."
+
+---
+
 ### Step 2 — Project profile
 
 **If quick mode:** Use the inferred profile directly without asking for confirmation. If established project, apply the signal table below and pick the best match. If greenfield (no signals), default to `fullstack`. Skip stack recommendations entirely. Log the chosen profile and evidence (e.g., "Profile: fullstack — detected next.config.ts"). Skip to Step 2b.
@@ -736,29 +829,26 @@ If yes, resolve the plugin's install location by finding the directory containin
 
 ---
 
-### GitHub Issue Tracking
+### Issue Tracking
 
-If `project.repo` is set (GitHub is enabled), create a GitHub issue to track that initialization was completed:
+If `platform.issue_tracker` is not `none`, create an issue to track that initialization was completed:
 
-First ensure the label exists (no-op if it already does):
+Create the initialization issue:
 ```bash
-gh label create pipeline --description 'Pipeline tracking' --color 0E8A16 --repo '[GITHUB_REPO]' 2>/dev/null || true
-```
-
-Then create the issue:
-```bash
-gh issue create --repo '[GITHUB_REPO]' --title 'Pipeline initialized' --body "$(cat <<'EOF'
+cat <<'EOF' | node '[SCRIPTS_DIR]/platform.js' issue create --title 'Pipeline initialized' --labels 'pipeline' --stdin
 ## Pipeline Setup
 
 **Profile:** [profile]
 **Knowledge tier:** [tier]
 **Security policy:** [policy]
 **Engagement:** [engagement style]
+**Platform:** [code_host] / [issue_tracker]
 **Integrations:** [list enabled]
 
 Config: `.claude/pipeline.yml`
 EOF
-)" --label "pipeline"
 ```
+
+If the command fails, notify the user with the error and ask for guidance.
 
 This is the first entry in the project's issue trail. All subsequent pipeline commands post to their own issues, building the project's audit log.

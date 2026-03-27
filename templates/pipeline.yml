@@ -4,7 +4,7 @@ project:
   name: "my-project"
   repo: "owner/repo"
   branch: "main"
-  profile: null  # Set by init: spa, fullstack, mobile, mobile-web, api, cli, library
+  profile: null  # Set by init: spa, fullstack, mobile, mobile-web, api, cli, library, service, data-pipeline, automation
   pkg_manager: "npm"  # Detected from lockfile: pnpm, npm, yarn, bun
 
 # Tool commands (null to disable any gate)
@@ -251,6 +251,21 @@ integrations:
   playwright:
     enabled: false
     use_in: [ui-review]
+
+# Platform — issue tracking and code hosting
+# Detected during init from git remote URL. Agents call scripts/platform.js
+# which dispatches to the correct CLI (gh, az devops) transparently.
+platform:
+  code_host: "github"          # github, azure-devops, none
+  issue_tracker: "github"      # github, azure-devops, none
+  # Azure DevOps config (populated during init when azure-devops detected)
+  # azure_devops:
+  #   organization: ""          # Extracted from git remote URL
+  #   project: ""               # Extracted from git remote URL
+  #   process_template: ""      # Detected via az devops project show (Basic, Agile, Scrum, CMMI)
+  #   work_item_type: "Task"    # Default work item type for Pipeline-created items
+  #   done_state: ""            # Resolved from process_template (e.g., Closed, Done)
+  #   active_state: ""          # Resolved from process_template (e.g., Active, Doing)
 
 # Docs
 docs:
