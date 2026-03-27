@@ -152,7 +152,8 @@ These directories contain generated output, not maintained documentation:
 |-----------|-------------|----------|
 | `docs/specs/` | `/pipeline:brainstorm` | Feature specs scoped to a single feature |
 | `docs/superpowers/specs/` | Superpowers brainstorming skill | Same — feature specs |
-| `docs/plans/` | `/pipeline:plan`, `/pipeline:architect`, `/pipeline:qa plan` | Implementation plans, architectural decision records, test plans |
+| `docs/plans/` | `/pipeline:plan`, `/pipeline:qa plan` | Implementation plans, test plans |
+| `docs/architecture.md` | `/pipeline:architect` | Engineering standards: typed contracts, decisions, security/testing standards, banned patterns |
 | `docs/findings/` | `/pipeline:redteam`, `/pipeline:audit`, `/pipeline:review`, `/pipeline:remediate`, `/pipeline:purpleteam`, `/pipeline:qa verify` | Security reports, audit findings, SBOM artifacts, remediation summaries, QA reports |
 | `docs/sessions/` | Auto-persistence | Session logs (files tier only, rotated to last 5) |
 

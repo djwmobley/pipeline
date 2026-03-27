@@ -206,14 +206,14 @@ Explores requirements, proposes approaches, and writes a spec. Used before LARGE
 
 ### `/pipeline:architect`
 
-Produces architectural decision records that constrain downstream planning and implementation. For LARGE/MILESTONE changes — MEDIUM changes get silent recon inside `/pipeline:plan`.
+Produces `docs/architecture.md` — a committed engineering standards document with typed contracts, security standards, and banned patterns. For LARGE/MILESTONE changes — MEDIUM changes get silent recon inside `/pipeline:plan`.
 
 **What it does:**
 1. Dispatches a recon agent (haiku) to scan the codebase for dependencies, patterns, and conventions
 2. Selects relevant architectural domains from recon results (DATA, STATE, UI, API, INFRA, TEST — typically 2-4, not all six)
 3. Launches parallel domain specialists (sonnet) — one per relevant domain
 4. Lead architect (opus) synthesizes specialist outputs, resolves cross-domain conflicts, and produces decision records
-5. Saves decisions to `docs/plans/` and persists to knowledge tier
+5. Saves to `docs/architecture.md` and persists decisions to knowledge tier
 6. Presents decisions to builder with confidence levels — LOW confidence items require builder review
 
 **Decision records** are individually addressable and invalidatable. Each has a specific invalidation condition ("Invalidate if: deployment target changes from Vercel to self-hosted"). Build agents check relevant decisions and report `DONE_WITH_CONCERNS` if a real-world constraint conflicts.
@@ -239,7 +239,7 @@ Creates an implementation plan from a spec.
 8. Saves to `docs/plans/`
 9. If GitHub issue tracking enabled: propagates `github_epic` from spec to plan metadata and comments the plan summary on the epic
 
-For LARGE+ changes with 3+ relevant domains and no existing decisions, plan auto-invokes the full architect mode before planning.
+For LARGE+ changes with 3+ relevant domains and no `docs/architecture.md`, plan auto-invokes the full architect mode before planning.
 
 ---
 

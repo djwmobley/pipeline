@@ -181,12 +181,11 @@ Which option? (default: 1)
 
 Do NOT pass conversation history, prior task results, or accumulated context. Each sub-agent starts clean. This prevents context rot — quality degradation as context accumulates.
 
-**Architectural constraints injection:** If `architect.enforce_in_build` is true, check for decision records:
-1. Look for a decisions file matching the plan's feature name in `docs.plans_dir` (e.g., `*-decisions.md`)
-2. If found, extract the constraints block (the `**Constraints for implementers:**` lines from each decision)
-3. Also check the plan itself for an `## Architectural Constraints` section
-4. Combine into a `{{ARCHITECTURAL_CONSTRAINTS}}` block and include in each implementer dispatch (see implementer-prompt.md)
-5. If no decisions exist, omit the block — do not inject an empty section
+**Architectural constraints injection:** If `architect.enforce_in_build` is true, check for architectural constraints:
+1. Check for `docs/architecture.md` at the project root — extract the `## Constraints Summary` section
+2. Also check the plan itself for an `## Architectural Constraints` section
+3. Combine into a `{{ARCHITECTURAL_CONSTRAINTS}}` block and include in each implementer dispatch (see implementer-prompt.md)
+4. If neither source exists, omit the block — do not inject an empty section
 
 **Checkpoint after each task:** After a task passes post-task review, update `.claude/build-state.json`:
 - Set the task's `status` to `"done"`

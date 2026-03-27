@@ -110,7 +110,6 @@ Task tool (general-purpose, model: {{MODEL}}):
       - [concrete rule]
       - [concrete rule]
     - **Invalidate if:** [condition]
-    - **Big 4 impact:** [which dimensions affected and how]
     ```
 
     ## Step 4 — Engineering Standards Sections

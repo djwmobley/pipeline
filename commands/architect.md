@@ -24,7 +24,7 @@ Read `.claude/pipeline.yml` from the project root. Extract:
 - `models.cheap`, `models.review`, `models.architecture`
 - `review.non_negotiable[]`
 - `knowledge.tier`
-- `docs.plans_dir`, `docs.specs_dir`
+- `docs.specs_dir`
 - `integrations.github.enabled`, `integrations.github.issue_tracking`
 - `project.repo` — GitHub repo (owner/repo)
 
@@ -141,11 +141,20 @@ DETAIL
 
 ### Step 6 — Save artifact
 
-Save to `docs/architecture.md` at the project root. If the file already exists, update it —
-merge new decisions with existing ones (keep existing decisions that aren't contradicted,
-add new ones, update changed ones with a `**Updated:** [date]` annotation).
+Save to `docs/architecture.md` at the project root. The format is defined in the architecture
+SKILL.md Full Mode output section.
 
-The format is defined in the architecture SKILL.md Full Mode output section.
+**If `docs/architecture.md` already exists, merge:**
+
+1. Match existing decisions by domain and technology area — if the new run covers the
+   same domain, the new decision wins; annotate with `**Updated:** [date]`
+2. Existing decisions whose domain is NOT in the domains analyzed this run are kept unchanged
+3. New decisions are appended, numbered sequentially after the last existing number
+4. Sections (Project Structure, Code Patterns, Security Standards, Testing Standards, Banned
+   Patterns) are merged by appending new items that do not already appear verbatim
+5. Typed Contracts: new endpoints/interfaces are appended; existing ones with the same
+   path or interface name are replaced
+6. Regenerate the Constraints Summary from all sections after merging
 
 ---
 

@@ -173,10 +173,9 @@ DETAIL
 ### Step 6 — Save Artifact
 
 Save to `docs/architecture.md` at the project root. This is a persistent, evolving document —
-not per-feature. If it already exists, merge new content with existing (keep non-contradicted
-decisions, update changed ones with `**Updated:** [date]`).
+not per-feature. If it already exists, merge using the algorithm defined in the architect command.
 
-```markdown
+````markdown
 # Architecture — [Project Name]
 
 **Last updated:** [date] | **Profile:** [profile] | **Domains analyzed:** [list]
@@ -185,13 +184,11 @@ decisions, update changed ones with `**Updated:** [date]`).
 
 [Directory layout with purpose annotations. Generated from recon output.]
 
-```
-src/
-  app/          — Next.js App Router pages and layouts
-  components/   — Shared React components
-  lib/          — Business logic and utilities
-  ...
-```
+    src/
+      app/          — Next.js App Router pages and layouts
+      components/   — Shared React components
+      lib/          — Business logic and utilities
+      ...
 
 ## Code Patterns
 
@@ -267,12 +264,12 @@ interface Example {
 ## Override Instructions
 
 To override a decision, add an OVERRIDE annotation:
-```
-DECISION-003: Use Prisma ORM
-OVERRIDE: Using Drizzle — target is Cloudflare Workers, Prisma unsupported.
-```
+
+    DECISION-003: Use Prisma ORM
+    OVERRIDE: Using Drizzle — target is Cloudflare Workers, Prisma unsupported.
+
 Overrides propagate as hard constraints to all downstream agents.
-```
+````
 
 ### Step 7 — Present to Builder
 
