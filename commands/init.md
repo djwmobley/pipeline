@@ -34,6 +34,8 @@ Check if `.claude/pipeline.yml` already exists in the project root.
 | `commands.typecheck` | Has a command or `null` | Missing entirely |
 | `knowledge.tier` | Set to `"files"` or `"postgres"` | Missing |
 | `integrations` | Has entries with `enabled: true/false` | Missing entirely |
+| `project.engagement` | Set to `expert`, `guided`, or `full-guidance` | Missing |
+| `security.policy` | Set to `every-feature`, `milestone`, or `on-demand` | Missing |
 
 If ALL sections are complete:
 > "Pipeline is already configured for this project. Config looks complete.
@@ -52,7 +54,30 @@ If SOME sections are incomplete:
 
 Then **skip to the first incomplete section's corresponding step** — don't re-ask questions the user already answered.
 
-**If it does not exist:** Proceed to Step 1 (fresh setup).
+**If it does not exist:** Proceed to Step 0b (engagement style).
+
+---
+
+### Step 0b — Engagement style
+
+**If quick mode:** Default to `expert`. Skip this question.
+
+Ask the user how they want to interact with Pipeline:
+
+> "How much guidance do you want during setup?
+>
+> 1. **Expert** — Minimal explanation, just the decisions. You know your stack.
+> 2. **Guided** (default) — Brief context before each decision, recommendations included.
+> 3. **Full guidance** — Detailed explanations, rationale for every recommendation. Good for first-time users."
+
+Set `project.engagement` to `expert`, `guided`, or `full-guidance`.
+
+This controls how all subsequent questions are framed:
+- **Expert:** One-line questions, no recommendations, no "why" explanations
+- **Guided:** Short context + recommendation + question
+- **Full guidance:** Full paragraph explaining what the option does, why it matters, and what the recommendation is
+
+Every question in the remaining steps has three variants. Use the engagement style to pick which variant to show.
 
 ---
 
@@ -115,14 +140,42 @@ echo "=== DONE ==="
 
 ### Step 1b — Fill in gaps
 
-**If quick mode:** Use the directory name for `project.name` if no `name` field found in package.json/Cargo.toml/etc. Set `project.repo: null` if no git remote detected. Log both decisions. Skip to Step 2.
+**If quick mode:** Use the directory name for `project.name` if no `name` field found in package.json/Cargo.toml/etc. Set `project.repo: null` if no git remote detected. Infer source dirs from detection. Log all decisions. Skip to Step 2.
 
-**Git remote:** If `git remote get-url origin` returned nothing (no remote configured), ask:
-> "No git remote detected. What's the GitHub repo for this project? (e.g., `owner/repo`, or press Enter to skip)"
+**Project name:** If no `name` field in package.json/Cargo.toml/etc., use the directory name.
+
+**Git remote and repo creation:** If `git remote get-url origin` returned nothing (no remote configured):
+
+**Expert:**
+> "No git remote. Repo name? (e.g., `owner/repo`, Enter to skip, or `create` to make one)"
+
+**Guided:**
+> "No git remote detected. Pipeline uses GitHub for issue tracking and PR workflows.
+>
+> Options:
+> - Enter a repo name (e.g., `owner/repo`)
+> - Type `create` — I'll create a GitHub repo and set the remote
+> - Press Enter to skip (GitHub features will be disabled)"
+
+**Full guidance:**
+> "No git remote detected. Pipeline's workflow tracks all work through GitHub issues — every feature, fix, and finding gets an issue with description, commentary, and status. The `/pipeline:finish` command creates PRs automatically.
+>
+> Without a GitHub repo, these features are disabled. You can still use Pipeline for local development, but you'll lose the audit trail.
+>
+> Options:
+> - Enter an existing repo name (e.g., `owner/repo`)
+> - Type `create` — I'll create a new GitHub repo using `gh repo create` and set the remote
+> - Press Enter to skip for now (you can add it later with `/pipeline:update`)"
+
+If `create`: validate that `project_name` matches `[a-zA-Z0-9_.-]+` only. If it contains shell metacharacters or single quotes, reject with: "Project name contains unsafe characters. Rename the directory or provide a safe repo name." Then run `gh repo create '[project_name]' --private --source=. --remote=origin --push`. Extract `owner/repo` from the output. If `gh` is not installed, show: "GitHub CLI not available. Install it first: https://cli.github.com"
 
 If the user provides a value, use it for `project.repo`. If skipped, set `project.repo: null`.
 
-**Project name:** If no `name` field in package.json/Cargo.toml/etc., use the directory name.
+**Source directories:** Infer from detection signals — do NOT ask the user.
+
+Use detected directories from Step 1's "SOURCE DIRS" section. If directories were found, use them directly and log: "Source dirs: [dirs] — detected [list]".
+
+If no source directories were detected (greenfield), defer resolution to Step 5 — the profile-based defaults require the profile from Step 2 which has not run yet.
 
 ---
 
@@ -146,26 +199,50 @@ If the user provides a value, use it for `project.repo`. If skipped, set `projec
 | go.mod with `cmd/` directory | `cli` |
 | go.mod with web framework (Echo, Gin, Fiber) | `api` |
 
-Present the inference for confirmation:
+Present the inference for confirmation, scaled by engagement style:
 
+**Expert (established):**
+> "Profile: [inferred] ([evidence]). OK? (Y/n, or: spa/fullstack/mobile/mobile-web/api/cli/library)"
+
+**Expert (greenfield):**
+> "Profile? (spa/fullstack/mobile/mobile-web/api/cli/library)"
+
+**Guided (established):**
 > "Based on your project structure, this looks like a **[inferred profile]** project ([evidence]).
 > Sound right? (Y/n, or pick a different profile: spa, fullstack, mobile, mobile-web, api, cli, library)"
 
-**If greenfield project** (no code to infer from), ask directly:
-
+**Guided (greenfield):**
 > "What type of project is this?
 >
-> 1. **SPA** — Single-page web app (React, Vue, Angular, Svelte)
-> 2. **Full-stack** — Frontend + backend in one repo (Next.js, Nuxt, SvelteKit, Rails)
-> 3. **Mobile** — Native mobile app (React Native, Flutter, Swift, Kotlin)
-> 4. **Mobile + Web** — Shared codebase with web fallback (Capacitor, Expo Web)
-> 5. **API** — Backend service or REST/GraphQL API
+> 1. **SPA** — Single-page web app
+> 2. **Full-stack** — Frontend + backend (Next.js, Nuxt, SvelteKit)
+> 3. **Mobile** — Native mobile app
+> 4. **Mobile + Web** — Shared codebase with web fallback
+> 5. **API** — Backend service
 > 6. **CLI** — Command-line tool
-> 7. **Library** — Reusable package/module published for others"
+> 7. **Library** — Reusable package/module"
+
+**Full guidance (established):**
+> "Based on your project structure, this looks like a **[inferred profile]** project.
+>
+> Evidence: [detailed evidence list]
+>
+> The profile controls which review criteria Pipeline applies (e.g., accessibility checks for UI projects, battery-impact analysis for mobile). Sound right? (Y/n, or pick: spa, fullstack, mobile, mobile-web, api, cli, library)"
+
+**Full guidance (greenfield):**
+> "What type of project is this? The profile controls which review criteria, security checks, and recommendations Pipeline applies throughout the workflow.
+>
+> 1. **SPA** — Single-page web app (React, Vue, Angular, Svelte). Reviews focus on UX, accessibility, performance.
+> 2. **Full-stack** — Frontend + backend in one repo (Next.js, Nuxt, SvelteKit, Rails). Reviews add API design and data integrity.
+> 3. **Mobile** — Native mobile app (React Native, Flutter, Swift, Kotlin). Reviews add battery impact and performance.
+> 4. **Mobile + Web** — Shared codebase with web fallback (Capacitor, Expo Web). Reviews add responsive design.
+> 5. **API** — Backend service or REST/GraphQL API. Reviews focus on security, error handling, data integrity.
+> 6. **CLI** — Command-line tool. Reviews focus on error handling and UX.
+> 7. **Library** — Reusable package/module. Reviews add backwards-compatibility and documentation."
 
 Set `project.profile` to the chosen value: `spa`, `fullstack`, `mobile`, `mobile-web`, `api`, `cli`, `library`.
 
-**If greenfield**, follow up with stack recommendations:
+**If greenfield**, follow up with stack recommendations (guided and full-guidance only — skip for expert):
 
 For each profile, suggest a proven starter stack. Present these as recommendations, not requirements — the user knows their constraints best:
 
@@ -179,6 +256,10 @@ For each profile, suggest a proven starter stack. Present these as recommendatio
 | **CLI** | Node + Commander/Yargs or Rust + Clap or Go + Cobra | Depends on distribution needs |
 | **Library** | TypeScript + Vitest + tsup (bundler) | Tree-shakeable, well-tested, easy to publish |
 
+**Guided:**
+> "Since you're starting fresh, here's what works well for [profile] projects: **[Stack recommendation]**. Want me to scaffold with this stack, or do you have a different setup in mind?"
+
+**Full guidance:**
 > "Since you're starting fresh, here's what works well for [profile] projects:
 >
 > **[Stack recommendation]**
@@ -213,6 +294,35 @@ Based on the chosen profile, pre-configure review criteria and security checks. 
 | Mobile, Mobile + Web | `{ check: "Stores data on device?", rule: "Use secure storage for tokens — never use plain storage for secrets" }` |
 | API | `{ check: "Exposes endpoint?", rule: "Rate limit, authenticate, validate input schema" }` |
 | Library | `{ check: "Accepts external input?", rule: "Validate types at boundary — never trust caller input" }` |
+
+---
+
+### Step 2c — Security policy
+
+**If quick mode:** Default to `milestone`. Log decision. Skip to Step 3.
+
+Controls when Pipeline runs red team and audit workflows in the orchestrated pipeline.
+
+**Expert:**
+> "Security scanning policy? (every-feature / milestone / on-demand)"
+
+**Guided:**
+> "When should Pipeline run security analysis (red team + audit)?
+>
+> 1. **Every feature** — full security scan on every LARGE+ feature
+> 2. **Milestone** (default) — security scans on MILESTONE changes only; LARGE features get review-only
+> 3. **On-demand** — only when you explicitly run `/pipeline:redteam` or `/pipeline:audit`"
+
+**Full guidance:**
+> "Pipeline includes red team agents that probe your code for security vulnerabilities (injection, auth bypass, data exposure) and audit agents that check for compliance, dead code, and structural issues.
+>
+> These are powerful but add time to the workflow. You can control when they run:
+>
+> 1. **Every feature** — runs red team + audit on every LARGE+ feature in the orchestrated pipeline. Best for security-critical applications (fintech, healthcare, auth systems).
+> 2. **Milestone** (default) — runs security scans only on MILESTONE changes. LARGE features still get code review but skip the full security sweep. Good balance for most projects.
+> 3. **On-demand** — security scans never run automatically. You trigger them manually with `/pipeline:redteam` or `/pipeline:audit` when you want them. Best for early-stage projects where speed matters more than coverage."
+
+Set `security.policy` to `every-feature`, `milestone`, or `on-demand`.
 
 ---
 
@@ -299,17 +409,26 @@ Note: Figma detection is MCP-only. The `FIGMA_API_KEY` env var is used internall
 
 | Figma MCP | Stitch MCP | Action |
 |----------|-----------|--------|
-| connected | connected | Ask: "Both Figma and Stitch are available. Figma imports existing designs for comparison. Stitch generates new mockups from text prompts. Which do you want for this project? (figma / stitch / both)" |
+| connected | connected | **Expert:** "Design tools: figma / stitch / both?" **Guided:** "Both Figma and Stitch are available. Figma imports existing designs. Stitch generates new mockups from text. Which? (figma / stitch / both)" **Full guidance:** "Both Figma and Stitch are available. Figma imports existing designs for comparison during `/pipeline:ui-review` — it checks your implementation against the original design. Stitch generates new mockups from text prompts during `/pipeline:brainstorm` — it creates visual prototypes from your feature description. You can use both (Figma for design fidelity, Stitch for exploration). Which? (figma / stitch / both)" |
 | connected | not connected | Enable Figma. Mention: "Stitch can generate design mockups from text — see `docs/prerequisites.md` to set it up." |
 | not connected | connected | Enable Stitch. Mention: "If you have existing Figma designs, you can add the Figma MCP server too — see `docs/prerequisites.md`." |
 | not connected | not connected | Neither. Show: "No design tools detected. Brainstorming will use simple HTML wireframes. See `docs/prerequisites.md` to set up Stitch (free, generates AI mockups) or Figma." |
 
 If Stitch is enabled, ask about device type:
-> "What's the primary device target for designs in this project?
-> 1. **Desktop** (default) → `DESKTOP`
-> 2. **Mobile** → `MOBILE`
-> 3. **Tablet** → `TABLET`
-> 4. **Device-agnostic** → `AGNOSTIC`"
+
+**Expert:**
+> "Stitch device target? (desktop/mobile/tablet/agnostic)"
+
+**Guided:**
+> "What's the primary device target for Stitch designs?
+> 1. **Desktop** (default) 2. **Mobile** 3. **Tablet** 4. **Device-agnostic**"
+
+**Full guidance:**
+> "What's the primary device target for designs in this project? This controls the viewport and layout Stitch uses when generating mockups.
+> 1. **Desktop** (default) → standard browser viewport
+> 2. **Mobile** → phone-sized viewport, touch-friendly
+> 3. **Tablet** → tablet viewport
+> 4. **Device-agnostic** → generic, no viewport constraints"
 
 Set `integrations.stitch.device_type` to the corresponding enum value (e.g., `DESKTOP`, `MOBILE`, `TABLET`, `AGNOSTIC`). Do NOT create a Stitch project during init — it's created lazily on first brainstorm use so the title matches the feature being designed.
 
@@ -323,10 +442,10 @@ Set `integrations.stitch.device_type` to the corresponding enum value (e.g., `DE
 |-----------|--------------|-----------|---------------|----------------|
 | on PATH | — | accepting | — | **Running on default port.** Set `postgres.enabled: true`, `port: 5432` |
 | found (not on PATH) | yes | accepting | — | **Running but not on PATH.** Note the path, set enabled, suggest adding to PATH |
-| on PATH | — | not responding | no | **Installed but not running.** Ask: "Postgres is installed but not running. Start it, or skip for now?" |
-| on PATH | — | not responding | yes (e.g. 5433) | **Running on non-default port.** Ask: "Postgres doesn't respond on 5432 but port [N] is open. Is that your Postgres port?" If confirmed, use that port |
-| not found | yes | closed | no | **Installed but not on PATH and not running.** Show install path, ask if they want to configure it |
-| not found | yes | open or alt open | — | **Port open, no pg_isready.** Ask: "Something is listening on port [N] — is that Postgres? What port?" |
+| on PATH | — | not responding | no | **Installed but not running.** **Expert:** "Postgres installed, not running. Start/skip?" **Guided/Full:** "Postgres is installed but not running. Start it, or skip for now?" |
+| on PATH | — | not responding | yes (e.g. 5433) | **Running on non-default port.** **Expert:** "Port [N] open. Postgres? (y/n)" **Guided/Full:** "Postgres doesn't respond on 5432 but port [N] is open. Is that your Postgres port?" If confirmed, use that port |
+| not found | yes | closed | no | **Installed but not on PATH and not running.** **Expert:** "Postgres at [path], not running. Configure? (y/n)" **Guided:** "Postgres is installed at [path] but not on PATH and not running. Want to configure it?" **Full guidance:** (same as guided + explain what PATH means and how to start Postgres) |
+| not found | yes | open or alt open | — | **Port open, no pg_isready.** **Expert:** "Port [N] open — Postgres? (y/n, or enter port)" **Guided:** "Something is listening on port [N] — is that Postgres? What port?" **Full guidance:** (same as guided + explain that pg_isready was not found so we cannot confirm it is Postgres) |
 | not found | no | closed | no | **Not installed.** Show install instructions |
 
 **Present integration results grouped by importance:**
@@ -345,7 +464,7 @@ Set `integrations.stitch.device_type` to the corresponding enum value (e.g., `DE
 |------------|-----------|----------------|--------------------|----|
 | **Stitch** | Optional | AI-generated design mockups in `/pipeline:brainstorm` and `/pipeline:ui-review` | HTML wireframes via visual companion subagent | Show: "See `docs/prerequisites.md` for Stitch setup (free, generates AI mockups from text)." |
 | **Figma** | Optional | Import existing designs for comparison in `/pipeline:ui-review` and reference in `/pipeline:brainstorm` | Stitch for new mockups, or no design reference | Show: "See `docs/prerequisites.md` for Figma MCP setup." |
-| **Playwright** | Optional | Screenshot capture for `/pipeline:ui-review` | Chrome DevTools MCP, or provide screenshots manually | Ask: "Playwright enables automatic screenshot capture for UI reviews. Want me to install it? (I'll run `[pkg_manager] add -D @playwright/test && npx playwright install chromium`)" If declined: "No problem — see `docs/prerequisites.md` for manual setup, or use Chrome DevTools MCP instead." |
+| **Playwright** | Optional | Screenshot capture for `/pipeline:ui-review` | Chrome DevTools MCP, or provide screenshots manually | **Expert:** "Install Playwright? (y/n)" **Guided:** "Playwright enables automatic screenshot capture for UI reviews. Install it? (I'll run `[pkg_manager] add -D @playwright/test && npx playwright install chromium`)" **Full guidance:** "Playwright captures screenshots automatically during `/pipeline:ui-review`. Without it, you can use Chrome DevTools MCP (if Chrome is running with remote debugging) or provide screenshots manually. Install it? (I'll run `[pkg_manager] add -D @playwright/test && npx playwright install chromium`)" If declined: "No problem — see `docs/prerequisites.md` for manual setup, or use Chrome DevTools MCP instead." |
 | **GitHub CLI** | Optional | PR creation in `/pipeline:finish`, issue management | Push branches manually, create PRs in browser | Show: "GitHub CLI (`gh`) enables PR creation from `/pipeline:finish`. See `docs/prerequisites.md` for setup." |
 | **Postgres** | Optional | Knowledge tier with semantic search, structured queries | Files tier (markdown-based, zero setup) | Show: "Without Postgres, you'll use the files tier — markdown-based session tracking that works but lacks search. See `docs/prerequisites.md` for setup." |
 | **Ollama** | Optional | Semantic/hybrid search in Postgres tier | FTS keyword search only (still useful) | Show: "Ollama runs embedding models locally (no API keys, no cloud). See `docs/prerequisites.md` for setup. Without it, keyword search still works." |
@@ -376,18 +495,41 @@ Set `integrations.stitch.device_type` to the corresponding enum value (e.g., `DE
 3. Log: "Postgres not detected — using files tier. Run `/pipeline:update knowledge` to switch later."
 4. Skip to Step 5.
 
-Present both options:
+Present options based on engagement style and what was detected:
 
-> "You can store session history as markdown files (zero setup) or in Postgres (requires local install).
-> Postgres gives you semantic search across all past sessions, structured task tracking, instant
-> session context at startup, and embedding-powered 'find related work.' For any project you'll
-> work on across 10+ sessions, Postgres is significantly more powerful. Which do you prefer?"
+**Expert:**
+> "Knowledge tier? (files / postgres) [Postgres detected: [yes/no], Ollama: [yes/no]]"
+
+**Guided:**
+> "Where should Pipeline store session history?
+>
+> 1. **Files** (zero setup) — markdown files in `docs/sessions/`. Works everywhere.
+> 2. **Postgres** [if detected: "(detected — running on port [N])"] — structured storage with semantic search [if Ollama detected: "powered by local embeddings via Ollama"]. Best for 10+ session projects.
+>
+> [If Postgres not detected: "Postgres is not running. Choose files for now, or start Postgres and re-run `/pipeline:init`."]"
+
+**Full guidance:**
+> "Pipeline tracks every session's decisions, findings, and gotchas. Where this data lives affects how well Pipeline can recall relevant context in future sessions.
+>
+> 1. **Files** (zero setup) — markdown files in `docs/sessions/`. No dependencies. Works on any machine. But search is limited to filenames and manual browsing.
+> 2. **Postgres** [if detected: "(detected — running on port [N])"] — structured database with full-text search [if Ollama detected: " + semantic search via Ollama embeddings (finds related work even when terminology differs)"]. Tracks tasks, findings, decisions, and gotchas in queryable tables. The `/pipeline:knowledge` commands give instant context.
+>
+> For any project you'll work on across 10+ sessions, Postgres is significantly more powerful. For quick projects or when Postgres isn't available, files work fine.
+>
+> [If Postgres not detected: "Postgres is not running on this machine. You can install it later and switch with `/pipeline:update knowledge`."]"
 
 If Postgres chosen and available:
 
 The pipeline scripts need the `pg` Node.js package to talk to Postgres. The plugin's scripts use pnpm (they have a `pnpm-lock.yaml`) — always use `pnpm install` here, regardless of the project's own package manager. Ask before installing:
 
-> "I need to install the pipeline's database dependencies (the `pg` package). This goes in the plugin's scripts directory, not your project. OK to install? (I'll run `pnpm install` in the pipeline scripts directory)"
+**Expert:**
+> "Install pipeline DB deps? (pnpm install in plugin scripts dir) (y/n)"
+
+**Guided:**
+> "I need to install the pipeline's database dependencies (the `pg` package). This goes in the plugin's scripts directory, not your project. OK? (I'll run `pnpm install`)"
+
+**Full guidance:**
+> "To connect to Postgres, Pipeline needs the `pg` Node.js driver. This installs in the pipeline plugin's own scripts directory — it does NOT affect your project's dependencies or package.json. OK to install? (I'll run `pnpm install` in the pipeline scripts directory)"
 
 If yes:
 1. Locate the pipeline plugin's `scripts/` directory using the same resolution as `/pipeline:knowledge` Step 0: check `$PIPELINE_DIR/scripts/`, then `${HOME:-$USERPROFILE}/dev/pipeline/scripts/`, then search `${HOME:-$USERPROFILE}/.claude/` for `pipeline-db.js`. Store the resolved absolute path — use this literal path (not a variable) in all subsequent Bash calls.
@@ -398,7 +540,7 @@ If yes:
 6. Set `knowledge.tier: "postgres"` in config with:
    - `database: "pipeline_<sanitized_project_name>"` (the generated name)
    - `host`, `port` from detection (use detected port if non-default)
-7. If Ollama is available, ask which embedding model to use: "Ollama is running. Which embedding model should Pipeline use for semantic search? Popular choices: `mxbai-embed-large` (1024-dim, good quality), `nomic-embed-text` (768-dim, smaller/faster). Or type any model name from https://ollama.com/search?c=embedding." Set `knowledge.embedding_model` to their choice. If the model isn't pulled yet, run `ollama pull <model>`.
+7. If Ollama is available, ask about embedding model. **Expert:** "Embedding model? (mxbai-embed-large / nomic-embed-text / other)" **Guided:** "Ollama is running. Which embedding model? `mxbai-embed-large` (1024-dim, good quality) or `nomic-embed-text` (768-dim, smaller/faster)?" **Full guidance:** "Ollama is running, which means Pipeline can use semantic search — finding related work even when the terminology differs (e.g., searching for 'auth' finds results about 'login' and 'session management'). Which embedding model? `mxbai-embed-large` (1024-dim, best quality, uses ~300MB VRAM) or `nomic-embed-text` (768-dim, smaller and faster). Or type any model name from https://ollama.com/search?c=embedding." Set `knowledge.embedding_model` to their choice. If the model isn't pulled yet, run `ollama pull <model>`.
 8. Add to config's `commit.post_commit_hooks`:
    `"node $SCRIPTS_DIR/pipeline-embed.js index"` (keeps embeddings current after each commit)
 9. If user has an existing project they want to bring context from, mention:
@@ -420,32 +562,18 @@ Using all detected values, generate `.claude/pipeline.yml`.
 
 Set `project.pkg_manager` to the detected package manager from Step 1 (pnpm, npm, yarn, or bun).
 
-Set `routing.source_dirs` from the directories detected in Step 1 (the "SOURCE DIRS" section). Include only directories that exist and contain source code (e.g., `["src/"]`, `["src/", "lib/"]`, `["cmd/", "internal/", "pkg/"]`). If only `src/` was detected, use `["src/"]`.
+Set `routing.source_dirs` from the value inferred in Step 1b. If Step 1b detected directories, use them. If no directories were detected (greenfield), apply profile-based defaults now that the profile is known:
 
-**If no source directories were detected** (greenfield or non-standard layout), do NOT use `["."]` — it poisons triage, commit gates, and audit by counting non-source files (config, docs, lockfiles).
+| Profile | Default source dirs |
+|---------|-------------------|
+| SPA/Full-stack/API/Library | `["src/"]` |
+| CLI (Go) | `["cmd/", "internal/"]` |
+| CLI (other) | `["src/"]` |
+| Mobile/Mobile+Web | `["src/"]` |
 
-**If quick mode:** Use a profile-based default:
-- SPA/Full-stack/API/Library: `["src/"]`
-- CLI (Go): `["cmd/", "internal/"]`
-- CLI (other): `["src/"]`
-- Mobile/Mobile+Web: `["src/"]`
+Log: "Source dirs: [dirs] — defaulted from [profile] profile"
 
-Log: "No source directories detected — defaulting to [chosen dirs] based on [profile] profile. Run `/pipeline:update` to change."
-
-**If interactive mode:** Ask:
-
-> "I didn't detect a standard source directory (src/, lib/, app/, etc.). Where will your source code live?"
->
-> Suggestions based on profile:
-> - SPA/Full-stack: `src/`
-> - CLI (Node): `src/` or `bin/`
-> - CLI (Go): `cmd/`, `internal/`
-> - API: `src/` or `server/`
-> - Library: `src/` or `lib/`
->
-> Or type a custom path (e.g., `packages/core/src/`)."
-
-Use the user's answer. If they haven't created the directory yet (greenfield), that's fine — set it in config and it will exist when they write code.
+**Never** use `["."]` — it poisons triage, commit gates, and audit by counting non-source files.
 
 Map detected tools to config fields. Use the detected package manager's runner where applicable (e.g., pnpm → `pnpm exec`, npm → `npx`, yarn → `yarn`, bun → `bunx`):
 - package.json + typescript → `commands.typecheck: "[runner] tsc --noEmit"`
@@ -456,7 +584,7 @@ Map detected tools to config fields. Use the detected package manager's runner w
 - go.mod → `commands.test: "go test ./..."`, `commands.lint: "golangci-lint run"`
 - pyproject.toml + pytest → `commands.test: "pytest"`, `commands.lint: "ruff check ."`
 
-Include profile-based defaults from Step 2b (review criteria, security checks). Set `review.sectors: []` — sectors are configured later via `/pipeline:update sectors` or on first `/pipeline:audit` run, when there's actual code to inform the conversation.
+Include profile-based defaults from Step 2b (review criteria, security checks). Set `security.policy` from Step 2c. Set `project.engagement` from Step 0b. Set `review.sectors: []` — sectors are configured later via `/pipeline:update sectors` or on first `/pipeline:audit` run, when there's actual code to inform the conversation.
 
 Write the config file:
 ```bash
@@ -486,7 +614,10 @@ Then use the Write tool to create `.claude/pipeline.yml`.
 **Integrations enabled:** [list each with evidence, e.g., "GitHub CLI (gh detected)", "Playwright (auto-installed)"]
 **Integrations skipped:** [list each with reason, e.g., "Sentry (SENTRY_AUTH_TOKEN not set)", "Stitch (MCP not connected)"]
 
+**Engagement:** expert
+**Security policy:** milestone
 **Knowledge:** [tier] [if postgres: "DB: pipeline_<name>, embedding: mxbai-embed-large"]
+**Source dirs:** [list, with inference evidence]
 
 **Auto-installed:**
 - [list everything installed, e.g., "Playwright (@playwright/test + chromium)", "Pipeline DB deps (pg via pnpm)", "Ollama model (mxbai-embed-large)"]
@@ -505,7 +636,8 @@ Stop after printing the summary. Do not show the getting-started guide or offer 
 **Project:** [name] ([profile])
 **Repo:** [owner/repo]
 **Branch:** [main branch]
-**Package manager:** [pnpm/npm/yarn/bun]
+**Package manager:** [detected]
+**Engagement:** [expert/guided/full-guidance]
 
 **Commands:**
 - Typecheck: [command or disabled]
@@ -513,48 +645,84 @@ Stop after printing the summary. Do not show the getting-started guide or offer 
 - Test: [command or disabled]
 
 **Integrations:** [list enabled]
-**Knowledge:** [files or postgres]
+**Knowledge:** [tier] [details]
+**Security policy:** [every-feature/milestone/on-demand]
+**Source dirs:** [list, with inference evidence]
 
 Config written to `.claude/pipeline.yml`.
 Review sectors are configured later — run `/pipeline:update sectors` when you have code to review.
 ```
 
-Then show the appropriate getting-started guide:
+Then show the getting-started guide scaled to engagement style:
 
-**If greenfield project:**
+**Expert (any project type):**
+
+```
+## Next steps
+- `/pipeline:triage` — size a change, get the right workflow
+- `/pipeline:commit` — preflight gates + commit
+- `/pipeline:update` — adjust config
+```
+
+**Guided — greenfield:**
 
 ```
 ## Getting started
-
-Your project is set up for planning-first development:
 
 1. `/pipeline:brainstorm` — explore your first feature's requirements and design
 2. `/pipeline:plan` — create an implementation plan from the spec
 3. `/pipeline:build` — execute the plan with built-in quality checks
 
-Once you have code:
-- `/pipeline:commit` — runs preflight gates and commits
-- `/pipeline:update sectors` — auto-generate review sectors from your directory structure
-- `/pipeline:triage` — check the recommended workflow for any change
-
-**Adjust anything later:** `/pipeline:update`
+Once you have code: `/pipeline:commit` to commit, `/pipeline:triage` to size changes.
+Adjust anything: `/pipeline:update`
 ```
 
-**If established project:**
+**Guided — established:**
 
 ```
 ## Getting started
 
-**Make a small change, then:**
 1. `/pipeline:commit` — runs preflight gates (typecheck, lint, test) and commits
+2. `/pipeline:triage` — tells you the right workflow for any change size
 
-**Before a bigger change:**
-1. `/pipeline:triage` — tells you the right workflow for the change size
+All commands: `/pipeline:` then tab-complete. Adjust anything: `/pipeline:update`
+```
+
+**Full guidance — greenfield:**
+
+```
+## Getting started
+
+Your project is set up for planning-first development. Here's the recommended workflow:
+
+1. **Start with an idea:** `/pipeline:brainstorm` walks you through requirements, user stories, and design. It produces a spec document that captures what you're building and why.
+2. **Plan the work:** `/pipeline:plan` turns your spec into a task-by-task implementation plan with acceptance criteria.
+3. **Build with guardrails:** `/pipeline:build` executes the plan — dispatching subagents for each task, reviewing after each, and running quality gates automatically.
+4. **Ship it:** `/pipeline:finish` creates a PR, compiles a summary of all work, and closes tracking issues.
+
+Once you have code:
+- `/pipeline:commit` — runs typecheck + lint + tests before every commit
+- `/pipeline:update sectors` — auto-configures review sectors from your directory structure
+- `/pipeline:triage` — analyzes any change and recommends the right workflow size
 
 **Adjust anything later:** `/pipeline:update`
+**Full documentation:** Open docs/index.html in your browser for the complete guide with examples.
+```
+
+**Full guidance — established:**
+
+```
+## Getting started
+
+Pipeline adapts its workflow based on the size of each change:
+- **TINY** changes (1-2 files, config tweaks): just `/pipeline:commit` with preflight gates
+- **MEDIUM** changes (3-10 files): brainstorm → plan → build → review → commit
+- **LARGE** changes (10+ files): adds debate, architecture plan, QA, and red team
+
+Use `/pipeline:triage` before any change to get the right workflow recommendation.
 
 **All commands:** `/pipeline:` then tab-complete to see options
-
+**Adjust anything:** `/pipeline:update`
 **Full documentation:** Open docs/index.html in your browser for the complete guide with examples.
 ```
 
@@ -565,3 +733,32 @@ Would you like me to open the Pipeline documentation in your browser?
 ```
 
 If yes, resolve the plugin's install location by finding the directory containing this command file (init.md), then open `docs/index.html` relative to the plugin root. Use the platform-appropriate command: `start "" "<path>"` (Windows), `open "<path>"` (Mac), or `xdg-open "<path>"` (Linux). The file is a self-contained HTML page with no external dependencies.
+
+---
+
+### GitHub Issue Tracking
+
+If `project.repo` is set (GitHub is enabled), create a GitHub issue to track that initialization was completed:
+
+First ensure the label exists (no-op if it already does):
+```bash
+gh label create pipeline --description 'Pipeline tracking' --color 0E8A16 --repo '[GITHUB_REPO]' 2>/dev/null || true
+```
+
+Then create the issue:
+```bash
+gh issue create --repo '[GITHUB_REPO]' --title 'Pipeline initialized' --body "$(cat <<'EOF'
+## Pipeline Setup
+
+**Profile:** [profile]
+**Knowledge tier:** [tier]
+**Security policy:** [policy]
+**Engagement:** [engagement style]
+**Integrations:** [list enabled]
+
+Config: `.claude/pipeline.yml`
+EOF
+)" --label "pipeline"
+```
+
+This is the first entry in the project's issue trail. All subsequent pipeline commands post to their own issues, building the project's audit log.
