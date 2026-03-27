@@ -162,6 +162,37 @@ Task tool (general-purpose, model: {{MODEL}}):
 
     If no arch plan exists, report `arch_compliance: "SKIPPED"` and move on.
 
+    ## Part 4: Cross-File and Structural Verification
+
+    After reviewing code quality and arch compliance, verify internal consistency:
+
+    ### Cross-file contracts
+    - Read the substitution checklist at the top of any changed prompt template.
+      Verify every `[BRACKET]` and `{{BRACE}}` placeholder in the body is listed
+      in the checklist, and vice versa.
+    - If the changed file has a parent SKILL.md, verify the SKILL.md's "Runtime
+      placeholders" section matches the prompt's substitution checklist.
+    - If the change uses a pattern (shell command, path resolution, reporting
+      format), check how the same pattern is done in sibling files. Divergence
+      without rationale is 🟡 MEDIUM.
+
+    ### Structural completeness
+    - If the text references a section name (e.g., "remove the `## Finding Context`
+      section"), verify that section exists in the document. Dangling references
+      are 🔴 HIGH.
+    - Verify the document has all required sections for v2 agents: substitution
+      checklist, DATA tags, context reads, ANTI-RATIONALIZATION, reporting
+      contract, output format. Missing sections are 🔴 HIGH.
+    - If the document promises "every X has Y" (e.g., "every question has three
+      variants"), enumerate each X and verify it has Y. Do not scan — count.
+
+    ### Fallback symmetry
+    - For every Postgres READ with a fallback, verify the corresponding WRITE
+      also has a fallback. For every `gh` command, verify it has a GitHub-disabled
+      guard. Unguarded commands or asymmetric fallbacks are 🔴 HIGH.
+    - For every shell command using externally-sourced values (SHAs, names, IDs),
+      verify a validation instruction exists before the value reaches the shell.
+
     ## Severity Tiers
 
     - 🔴 HIGH Must fix — bugs, security, correctness, arch violations
