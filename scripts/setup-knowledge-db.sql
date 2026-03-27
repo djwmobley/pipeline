@@ -215,6 +215,40 @@ END $$;
 -- FILE CACHE — hash-based cache to skip re-reading unchanged files
 -- ═══════════════════════════════════════════════════════════════════════════════
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- WORKFLOW STATE — orchestrator tracks current step, completed steps, results
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+CREATE TABLE IF NOT EXISTS workflow_state (
+  id SERIAL PRIMARY KEY,
+  workflow_id TEXT NOT NULL,              -- unique ID per workflow run (e.g., "feat-auth-2026-03-27")
+  step TEXT NOT NULL,                     -- current or completed step name
+  status TEXT NOT NULL DEFAULT 'pending', -- pending, running, done, failed, skipped
+  result_code TEXT,                       -- step-specific: PASS, FAIL, PARTIAL, BLOCKED, etc.
+  fail_count INTEGER DEFAULT 0,          -- consecutive failures (for loopback rules)
+  inputs_met BOOLEAN DEFAULT FALSE,      -- were preconditions satisfied?
+  output_artifact TEXT,                   -- path to output file if any (spec, plan, report)
+  metadata JSONB DEFAULT '{}',           -- step-specific data (finding counts, test results, etc.)
+  started_at TIMESTAMPTZ,
+  completed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS ws_workflow_idx ON workflow_state (workflow_id);
+CREATE INDEX IF NOT EXISTS ws_step_idx ON workflow_state (step);
+CREATE INDEX IF NOT EXISTS ws_status_idx ON workflow_state (status);
+
+-- Current workflow position (latest per workflow)
+CREATE OR REPLACE VIEW workflow_current AS
+  SELECT DISTINCT ON (workflow_id)
+    workflow_id, step, status, result_code, fail_count, started_at, completed_at
+  FROM workflow_state
+  ORDER BY workflow_id, created_at DESC;
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- FILE CACHE — hash-based cache to skip re-reading unchanged files
+-- ═══════════════════════════════════════════════════════════════════════════════
+
 CREATE TABLE IF NOT EXISTS file_cache (
   path TEXT PRIMARY KEY,
   sha256 TEXT NOT NULL,
