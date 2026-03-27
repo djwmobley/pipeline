@@ -135,10 +135,20 @@ For each file in the diff, read it completely for full context.
 
 ---
 
-### Step 6 — Review against configured criteria
+### Step 6 — Review (always-on + configured criteria)
 
-Follow the reviewing skill's process. Apply each criterion from `review.criteria[]` in the config.
-The skill defines severity calibration and the full review process.
+Follow the reviewing skill's process. Two layers, both required:
+
+1. **Always-on checks** (cannot be disabled via config):
+   - Big 4 dimensions (Functionality, Usability, Performance, Security) — apply those relevant to the changed files. Functionality always applies.
+   - Branch and Boundary Condition Analysis — enumerate conditionals, check for unhandled states
+   - Intra-File Contract Verification — check that comments/JSDoc match code behavior
+   - Cross-File Contract Verification — trace contracts across file boundaries
+   - Fallback Symmetry — verify failure paths for operations that can fail
+
+2. **Config criteria** from `review.criteria[]` — apply each configured criterion (e.g., dead-code, simplicity, SOLID) as additional checks on top of the always-on layer.
+
+The skill defines severity calibration and the full review process for both layers.
 
 ---
 
@@ -235,7 +245,7 @@ Then: "Run `/pipeline:remediate --source review` to batch-fix 🔴 findings, or 
 
 For each 🔴 or 🟡 finding, persist as a structured record:
 ```bash
-PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update finding new "$(cat <<'EOF'
+PROJECT_ROOT=$(pwd) node '[SCRIPTS_DIR]/pipeline-db.js' update finding new "$(cat <<'EOF'
 {"id":"[FINDING_ID]","source":"review","severity":"[high|medium]","confidence":"[HIGH|MEDIUM|LOW]","location":"[file:line]","category":"[review criterion]","description":"[one-line description]","impact":"[why it matters]","remediation":"[fix description]","effort":"[quick|medium|large]"}
 EOF
 )"
@@ -243,7 +253,7 @@ EOF
 
 Record the verdict:
 ```bash
-PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update decision 'code-review' "$(cat <<'SUMMARY'
+PROJECT_ROOT=$(pwd) node '[SCRIPTS_DIR]/pipeline-db.js' update decision 'code-review' "$(cat <<'SUMMARY'
 Review [date]: [verdict]. [N] findings ([M] 🔴 / [P] 🟡 / [Q] 🔵)
 SUMMARY
 )" "$(cat <<'DETAIL'

@@ -12,6 +12,7 @@ Use this template when dispatching the QA lead verifier to synthesize worker res
 7. `[TEST_COMMAND]` -> `commands.test` from pipeline.yml
 8. `[BROWSER_TESTING]` -> `qa.browser_testing` from pipeline.yml (true/false)
 9. `[DB_VERIFICATION]` -> `qa.db_verification` from pipeline.yml (true/false)
+10. `[SCRIPTS_DIR]` -> path to pipeline's scripts/ directory (absolute)
 
 ```
 Task tool (general-purpose, model: {{MODEL}}):
@@ -188,14 +189,31 @@ Task tool (general-purpose, model: {{MODEL}}):
 
     ## Reporting Contract
 
-    Your output (the test report above) is consumed by the orchestrator for:
-    1. **Postgres** — the orchestrator writes your verdict, pass/fail counts, and
-       failure triage to the knowledge DB. You produce the data; you do not write it.
-    2. **PR comment** — the orchestrator posts a summary to the PR. Your report is
-       the source. Include enough structure that a summary can be extracted
-       mechanically (verdict line, failures section, coverage metrics).
-    3. **GitHub issues** — for each `code-is-wrong` failure, the orchestrator
-       creates a sub-issue. Include finding IDs (FAIL-NNN) so they can be referenced.
+    ### 1. Build State (you write this directly)
 
-    You produce the report. The orchestrator handles routing and persistence.
+    Before producing your report, record completion in build-state so the
+    orchestrator can detect "verifier completed" on crash recovery:
+
+    ```bash
+    node -e "
+      const fs = require('fs');
+      const p = '.claude/build-state.json';
+      const s = fs.existsSync(p) ? JSON.parse(fs.readFileSync(p,'utf8')) : {};
+      s.qa_verifier = { status: 'complete', timestamp: new Date().toISOString() };
+      fs.writeFileSync(p, JSON.stringify(s, null, 2));
+    "
+    ```
+
+    If the write fails, log the error and continue — your report is the
+    primary output and must not be blocked by a state write failure.
+
+    ### 2. Orchestrator persistence (you produce the data, orchestrator writes it)
+
+    - **Postgres** — the orchestrator writes your verdict, pass/fail counts, and
+      failure triage to the knowledge DB. You produce the data; you do not write it.
+    - **Issue comment** — the orchestrator posts a summary via `platform.js`.
+      Your report is the source. Include enough structure that a summary can be
+      extracted mechanically (verdict line, failures section, coverage metrics).
+    - **Issue creation** — for each `code-is-wrong` failure, the orchestrator
+      creates a sub-issue. Include finding IDs (FAIL-NNN) so they can be referenced.
 ```

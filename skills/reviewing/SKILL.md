@@ -34,8 +34,10 @@ If you catch yourself thinking "this looks fine" — that thought is a red flag.
 3. Run SAST scan (Step 2b) — see Static Analysis (SAST) section below
 4. Get the diff — understand what changed
 5. Read each changed file in full — understand context
-6. Review against `review.criteria[]` — apply each configured criterion
+6. **Always-on checks** — apply the Big 4 dimensions, branch/boundary analysis, intra-file contract verification, and cross-file contract verification to every review regardless of config
 7. Report with severity tiers — 🔴 HIGH / 🟡 MEDIUM / 🔵 LOW format
+
+The review command (`commands/review.md`) defines the authoritative step sequence including config criteria (between steps 6 and 7), post-report persistence (steps 8, 8b, 8c), and simplify handoff. This skill defines the criteria and calibration for steps 2-7.
 
 ## Static Analysis (SAST) — Step 2b
 
@@ -46,8 +48,10 @@ Configured via `static_analysis` in pipeline.yml.
 
 1. **Check config:** Read `static_analysis.semgrep.enabled` from pipeline.yml.
    - `false` → skip SAST entirely
-   - `"auto"` → probe for semgrep binary (see step 2)
+   - `"auto"` or **missing/undefined** → probe for semgrep binary (see step 2)
    - `true` → require semgrep (warn if missing, but continue)
+   If the `static_analysis` section is absent from pipeline.yml, treat as `"auto"`.
+   If `static_analysis.grep_fallback` is missing/undefined, treat as `false`.
 
 2. **Probe for semgrep:**
    ```bash
@@ -130,14 +134,14 @@ All three stores, every time. This is the A2A contract — the QA agent reads
 review results to understand what was validated and what needs testing focus.
 
 **Runtime placeholders** (resolved by the review command before executing):
-- `[GITHUB_REPO]` — `integrations.github.repo` from pipeline.yml. Empty if GitHub disabled.
+- `[SCRIPTS_DIR]` — path to pipeline's scripts/ directory (absolute).
 - `[GITHUB_ISSUE]` — task issue number for this review phase. Empty if GitHub disabled.
 
 ### 1. Postgres Write
 
 Record results in the knowledge DB:
 ```
-PROJECT_ROOT=$(git rev-parse --show-toplevel) node "$PROJECT_ROOT/scripts/pipeline-db.js" insert knowledge \
+node '[SCRIPTS_DIR]/pipeline-db.js' insert knowledge \
   --category 'review' \
   --label 'review-verdict' \
   --body "$(cat <<'BODY'
@@ -167,10 +171,11 @@ If the command fails, notify the user with the error and ask for guidance.
 
 Update `build-state.json` with review status for crash recovery.
 
-### Fallback (GitHub disabled)
+### Fallback
 
-If GitHub is not enabled, skip the issue comment.
-Postgres write, build state update, and the findings report are always required.
+- **GitHub/issue tracker disabled** (`[GITHUB_ISSUE]` is empty): skip the issue comment.
+- **Postgres unreachable:** log the failure in the review report. The findings file in `docs/findings/` is the fallback record. The orchestrator retries the Postgres write on next dispatch.
+- Build state update and the findings report are always required.
 
 ## Severity Calibration
 
@@ -188,15 +193,16 @@ SOLID violations that manifest as real problems.
 Includes: alternative approaches, performance optimizations, readability improvements.
 **Any confidence level accepted, but you MUST state it.** A LOW confidence 🔵 LOW is valid; an unstated confidence is not.
 
-## Review Dimensions
+## Review Dimensions (Always-On)
 
-The Big 4 dimensions apply to code review, not just design:
-- **Functionality** — correctness, spec compliance (core of every review)
-- **Usability** — user-facing clarity, error messages, accessibility (when task touches UI/API)
-- **Performance** — scalability, resource usage, query efficiency (when task touches data/compute)
-- **Security** — already enforced via safety guards and non-negotiables
+The Big 4 dimensions are **always-on** — they apply to every review regardless of `review.criteria[]` config. Config criteria are *additional* checks on top of these.
 
-Not every review touches all four. Apply the dimensions relevant to the changed files.
+- **Functionality** — correctness, spec compliance, branch/boundary completeness. **Always applies.** This is the core of every review. Includes: does the code do what it claims? Are all conditional branches handled? Do edge cases (null, undefined, empty, first-run) work?
+- **Usability** — user-facing clarity, error messages, accessibility. Applies when the change touches UI, CLI output, API responses, or documentation that users read.
+- **Performance** — scalability, resource usage, query efficiency. Applies when the change touches data processing, loops, I/O, or network calls.
+- **Security** — input validation, injection, access control. Already enforced via SAST and non-negotiables, but also applies to manual review when SAST is unavailable.
+
+The config's `review.criteria[]` (e.g., `dead-code`, `simplicity`, `SOLID`) are checked *in addition to* the Big 4. They are never a substitute.
 
 ## Non-Negotiable Filtering
 
@@ -252,6 +258,32 @@ For every operation that can fail, verify the failure path is documented:
 2. **Shell command validation** — every shell command that uses externally-sourced values (commit SHAs from issue comments, project names from directories, finding IDs from triage) must have a validation instruction. Check: is the value validated before it reaches a shell command? If not, 🔴 HIGH.
 
 3. **Disabled-service paths** — if GitHub can be disabled, trace every `gh` command to confirm it has a guard. If Postgres can be unavailable, trace every `pipeline-db.js` / `pipeline-context.js` call to confirm it has a fallback. Unguarded commands are 🔴 HIGH.
+
+## Branch and Boundary Condition Analysis
+
+For every conditional in changed code, systematically check for unhandled states:
+
+1. **Equality traps** — if code checks `x === false`, ask: what happens when `x` is `undefined`, `null`, `0`, or missing entirely? A strict equality check that should be a truthiness check (or vice versa) is 🔴 HIGH when it creates a silent no-op on a reachable path.
+
+2. **Optional chaining gaps** — if code uses `obj?.prop` to read, does the write path also handle `obj` being undefined? Trace the full read/write lifecycle of optional-chained values. A read that gracefully handles missing data paired with a write that crashes on the same missing data is 🔴 HIGH.
+
+3. **Enum/union exhaustiveness** — if a conditional handles specific cases (if/else if, switch), list every possible value the input can take. If a reachable value falls through without handling, that's 🔴 HIGH for values that cause wrong behavior or 🟡 MEDIUM for values that cause a silent no-op.
+
+4. **Initialization assumptions** — if code reads a key from a config object, file, or environment variable, ask: does this key always exist by the time this code runs? Check the creation path. Missing keys that cause silent skips on first-run or fresh-install paths are 🔴 HIGH.
+
+**How to apply:** For each function or code block in the diff that contains conditionals, list the branches and their triggering conditions. Then list the values the input can actually take (from callers, config files, or external state). Any value in the second list not covered by the first is a candidate finding.
+
+## Intra-File Contract Verification
+
+Code comments, JSDoc, and doc blocks are promises. Check that the code keeps them:
+
+1. **Behavioral claims** — if a comment says "runs silently", "never throws", "always returns X", "idempotent", or similar, verify the code fulfills that claim. A `console.log` in a "silent" function, a throw in a "never throws" function, or a side effect in an "idempotent" function is 🟡 MEDIUM (or 🔴 HIGH if the claim is part of an API contract that callers depend on).
+
+2. **Parameter/return doc mismatches** — if JSDoc documents `@param {string} name` but the code accepts and handles `null`, or if `@returns {boolean}` but a path returns `undefined`, that's 🟡 MEDIUM.
+
+3. **TODO/FIXME freshness** — if the change adds a TODO, fine. If the change modifies code near an existing TODO that the change could have resolved, flag it as 🔵 LOW.
+
+**Key distinction from Cross-File Contract Verification:** Cross-file traces contracts *between* files (SKILL.md ↔ prompt template, code ↔ docs). Intra-file traces contracts *within* a single file (comment ↔ code, JSDoc ↔ behavior). Both are required.
 
 ## Fix Quality Requirements
 

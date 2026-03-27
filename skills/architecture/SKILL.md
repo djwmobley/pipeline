@@ -298,3 +298,28 @@ This is NOT a monolithic roadmap. Each decision stands alone with its own invali
 | "This decision is obvious" | Document it anyway. What's obvious to you is context for the build agent. |
 | "The conflicts don't matter" | Cross-domain conflicts become implementation bugs. Resolve them now. |
 | "Silent mode is fine for this LARGE change" | If recon found 3+ relevant domains, use full mode. |
+
+## Issue Tracker Contract
+
+Architecture spans **Category 2 (Issue-Creating)** and **Category 3 (Decision Command)** per `skills/github-tracking/SKILL.md`. Category 3 governs the summary comment; Category 2 governs child issue creation for LOW-confidence decisions.
+
+When `integrations.github.enabled` and `integrations.github.issue_tracking` are both `true`:
+
+1. Read `github_epic: N` from the plan or spec metadata
+2. Post a summary comment on the epic after completing the decision records (Category 3)
+3. For each LOW-confidence decision, create a child issue with label `pipeline:decision` (Category 2). HIGH/MEDIUM decisions do not get child issues.
+
+**Comment format:**
+
+```
+## Architecture
+
+**Decisions produced:** [N]
+**Domains analyzed:** [list]
+**LOW confidence decisions:** [count, or "None"]
+[1-sentence posture summary]
+
+Artifact: `docs/architecture.md`
+```
+
+If the epic is not found, skip tracking silently. Do not fail the architect run.

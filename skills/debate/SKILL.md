@@ -108,3 +108,30 @@ Failure modes the plan must mitigate. Each entry includes the risk, which paneli
 | "MEDIUM changes don't need this" | Correct — that is why MEDIUM defaults to skip. Respect the default. |
 | "I'll just incorporate the feedback mentally" | Unwritten constraints are forgotten constraints. The verdict file exists so the plan reads it. |
 | "The user is in a hurry" | Present the sell honestly. Let the user decide. Never skip the sell for LARGE+. |
+
+## Issue Tracker Contract
+
+Debate is a **Category 3 — Decision Command** per `skills/github-tracking/SKILL.md`.
+
+When `integrations.github.enabled` and `integrations.github.issue_tracking` are both `true`:
+
+1. Read `github_epic: N` from the spec metadata
+2. After the verdict is produced, post a summary comment on the epic
+3. Do NOT create child issues — the verdict is a comment, not a trackable item
+
+**Comment format:**
+
+```
+## Debate
+
+**Disposition:** [proceed / proceed-with-constraints / rethink]
+**Points of agreement:** [N]
+**Contested points:** [N]
+**Risks registered:** [N]
+[1-sentence verdict summary]
+
+Verdict: `[path to verdict file]`
+```
+
+If the epic is not found, skip tracking silently.
+If the debate was not run (user declined the sell or change size below threshold), there is no verdict to post — skip tracking.

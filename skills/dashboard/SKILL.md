@@ -60,12 +60,14 @@ Check artifacts in order (first match wins):
 
 **Phase check commands:**
 
-```bash
-# Check for specs
-ls -t [docs.specs_dir]*.md 2>/dev/null | head -1
+**Note:** Ensure `docs.specs_dir` and `docs.plans_dir` values end with `/`. If the config value lacks a trailing slash, append one before substituting (e.g., `docs/specs` → `docs/specs/`).
 
-# Check for plans
-ls -t [docs.plans_dir]*.md 2>/dev/null | head -1
+```bash
+# Check for specs (ensure trailing slash on dir path)
+ls -t [docs.specs_dir]/*.md 2>/dev/null | head -1
+
+# Check for plans (ensure trailing slash on dir path)
+ls -t [docs.plans_dir]/*.md 2>/dev/null | head -1
 
 # Check for findings (excluding remediation files)
 ls docs/findings/*.md 2>/dev/null | grep -v 'remediation-' | grep -v 'triage-' | head -1

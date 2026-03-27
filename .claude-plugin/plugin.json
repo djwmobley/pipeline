@@ -9,5 +9,6 @@
   "repository": "https://github.com/djwmobley/pipeline",
   "license": "MIT",
   "keywords": ["pipeline", "review", "tdd", "debugging", "quality-gates", "workflows", "size-routing", "dashboard"],
-  "commands": "./commands/"
+  "commands": "./commands/",
+  "hooks": "./hooks/"
 }

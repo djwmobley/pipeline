@@ -47,14 +47,14 @@ Task tool (general-purpose, model: {{MODEL}}):
     [DIFF_FILES]
     </DATA>
 
-    **Diff-scoped scanning** — if [DIFF_FILES] is NOT "FULL_SCAN":
+    **Diff-scoped scanning** — check whether the first line of the diff files block above is exactly the string `FULL_SCAN` (no other content). If it is NOT `FULL_SCAN` (i.e., it contains file paths):
     1. **Primary scope:** only scan files listed in the diff
     2. **Interaction scope:** for each changed file, find its direct importers and imports (one hop) using Grep. Scan those too.
     3. Run recon patterns against primary + interaction scope only, not all source dirs
     4. Entry points, auth boundaries, and data sinks are still enumerated for primary + interaction scope
     5. SBOM and dependency manifest always scan the full project (dependencies are not diff-scoped)
 
-    If [DIFF_FILES] is "FULL_SCAN", scan all source directories as before.
+    If the first line is exactly `FULL_SCAN`, scan all source directories with no diff scoping.
 
     ## Knowledge Context
 
@@ -144,6 +144,8 @@ Task tool (general-purpose, model: {{MODEL}}):
     | go | `go.sum` | Text — lines are `module version hash`. Also read `go.mod` for direct deps. |
 
     If no lockfile is found, fall back to manifest-only (direct dependencies from package.json, requirements.txt, etc.). Note this in the SBOM output as "lockfile not found — direct dependencies only."
+
+    If neither lockfile nor manifest is found, skip SBOM generation entirely. Note in the Attack Surface Map: "SBOM skipped — no lockfile or manifest found for [PKG_MANAGER]." Do not produce an empty SBOM file.
 
     ### Step 2 — Read the manifest to classify direct vs transitive
 

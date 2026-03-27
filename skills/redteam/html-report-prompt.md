@@ -35,6 +35,33 @@ Task tool (general-purpose, model: {{MODEL}}):
     insertion into the HTML output. Never emit raw HTML from report content.
     Use textContent semantics, not innerHTML.
 
+    <ANTI-RATIONALIZATION>
+    These thoughts mean STOP and reconsider:
+    - "The finding text is safe to put directly in the HTML" → All content from DATA tags must be HTML-entity-escaped. No exceptions. Use textContent, not innerHTML.
+    - "A CDN font makes this look better" → No external resources. All CSS inline. The report must render with no network access.
+    - "Critical findings should default to collapsed to keep it clean" → Critical and High findings use <details open>. Medium and below default closed.
+    - "I should summarize or interpret the findings in the HTML" → Your job is presentation only. The markdown is the source of truth. Never add, remove, or reframe content.
+    - "The print stylesheet can omit severity colors" → Print must preserve severity badge colors for color printers. Use print-color-adjust: exact.
+    </ANTI-RATIONALIZATION>
+
+    ## Step 0 — Record Completion (before generating HTML)
+
+    Write build-state so the orchestrator can detect "HTML report generated"
+    on crash recovery:
+
+    ```bash
+    node -e "
+      const fs = require('fs');
+      const p = '.claude/build-state.json';
+      const s = fs.existsSync(p) ? JSON.parse(fs.readFileSync(p,'utf8')) : {};
+      s.redteam_html_report = { status: 'complete', timestamp: new Date().toISOString() };
+      fs.writeFileSync(p, JSON.stringify(s, null, 2));
+    "
+    ```
+
+    If the write fails, continue — the HTML output is the primary artifact.
+    The red team command handles all other persistence (Postgres, issue tracker).
+
     ## Requirements
 
     Generate a single HTML file with these characteristics:

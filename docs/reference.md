@@ -814,3 +814,26 @@ Every point where the pipeline requires or recommends a human decision is a **ch
 | `build-completion` | build | SHOULD | Post-build option selection |
 | `finish-completion` | finish | SHOULD | Post-finish option selection |
 | `debate-medium` | debate | MAY | Design debate for MEDIUM specs |
+
+---
+
+## Plugin Hooks
+
+Pipeline registers hooks via `hooks/hooks.json`. The plugin manifest (`plugin.json`) declares `"hooks": "./hooks/"` — pointing to the hooks directory, from which the runtime loads `hooks.json`.
+
+### `SessionStart` — Cache Sync
+
+**Hook:** `hooks/sync-cache.mjs`
+**Matcher:** `startup|resume` (pipe-delimited alternation — matches either the `startup` or `resume` SessionStart event type)
+**Purpose:** Keeps the plugin cache in sync with source when working in the pipeline repo.
+
+**Behavior:**
+1. Reads `installed_plugins.json` to find the `pipeline@pipeline` entry
+2. Exits early if CWD is not the pipeline repo (other projects use the stable cache)
+3. Compares `git rev-parse HEAD` against the stored SHA
+4. If they differ: deletes stale cache, copies source items to new cache directory, updates registry
+5. Ensures the plugin is enabled in `.claude/settings.json`
+
+**Synced items:** `.claude-plugin/`, `commands/`, `hooks/`, `rules/`, `scripts/`, `skills/`, `templates/`, `CLAUDE.md`, `LICENSE`, `README.md`
+
+**Note:** Only committed changes are detected. Uncommitted edits require a commit before the next session picks them up. See [troubleshooting](troubleshooting.md) for manual sync instructions.
