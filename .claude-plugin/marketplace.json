@@ -1,5 +1,8 @@
 {
   "name": "pipeline",
+  "metadata": {
+    "description": "Agent workflow engine — content-blind orchestrator routes stateless AI agents through a 13-step quality pipeline with three-store A2A reporting"
+  },
   "owner": {
     "name": "DJ Mobley"
   },
