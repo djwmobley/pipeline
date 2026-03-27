@@ -70,10 +70,25 @@ Which option? (default: 1)
 
 ### Step 4 — Execute choice
 
-**Option 1: Commit + merge + push (full workflow)**
+**Option 1: Merge PR + push (full workflow)**
 
 <!-- checkpoint:MUST finish-merge-verify -->
 
+If a PR exists for the feature branch, merge via `gh pr merge` to preserve the audit trail:
+
+```bash
+# Check if PR exists
+gh pr view [feature-branch] --repo '[project.repo]' --json number,state -q '.number' 2>/dev/null
+```
+
+If a PR exists:
+```bash
+gh pr merge [PR_NUMBER] --repo '[project.repo]' --squash --delete-branch
+git checkout [base-branch]
+git pull
+```
+
+If NO PR exists, fall back to local merge:
 ```bash
 git checkout [base-branch]
 git pull
@@ -93,7 +108,7 @@ If tests fail on the merged result, do NOT push. Report the failure and stop.
 
 Then cleanup worktree (Step 5).
 
-**Option 2: Commit + merge locally (no push)**
+**Option 2: Merge locally (no push)**
 
 <!-- checkpoint:MUST finish-merge-verify (same checkpoint as Option 1) -->
 
@@ -157,6 +172,58 @@ git branch -D [feature-branch]
 git push origin --delete [feature-branch] 2>/dev/null || true
 ```
 Then cleanup worktree (Step 5).
+
+---
+
+### Step 4a — Compile epic summary from Postgres
+
+**Runs for Options 1 and 2 (merge paths).** Skip if GitHub is not enabled or no epic is found.
+
+This is the single compiled summary posted to the epic — no other command posts to the epic.
+Query Postgres for all phase results from this workflow:
+
+```bash
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js query "$(cat <<'SQL'
+SELECT label, body FROM knowledge WHERE category IN ('review', 'qa', 'redteam', 'remediation') ORDER BY created_at
+SQL
+)"
+```
+
+Also query for deferred features from the brainstorm/spec:
+```bash
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js query "$(cat <<'SQL'
+SELECT label, body FROM knowledge WHERE category = 'deferred' ORDER BY created_at
+SQL
+)"
+```
+
+Compile into a single comment and post to the epic:
+```bash
+gh issue comment [EPIC_N] --repo '[project.repo]' --body "$(cat <<'EOF'
+## Ship Summary
+
+### Review
+[verdict, finding counts from review knowledge rows]
+
+### QA
+[verdict, pass/fail counts from qa knowledge rows]
+
+### Security
+[finding counts by domain from redteam knowledge rows]
+
+### Remediation
+[fixes applied, commits from remediation knowledge rows]
+
+### Deferred Features
+[list deferred items for future work, or "None"]
+
+**Merged:** [SHA] → [base-branch]
+EOF
+)"
+```
+
+This is the ONLY comment posted to the epic by any command. All phase-level
+detail lives on task issues. The epic summary is a compiled bird's-eye view.
 
 ---
 

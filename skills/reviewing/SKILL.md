@@ -103,6 +103,70 @@ If SAST was skipped entirely, report:
 Skipped: [reason — disabled in config / semgrep not found, no grep fallback]
 ```
 
+## Diff Scope
+
+Review is scoped to the feature branch diff by default:
+
+```bash
+git diff --name-only [BASELINE_SHA]...HEAD
+```
+
+Where `[BASELINE_SHA]` is the merge-base with the base branch (from `project.branch` in pipeline.yml). Read each changed file in full for context, but only produce findings for changed code. The review serves as the PR gate in the orchestrated workflow.
+
+## Architecture Plan Compliance
+
+If `docs/architecture.md` exists, read it and add these checks to the review:
+
+- **Module boundaries** — do the changes respect the module structure defined in the arch plan? Cross-boundary imports that bypass the public interface are 🔴 HIGH.
+- **Typed contracts** — do function signatures match the contract shapes in the arch plan? Mismatches are 🔴 HIGH.
+- **Banned patterns** — does the code use any pattern explicitly banned in the arch plan? Violations are 🔴 HIGH.
+- **Cross-task consistency** — if multiple build tasks were implemented, do they integrate correctly per the arch plan's integration points?
+
+If no arch plan exists, skip this section silently.
+
+## Reporting Contract
+
+All three stores, every time. This is the A2A contract — the QA agent reads
+review results to understand what was validated and what needs testing focus.
+
+### 1. Postgres Write
+
+Record results in the knowledge DB:
+```
+PROJECT_ROOT=$(git rev-parse --show-toplevel) node "$PROJECT_ROOT/scripts/pipeline-db.js" insert knowledge \
+  --category 'review' \
+  --label 'review-verdict' \
+  --body "$(cat <<'BODY'
+{"verdict": "PASS|FAIL", "findings": {"high": N, "medium": M, "low": P}, "arch_compliance": "PASS|FAIL|SKIPPED", "sast_findings": N}
+BODY
+)"
+```
+
+### 2. GitHub Issue Comment (if task issue is available)
+
+Post the review verdict as a comment on the task issue:
+```
+gh issue comment [GITHUB_ISSUE] --repo '[GITHUB_REPO]' --body "$(cat <<'EOF'
+## Review
+**Verdict:** [PASS/FAIL]
+**Findings:** [N] high, [M] medium, [P] low
+**Arch compliance:** [PASS/FAIL/SKIPPED]
+**SAST:** [N findings | skipped]
+
+[For FAIL: list 🔴 HIGH finding IDs + one-line descriptions]
+EOF
+)"
+```
+
+### 3. Build State
+
+Update `build-state.json` with review status for crash recovery.
+
+### Fallback (GitHub disabled)
+
+If GitHub is not enabled, skip the issue comment.
+Postgres write, build state update, and the findings report are always required.
+
 ## Severity Calibration
 
 **🔴 HIGH — Must fix** — Will cause bugs, security issues, crashes, or data loss in production.
