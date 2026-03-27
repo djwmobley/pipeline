@@ -34,6 +34,9 @@ const EMBED_MODEL = CONFIG.embedding_model || ollamaDefaults.model;
 
 // ─── TABLE DEFINITIONS ──────────────────────────────────────────────────────
 // Each entry defines how to read, embed, and search a table.
+// SECURITY: tbl.name, tbl.selectCols, and tbl.idCol are expanded into SQL
+// identifiers. These MUST remain static source constants — never populated
+// from pipeline.yml, user input, or any external data.
 
 const TABLES = [
   {
@@ -42,32 +45,29 @@ const TABLES = [
     textFn: (r) => `File: ${r.path}\n\n${r.description}`,
     selectCols: 'path, description',
     updateSql: 'UPDATE code_index SET embedding = $1 WHERE path = $2',
-    label: (r) => r.path,
-    snippet: (r) => r.description,
+    label: (r) => r.path || '(unknown)',
+    snippet: (r) => r.description || '',
     ftsCol: 'fts_vec',
-    ftsTarget: 'description',
   },
   {
     name: 'workflow_discovery',
     idCol: 'id',
-    textFn: (r) => `[${r.item_type}] ${r.step || 'general'}: ${r.title}\n\n${r.detail || ''}`,
+    textFn: (r) => `[${r.item_type || 'unknown'}] ${r.step || 'general'}: ${r.title || ''}\n\n${r.detail || ''}`,
     selectCols: 'id, step, item_type, title, detail',
     updateSql: 'UPDATE workflow_discovery SET embedding = $1 WHERE id = $2',
-    label: (r) => `[${r.item_type}] ${r.step || 'general'}: ${r.title}`,
-    snippet: (r) => r.detail || r.title,
+    label: (r) => `[${r.item_type || '?'}] ${r.step || 'general'}: ${r.title || '(untitled)'}`,
+    snippet: (r) => r.detail || r.title || '',
     ftsCol: 'fts_vec',
-    ftsTarget: "coalesce(title, '') || ' ' || coalesce(detail, '')",
   },
   {
     name: 'agent_rewrites',
     idCol: 'id',
-    textFn: (r) => `Agent: ${r.agent_name}\nAS-IS: ${r.as_is || ''}\nTO-BE: ${r.to_be || ''}\nGap: ${r.gap || ''}\nEffort: ${r.effort || ''}`,
+    textFn: (r) => `Agent: ${r.agent_name || ''}\nAS-IS: ${r.as_is || ''}\nTO-BE: ${r.to_be || ''}\nGap: ${r.gap || ''}\nEffort: ${r.effort || ''}`,
     selectCols: 'id, agent_name, as_is, to_be, gap, effort',
     updateSql: 'UPDATE agent_rewrites SET embedding = $1 WHERE id = $2',
-    label: (r) => `agent: ${r.agent_name} (${r.effort || '?'})`,
-    snippet: (r) => r.gap || r.to_be || r.agent_name,
+    label: (r) => `agent: ${r.agent_name || '?'} (${r.effort || '?'})`,
+    snippet: (r) => r.gap || r.to_be || r.agent_name || '',
     ftsCol: 'fts_vec',
-    ftsTarget: "coalesce(agent_name, '') || ' ' || coalesce(as_is, '') || ' ' || coalesce(to_be, '') || ' ' || coalesce(gap, '')",
   },
 ];
 
@@ -102,11 +102,11 @@ function ollamaEmbed(texts) {
   });
 }
 
-// ─── CHECK TABLE EXISTS ─────────────────────────────────────────────────────
+// ─── INTROSPECTION HELPERS ──────────────────────────────────────────────────
 
 async function tableExists(client, tableName) {
   const { rows } = await client.query(
-    "SELECT 1 FROM information_schema.tables WHERE table_name = $1",
+    "SELECT 1 FROM information_schema.tables WHERE table_schema = current_schema() AND table_name = $1",
     [tableName]
   );
   return rows.length > 0;
@@ -114,8 +114,16 @@ async function tableExists(client, tableName) {
 
 async function columnExists(client, tableName, colName) {
   const { rows } = await client.query(
-    "SELECT 1 FROM information_schema.columns WHERE table_name = $1 AND column_name = $2",
+    "SELECT 1 FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = $1 AND column_name = $2",
     [tableName, colName]
+  );
+  return rows.length > 0;
+}
+
+async function hasAnyEmbeddings(client, tableName) {
+  if (!(await columnExists(client, tableName, 'embedding'))) return false;
+  const { rows } = await client.query(
+    `SELECT 1 FROM ${tableName} WHERE embedding IS NOT NULL LIMIT 1`
   );
   return rows.length > 0;
 }
@@ -151,18 +159,32 @@ async function cmdIndex(forceAll) {
 
       const BATCH = 32;
       let done = 0;
-      for (let i = 0; i < rows.length; i += BATCH) {
-        const batch = rows.slice(i, i + BATCH);
-        const texts = batch.map(tbl.textFn);
-        const embeddings = await ollamaEmbed(texts);
-        for (let j = 0; j < batch.length; j++) {
-          const vec = `[${embeddings[j].join(',')}]`;
-          await client.query(tbl.updateSql, [vec, batch[j][tbl.idCol]]);
-          done++;
-          process.stdout.write(`\r  ${done}/${rows.length} embedded...`);
+      try {
+        for (let i = 0; i < rows.length; i += BATCH) {
+          const batch = rows.slice(i, i + BATCH);
+          const texts = batch.map(tbl.textFn);
+          const embeddings = await ollamaEmbed(texts);
+
+          if (embeddings.length !== batch.length) {
+            throw new Error(
+              `Ollama returned ${embeddings.length} embeddings for a batch of ${batch.length} ` +
+              `(table: ${tbl.name}, batch offset: ${i}). ` +
+              `This may indicate a context-length overrun. Try reducing BATCH size or truncating long text fields.`
+            );
+          }
+
+          for (let j = 0; j < batch.length; j++) {
+            const vec = `[${embeddings[j].join(',')}]`;
+            await client.query(tbl.updateSql, [vec, batch[j][tbl.idCol]]);
+            done++;
+            process.stdout.write(`\r  ${done}/${rows.length} embedded...`);
+          }
         }
+        console.log(`\n${c.green('Done.')} ${tbl.name}: ${done} entries embedded.`);
+      } catch (err) {
+        console.error(`\n${c.red(`Error embedding ${tbl.name}:`)} ${err.message}`);
+        console.error(c.dim(`  ${done} rows written before failure. Re-run "index" to resume.`));
       }
-      console.log(`\n${c.green('Done.')} ${tbl.name}: ${done} entries embedded.`);
       totalDone += done;
     }
 
@@ -177,6 +199,10 @@ async function cmdIndex(forceAll) {
 async function cmdAdd(filepath, description) {
   const client = await connect(CONFIG);
   try {
+    if (!(await tableExists(client, 'code_index'))) {
+      console.error(c.red('code_index table does not exist. Run: node pipeline-db.js setup'));
+      return;
+    }
     await client.query(
       `INSERT INTO code_index (path, description)
        VALUES ($1, $2)
@@ -195,21 +221,25 @@ async function cmdAdd(filepath, description) {
 async function cmdSearch(query) {
   console.log(`${c.bold('Semantic search:')} "${query}"\n`);
 
-  const [qEmbedding] = await ollamaEmbed([query]);
-  const vec = `[${qEmbedding.join(',')}]`;
-
   const client = await connect(CONFIG);
   try {
+    // Pre-check: is there anything to search?
+    let anyEmbedded = false;
+    for (const tbl of TABLES) {
+      if (await hasAnyEmbeddings(client, tbl.name)) { anyEmbedded = true; break; }
+    }
+    if (!anyEmbedded) {
+      console.log(c.yellow('No embeddings found across any table. Run "index" first.'));
+      return;
+    }
+
+    const [qEmbedding] = await ollamaEmbed([query]);
+    const vec = `[${qEmbedding.join(',')}]`;
+
     let resultNum = 0;
 
     for (const tbl of TABLES) {
-      if (!(await tableExists(client, tbl.name))) continue;
-      if (!(await columnExists(client, tbl.name, 'embedding'))) continue;
-
-      const { rows: check } = await client.query(
-        `SELECT COUNT(*) FROM ${tbl.name} WHERE embedding IS NOT NULL`
-      );
-      if (parseInt(check[0].count) === 0) continue;
+      if (!(await hasAnyEmbeddings(client, tbl.name))) continue;
 
       const { rows } = await client.query(
         `SELECT ${tbl.selectCols},
@@ -227,13 +257,13 @@ async function cmdSearch(query) {
       rows.forEach((row) => {
         resultNum++;
         const score = (row.cosine_similarity * 100).toFixed(1);
-        const snippet = tbl.snippet(row).substring(0, 120).replace(/\n/g, ' ');
+        const snippet = (tbl.snippet(row) || '').substring(0, 120).replace(/\n/g, ' ');
         console.log(`${c.cyan(String(resultNum).padStart(2))}. ${c.bold(tbl.label(row))} ${c.dim(`(${score}%)`)}`);
         console.log(`    ${snippet}...\n`);
       });
     }
 
-    if (resultNum === 0) console.log(c.yellow('No results. Run "index" first.'));
+    if (resultNum === 0) console.log(c.yellow('No results.'));
   } finally {
     await client.end();
   }
@@ -252,16 +282,14 @@ async function cmdHybrid(query) {
     for (const tbl of TABLES) {
       if (!(await tableExists(client, tbl.name))) continue;
 
-      const hasEmbeddings = (await columnExists(client, tbl.name, 'embedding'))
-        && parseInt((await client.query(
-            `SELECT COUNT(*) FROM ${tbl.name} WHERE embedding IS NOT NULL`
-          )).rows[0].count) > 0;
+      const hasEmb = await hasAnyEmbeddings(client, tbl.name);
+      const hasFts = await columnExists(client, tbl.name, 'fts_vec');
 
       let rows;
-      if (!hasEmbeddings) {
+      if (!hasEmb) {
         // FTS-only fallback
-        const hasFts = await columnExists(client, tbl.name, 'fts_vec');
         if (!hasFts) continue;
+        console.log(c.yellow(`  (${tbl.name}: no embeddings — keyword-only results)`));
 
         const result = await client.query(
           `SELECT ${tbl.selectCols},
@@ -273,11 +301,25 @@ async function cmdHybrid(query) {
           [query]
         );
         rows = result.rows;
+      } else if (!hasFts) {
+        // Vector-only (fts_vec missing — schema not updated)
+        console.log(c.yellow(`  (${tbl.name}: no fts_vec column — vector-only results. Run setup to enable hybrid.)`));
+        if (!qEmb) { [qEmb] = await ollamaEmbed([query]); }
+        const vec = `[${qEmb.join(',')}]`;
+
+        const result = await client.query(
+          `SELECT ${tbl.selectCols},
+                  1 - (embedding <=> $1::vector) AS score
+           FROM ${tbl.name}
+           WHERE embedding IS NOT NULL
+           ORDER BY embedding <=> $1::vector
+           LIMIT 5`,
+          [vec]
+        );
+        rows = result.rows;
       } else {
         // Hybrid: 30% FTS + 70% vector
-        if (!qEmb) {
-          [qEmb] = await ollamaEmbed([query]);
-        }
+        if (!qEmb) { [qEmb] = await ollamaEmbed([query]); }
         const vec = `[${qEmb.join(',')}]`;
 
         const result = await client.query(
@@ -298,7 +340,7 @@ async function cmdHybrid(query) {
       console.log(c.bold(`── ${tbl.name} ──`));
       rows.forEach((row) => {
         resultNum++;
-        const snippet = tbl.snippet(row).substring(0, 120).replace(/\n/g, ' ');
+        const snippet = (tbl.snippet(row) || '').substring(0, 120).replace(/\n/g, ' ');
         console.log(`${c.cyan(String(resultNum).padStart(2))}. ${c.bold(tbl.label(row))} ${c.dim(`(${(row.score * 100).toFixed(1)}%)`)}`);
         console.log(`    ${snippet}...\n`);
       });

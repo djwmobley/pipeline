@@ -154,7 +154,7 @@ CREATE TABLE IF NOT EXISTS workflow_discovery (
   detail TEXT,
   status TEXT DEFAULT 'open',
   persona TEXT,                          -- which persona surfaced this (advocate, skeptic, etc.)
-  created_at TIMESTAMP DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- FTS on title + detail
@@ -170,7 +170,7 @@ CREATE INDEX IF NOT EXISTS wd_step_idx ON workflow_discovery (step);
 -- Add vector column if pgvector is available (idempotent)
 DO $$ BEGIN
   ALTER TABLE workflow_discovery ADD COLUMN IF NOT EXISTS embedding vector(1024);
-EXCEPTION WHEN OTHERS THEN
+EXCEPTION WHEN undefined_object THEN
   RAISE NOTICE 'Skipping vector column on workflow_discovery — pgvector not installed.';
 END $$;
 
@@ -188,7 +188,7 @@ CREATE TABLE IF NOT EXISTS agent_rewrites (
   effort TEXT,                           -- small, large, rewrite
   depends_on TEXT,
   status TEXT DEFAULT 'pending',
-  created_at TIMESTAMP DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- FTS on agent_name + as_is + to_be + gap
@@ -207,7 +207,7 @@ CREATE INDEX IF NOT EXISTS ar_effort_idx ON agent_rewrites (effort);
 -- Add vector column if pgvector is available (idempotent)
 DO $$ BEGIN
   ALTER TABLE agent_rewrites ADD COLUMN IF NOT EXISTS embedding vector(1024);
-EXCEPTION WHEN OTHERS THEN
+EXCEPTION WHEN undefined_object THEN
   RAISE NOTICE 'Skipping vector column on agent_rewrites — pgvector not installed.';
 END $$;
 
