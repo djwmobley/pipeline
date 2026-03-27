@@ -113,22 +113,41 @@ Task tool (general-purpose, model: {{MODEL}}):
     - **Big 4 impact:** [which dimensions affected and how]
     ```
 
-    ## Step 4 — Constraints Summary
+    ## Step 4 — Engineering Standards Sections
 
-    After all decisions, produce a flat list of ALL implementer constraints:
+    After the decisions, produce these additional sections by synthesizing across
+    all specialist outputs and the recon findings:
 
-    ```
-    ## Constraints Summary
+    ### Typed Contracts
+    Extract concrete API shapes and key interfaces from the decisions and spec:
+    - API endpoints table: Method, Path, Request shape, Response shape, Auth
+    - Key TypeScript interfaces for shared data models
+    - These must be concrete enough to generate stubs for parallel development
 
-    - [DECISION-001] [constraint 1]
-    - [DECISION-001] [constraint 2]
-    - [DECISION-002] [constraint 1]
-    ...
-    ```
+    ### Security Standards
+    Bulleted list of security rules derived from decisions and specialist outputs:
+    - Input validation strategy
+    - Secret management approach
+    - Authentication/authorization pattern
+    - Known attack surface mitigations
 
+    ### Testing Standards
+    Bulleted list from TEST domain specialist (if dispatched) and decisions:
+    - What requires unit tests vs integration tests
+    - Test file location convention
+    - Coverage expectations
+
+    ### Banned Patterns
+    Table of patterns that MUST NOT appear, derived from decisions and non-negotiables:
+    | Pattern | Why Banned | Use Instead |
+
+    ## Step 5 — Constraints Summary
+
+    After all sections, produce a flat list of ALL implementer constraints from
+    decisions, security standards, testing standards, and banned patterns combined.
     This flat list is what gets injected into build agent prompts.
 
-    ## Step 5 — Flag for Builder Review
+    ## Step 6 — Flag for Builder Review
 
     List any decisions with LOW confidence. For each:
     - State the decision
@@ -144,8 +163,20 @@ Task tool (general-purpose, model: {{MODEL}}):
     ## Decisions
     [all DECISION-NNN entries]
 
+    ## Typed Contracts
+    [API endpoints table + key interfaces]
+
+    ## Security Standards
+    [bulleted rules]
+
+    ## Testing Standards
+    [bulleted rules]
+
+    ## Banned Patterns
+    [table: Pattern | Why Banned | Use Instead]
+
     ## Constraints Summary
-    [flat list]
+    [flat list — ALL constraints from all sections]
 
     ## Builder Review Required
     [LOW confidence decisions needing input, or "None — all decisions are HIGH/MEDIUM confidence"]

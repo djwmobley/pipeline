@@ -35,7 +35,7 @@ digraph architect {
   parallel [label="Launch domain specialists\nin parallel (sonnet)"];
   synth [label="Lead architect (opus)\nSynthesize + resolve conflicts"];
   persist [label="Persist decisions\nto knowledge tier"];
-  save [label="Save artifact\ndocs/plans/"];
+  save [label="Save artifact\ndocs/architecture.md"];
   done [label="Done" shape=doublecircle];
 
   start -> check_size;
@@ -172,13 +172,57 @@ DETAIL
 
 ### Step 6 — Save Artifact
 
-Save to `docs/plans/YYYY-MM-DD-{feature}-decisions.md`:
+Save to `docs/architecture.md` at the project root. This is a persistent, evolving document —
+not per-feature. If it already exists, merge new content with existing (keep non-contradicted
+decisions, update changed ones with `**Updated:** [date]`).
 
 ```markdown
-# Architectural Decisions — [Feature Name]
+# Architecture — [Project Name]
 
-**Date:** [date] | **Profile:** [profile] | **Domains analyzed:** [list]
-**Spec:** [path to source spec]
+**Last updated:** [date] | **Profile:** [profile] | **Domains analyzed:** [list]
+
+## Project Structure
+
+[Directory layout with purpose annotations. Generated from recon output.]
+
+```
+src/
+  app/          — Next.js App Router pages and layouts
+  components/   — Shared React components
+  lib/          — Business logic and utilities
+  ...
+```
+
+## Code Patterns
+
+[Established patterns from the codebase. Each pattern is a concrete rule.]
+
+- **Component style:** [e.g., "Server components by default; 'use client' only for interactivity"]
+- **Data fetching:** [e.g., "No raw fetch(); all data through useQuery hooks"]
+- **Error handling:** [e.g., "Error boundaries at route level; try/catch in server actions"]
+- **State management:** [e.g., "URL state for filters; React context for auth; no global store"]
+
+## Typed Contracts
+
+[Function signatures, API shapes, and data models concrete enough to generate stubs.
+ These enable parallel development — one team can code against the contract before
+ the implementation exists.]
+
+### API Endpoints
+
+| Method | Path | Request | Response | Auth |
+|--------|------|---------|----------|------|
+| POST | /api/example | `{ field: string }` | `{ id: string, created: Date }` | required |
+
+### Key Interfaces
+
+```typescript
+// [interface name] — [purpose]
+interface Example {
+  id: string;
+  // ...
+}
+```
 
 ## Decisions
 
@@ -188,16 +232,37 @@ Save to `docs/plans/YYYY-MM-DD-{feature}-decisions.md`:
 - **Rationale:** [why, trade-offs considered]
 - **Confidence:** HIGH/MEDIUM/LOW
 - **Constraints for implementers:**
-  - [concrete rule — e.g., "No raw fetch(); all data through useQuery hooks"]
-  - [concrete rule — e.g., "Server components by default; 'use client' only for interactivity"]
-- **Invalidate if:** [condition that makes this stale — e.g., "deployment target changes from Vercel to self-hosted"]
-- **Big 4 impact:** [which dimensions this affects and how]
+  - [concrete rule]
+- **Invalidate if:** [condition]
 
 [repeat for each decision]
 
+## Security Standards
+
+- [e.g., "All user input validated with Zod at API boundary"]
+- [e.g., "No secrets in client bundles; server-only via 'server-only' package"]
+- [e.g., "CSRF protection via SameSite cookies + origin check"]
+- [e.g., "SQL injection prevention: parameterized queries only, no string interpolation"]
+
+## Testing Standards
+
+- [e.g., "Unit tests required for business logic; optional for UI components"]
+- [e.g., "Integration tests at API boundary; e2e for critical user flows"]
+- [e.g., "Test file co-located: `foo.test.ts` next to `foo.ts`"]
+
+## Banned Patterns
+
+[Patterns that MUST NOT appear in the codebase. Build agents and reviewers check against this.]
+
+| Pattern | Why Banned | Use Instead |
+|---------|-----------|-------------|
+| `any` type | Defeats type safety | Explicit types or `unknown` |
+| `document.cookie` | XSS vector | Server-only session management |
+
 ## Constraints Summary
 
-[Flat bulleted list of ALL constraints from all decisions — this is what the planner and build agents consume]
+[Flat bulleted list of ALL implementer constraints from all sections above —
+ this is what the planner and build agents consume directly.]
 
 ## Override Instructions
 
