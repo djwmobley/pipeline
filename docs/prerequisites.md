@@ -10,9 +10,13 @@ Already have Git and Claude Code? You're ready:
 claude plugin install --scope user https://github.com/djwmobley/pipeline
 ```
 
-Then open Claude Code in any project and run `/pipeline:init`. Pipeline detects your stack, generates config, and works immediately. Everything below is optional and adds capabilities — Postgres adds searchable history, Ollama adds semantic search, browser tools add UI review, etc.
+Then open Claude Code in any project and run `/pipeline:init`. Pipeline detects your stack, generates config, and works immediately.
 
-**Only Git and Claude Code are required.** Read on for the full setup if you want the extras.
+**For TINY/MEDIUM changes:** Git and Claude Code are all you need.
+
+**For LARGE/MILESTONE orchestrated workflows:** Add PostgreSQL. The orchestrator persists workflow state, three-store A2A agent reporting, and structured task tracking in Postgres. Without it, you can still use individual commands but won't get the full 13-step orchestrated pipeline.
+
+Read on for the full setup if you want the extras — Ollama adds semantic search, browser tools add UI review, etc.
 
 ---
 

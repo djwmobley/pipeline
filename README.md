@@ -6,7 +6,7 @@
   <img src="docs/assets/hero.png" alt="Pipeline — one plugin, full pipeline" width="700">
 </p>
 
-A [Claude Code](https://docs.anthropic.com/en/docs/claude-code) plugin that matches process to change size. A one-line fix gets committed in seconds. A new feature gets designed, planned, built by subagents, and reviewed — automatically.
+An agent workflow engine for [Claude Code](https://docs.anthropic.com/en/docs/claude-code). A content-blind orchestrator routes stateless AI agents through a 13-step quality pipeline — from brainstorm to deploy — with agents reading context from and writing results to shared stores. A one-line fix gets committed in seconds. A new feature gets designed, debated, built, reviewed, and security-tested — automatically.
 
 ## What Using It Looks Like
 
@@ -55,18 +55,20 @@ Every finding has a severity (🔴 HIGH / 🟡 MEDIUM / 🔵 LOW), a confidence 
 
 ### You build a new feature (LARGE change)
 
-You describe what you want. Pipeline routes you through the full workflow:
+You describe what you want. The orchestrator routes you through the full workflow. Your engagement style (expert/guided/full-guidance) controls question depth — an expert gets minimal questions, a newcomer gets thorough explanations at every step:
 
 1. **`/pipeline:brainstorm`** — asks clarifying questions one at a time, proposes 2-3 approaches, writes a spec. Creates a GitHub feature epic if issue tracking is enabled.
 2. **`/pipeline:debate`** — three parallel agents (Advocate, Skeptic, Practitioner) stress-test the spec from first principles. Produces constraints the plan must respect.
 3. **`/pipeline:architect`** — parallel domain specialists assess your technology choices and produce decision records that constrain the build
 4. **`/pipeline:plan`** — turns the spec into bite-sized tasks with architectural constraints, debate verdict, and a QA strategy. For LARGE/MILESTONE, generates a standalone QA test plan with work packages.
-5. **`/pipeline:build`** — dispatches a fresh subagent for each task with architectural constraints injected. Each agent gets only its task and relevant files — no accumulated context, so quality doesn't degrade over a 15-task build. A reviewer agent checks each task before moving to the next.
+5. **`/pipeline:build`** — dispatches a fresh subagent for each task. Agents are stateless — they read their own context from stores (architecture plan, decisions, gotchas, GitHub issues, build state) rather than receiving pasted context. No accumulated context means quality doesn't degrade over a 15-task build. A reviewer agent checks each task before moving to the next.
 6. **`/pipeline:qa verify`** — parallel QA workers execute the test plan, a seam pass verifies integration boundaries
 7. **`/pipeline:review --since abc123`** — runs SAST scanning (semgrep + custom security rules), agent template lint if prompt templates changed, then reviews everything built since the baseline commit
-8. **`/pipeline:finish`** — merge, PR, dashboard update
+8. **`/pipeline:finish`** — merge, PR, compiled epic summary, dashboard update
 
-Architect and QA activate automatically for LARGE/MILESTONE changes — you can skip them if you've already made your technology choices or want to handle QA yourself. For MEDIUM changes, these capabilities run invisibly inside plan and build.
+Architect and QA activate automatically for LARGE/MILESTONE changes — you can skip them if you've already made your technology choices or want to handle QA yourself. For MEDIUM changes, these capabilities run invisibly inside plan and build. Your security policy (every-feature/milestone/on-demand) controls when red team and purple team run automatically.
+
+Every agent writes results to three stores (Postgres, GitHub issues, build-state) — this A2A protocol means downstream agents pick up where upstream agents left off without the orchestrator carrying content. See the **[workflow reference](docs/workflow-reference.md)** for the full 13-step graph with routing rules and failure paths.
 
 ### You finish a feature (MILESTONE)
 
@@ -198,7 +200,7 @@ You don't need to learn these upfront. They'll surface naturally — `/pipeline:
 
 | Tool | What It Adds | Without It |
 |------|-------------|------------|
-| PostgreSQL | Semantic search across sessions, structured task tracking, security assessment history | Markdown files (works fine, no search) |
+| PostgreSQL | Orchestrator workflow state, semantic search, structured task tracking, three-store A2A reporting | Markdown files (works for TINY/MEDIUM, no orchestrated workflows) |
 | [Ollama](https://ollama.com) | Vector similarity search (runs an embedding model locally — no API keys, no cloud) | Keyword search only |
 | GitHub CLI | PR creation, lifecycle issue tracking (feature epics, finding issues) | Push and use the browser, no issue tracking |
 | Chrome / Playwright | Automatic screenshots for UI review | Provide screenshots yourself |
@@ -283,12 +285,21 @@ Tracked items for future development. Checked items are shipped.
 - [x] Research folded into brainstorm — standalone `/pipeline:research` replaced with a verification gate (step 4) inside brainstorm that dispatches parallel agents when unfamiliar tech is detected
 - [x] `--quick` mode for init — `/pipeline:init --quick` auto-detects everything, makes all decisions, auto-installs Playwright/Postgres/Ollama models, prints decision log
 - [x] Compliance framework mapping — `/pipeline:compliance` maps red team CWE findings to 7 regulatory frameworks (NIST 800-53, PCI DSS, ISO 27001, NIST CSF, SOC 2, GDPR, HIPAA) with tiered mapping quality, coverage scope analysis, and evidence narrative generation. Integrated as optional Phase 4 in `/pipeline:security`.
-- [x] Antagonistic design debate — `/pipeline:debate` dispatches Advocate, Skeptic, and Practitioner agents to stress-test specs before planning. Produces structured verdicts consumed by `/pipeline:plan`.
+- [x] Antagonistic design debate
+- [x] Content-blind orchestrator — 13-step state machine with failure routing, loopback, and workflow state persistence in Postgres
+- [x] Three-store A2A reporting — agents write to Postgres + GitHub + build-state; downstream agents read from stores
+- [x] V2 agent rewrite (23/23 agents) — store-read pattern, ANTI-RATIONALIZATION blocks, reporting contracts, engagement style, compliance awareness
+- [x] Workflow reference doc — exhaustive 13-step reference with routing rules, agent mappings, and three-store contracts
+- [ ] Prompt caching — API-based dispatch for token savings — `/pipeline:debate` dispatches Advocate, Skeptic, and Practitioner agents to stress-test specs before planning. Produces structured verdicts consumed by `/pipeline:plan`.
 
 ## What's Original to Pipeline
 
 These features don't trace to any prior work:
 
+- **Content-blind orchestrator** — a state machine that routes between 13 steps based on artifact existence and status codes, never reading content. Failure loops (review/qa FAIL → build) and loopback (purple 2x FAIL → architect) are graph edges, not conditional logic. The orchestrator is a workflow engine, not a build bot.
+- **Three-store A2A protocol** — every agent writes to Postgres + GitHub issues + build-state.json on completion. Downstream agents read from these stores to pick up context. The orchestrator carries only IDs and status — zero content forwarding. This pub/sub pattern keeps token overhead constant regardless of pipeline depth.
+- **Stateless agent dispatch** — agents read their own context from shared stores (architecture plan, decisions, gotchas, task issues, build state) rather than receiving pasted context blocks. This means agent quality doesn't degrade as pipelines grow — each agent starts fresh with only what it needs.
+- **Engagement style system** — a single choice (expert/guided/full-guidance) at init propagates throughout the pipeline, controlling question depth in brainstorm, explanation detail in init, and workflow view complexity in the dashboard.
 - **Size routing** — TINY/MEDIUM/LARGE/MILESTONE classification that determines how much process to apply. A one-line fix skips review. A new feature gets the full pipeline. None of the source projects adjust ceremony to change size.
 - **Model routing** — automatic haiku/sonnet/opus assignment by task complexity. Cheaper models for mechanical work, capable models for judgment.
 - **Config-driven architecture** — a single `pipeline.yml` replaces all hardcoded paths, commands, frameworks, and patterns. Move between projects by running init.

@@ -4,7 +4,9 @@
 
 Hit an error? See the [error reference](errors.md) for recovery paths.
 
-All Pipeline commands, their arguments, and what they do. Commands are grouped by layer — most users only need Layer 1.
+Pipeline is an agent workflow engine. Commands are the user-facing entry points — each one corresponds to a step in the [13-step orchestrator](workflow-reference.md). The orchestrator routes between steps based on artifact existence and status codes. Agents are stateless — they read context from shared stores and write results back via the three-store A2A protocol.
+
+All commands, their arguments, and what they do. Commands are grouped by layer — most users only need Layer 1.
 
 ## Layer 1 — Quality Gates (daily use)
 
