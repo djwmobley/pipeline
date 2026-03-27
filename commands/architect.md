@@ -228,3 +228,21 @@ If `integrations.github.enabled` AND `integrations.github.issue_tracking`:
 If `dashboard.enabled` is true in pipeline.yml:
 
 Locate and read the dashboard skill, then regenerate `docs/dashboard.html`.
+
+---
+
+### Orchestrator
+
+Record step completion with `docs/architecture.md` as the output artifact:
+
+```bash
+node '[SCRIPTS_DIR]/orchestrator.js' complete architect PASS 'docs/architecture.md'
+```
+
+If the architect step was skipped (non-LARGE change), still record a PASS so the orchestrator can advance past this step:
+
+```bash
+node '[SCRIPTS_DIR]/orchestrator.js' complete architect PASS 'skipped'
+```
+
+Without this call, the workflow will be stuck waiting for architect to complete — the orchestrator does not auto-skip optional steps whose inputs are met.

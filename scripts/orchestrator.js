@@ -59,6 +59,7 @@ const STEPS = {
     outputs: [{ type: 'glob', pattern: 'docs/findings/debate-*.md' }],
     next: 'architect',
     required: false,  // user can skip — MAY checkpoint
+    onFail: 'brainstorm',  // rethink disposition → back to brainstorm
   },
   architect: {
     order: 5,

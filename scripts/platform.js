@@ -68,9 +68,15 @@ function loadPlatformConfig() {
   }
 
   const content = fs.readFileSync(configPath, 'utf8');
+
+  // Always extract project.repo — needed for GitHub operations regardless of platform config
+  const repoMatch = content.match(/^\s+repo:\s*["']?([^"'\s#]+)["']?/m);
+
   const platformMatch = content.match(/^platform:\s*$/m);
   if (!platformMatch) {
-    return { code_host: 'github', issue_tracker: 'github' };
+    const defaults = { code_host: 'github', issue_tracker: 'github' };
+    if (repoMatch) defaults.repo = repoMatch[1];
+    return defaults;
   }
 
   // Simple YAML extraction — no dependency needed for flat config
@@ -103,8 +109,7 @@ function loadPlatformConfig() {
     }
   }
 
-  // Also extract project.repo for GitHub operations
-  const repoMatch = content.match(/^\s+repo:\s*["']?([^"'\s#]+)["']?/m);
+  // project.repo was already extracted above (before platform section parsing)
   if (repoMatch) config.repo = repoMatch[1];
 
   return config;

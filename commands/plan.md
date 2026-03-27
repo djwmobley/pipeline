@@ -241,3 +241,15 @@ Locate and read the dashboard skill:
 2. Otherwise: use Glob `**/pipeline/skills/dashboard/SKILL.md` to find it
 
 Follow the dashboard skill to regenerate `docs/dashboard.html` with current project state.
+
+---
+
+### Orchestrator
+
+Record step completion with the plan file as the output artifact:
+
+```bash
+node '[SCRIPTS_DIR]/orchestrator.js' complete plan PASS '[plan file path]'
+```
+
+If the plan was not saved (user abandoned or TBD density too high), do NOT call the orchestrator.

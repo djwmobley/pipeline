@@ -210,3 +210,15 @@ This might not need a full plan. You can implement directly and /pipeline:commit
 ```
 
 Determine the size from the spec's scope — component count, file count estimates, whether new technology choices are needed. When in doubt, recommend the larger workflow.
+
+---
+
+### Orchestrator
+
+Record step completion with the spec file as the output artifact:
+
+```bash
+node '[SCRIPTS_DIR]/orchestrator.js' complete brainstorm PASS '[spec file path]'
+```
+
+If brainstorm failed (no spec was saved), do NOT call the orchestrator.

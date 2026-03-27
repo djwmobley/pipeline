@@ -289,3 +289,24 @@ Verdict saved to [path].
 Next: /pipeline:plan — the plan command will read the verdict file and incorporate
 the constraints and risk mitigations automatically.
 ```
+
+---
+
+### Orchestrator
+
+Record step completion with the verdict file as the output artifact. Map disposition to result code:
+
+- `proceed` or `proceed-with-constraints` → `PASS`
+- `rethink` → `FAIL` (routes back to brainstorm via orchestrator's onFail)
+
+```bash
+node '[SCRIPTS_DIR]/orchestrator.js' complete debate [PASS|FAIL] '[verdict file path]'
+```
+
+**If the debate was skipped** (TINY/MEDIUM change), still record a PASS so the orchestrator can advance past this step:
+
+```bash
+node '[SCRIPTS_DIR]/orchestrator.js' complete debate PASS 'skipped'
+```
+
+Without this call, the workflow will be stuck waiting for debate to complete — the orchestrator does not auto-skip optional steps whose inputs are met.
