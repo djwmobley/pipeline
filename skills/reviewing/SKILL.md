@@ -150,7 +150,7 @@ BODY
 
 Post the review verdict as a comment on the task issue:
 ```
-gh issue comment [GITHUB_ISSUE] --repo '[GITHUB_REPO]' --body "$(cat <<'EOF'
+cat <<'EOF' | node '[SCRIPTS_DIR]/platform.js' issue comment [GITHUB_ISSUE] --stdin
 ## Review
 **Verdict:** [PASS/FAIL]
 **Findings:** [N] high, [M] medium, [P] low
@@ -159,8 +159,9 @@ gh issue comment [GITHUB_ISSUE] --repo '[GITHUB_REPO]' --body "$(cat <<'EOF'
 
 [For FAIL: list 🔴 HIGH finding IDs + one-line descriptions]
 EOF
-)"
 ```
+
+If the command fails, notify the user with the error and ask for guidance.
 
 ### 3. Build State
 

@@ -393,7 +393,7 @@ All finding sources produce identical artifacts — same issue format, same comm
 - `--file path/to/file.md` — external report (QA, UX designer, etc.)
 
 **Ticket backends (checked in priority order):**
-1. **GitHub Issues** — when `integrations.github.enabled`. The issue body IS the ticket. Agents read with `gh issue view`.
+1. **Issue Tracker** — when `platform.issue_tracker` is not `none`. The issue body IS the ticket. Agents read with `node scripts/platform.js issue view`.
 2. **Postgres** — when `knowledge.tier == "postgres"`. Finding records in the `findings` table. Agents read with `pipeline-db.js get finding`.
 3. **Files** — always available as fallback. Inline context in prompts (only case where this is necessary).
 
@@ -701,6 +701,46 @@ See the [configuration guide](guide.md#knowledge-tiers) for setup and all subcom
 
 ---
 
+### `scripts/platform.js` — Platform Abstraction CLI
+
+Unified interface for issue tracking and code hosting operations. All agents call this instead of platform-specific CLIs.
+
+**Issue operations:**
+```bash
+node scripts/platform.js issue create --title "Title" --body "Body" --labels "label1,label2"
+node scripts/platform.js issue comment <ref> --stdin          # Read body from stdin
+node scripts/platform.js issue close <ref>
+node scripts/platform.js issue list --labels "pipeline" --state open
+node scripts/platform.js issue view <ref>
+node scripts/platform.js issue edit <ref> --stdin
+node scripts/platform.js issue reopen <ref>
+node scripts/platform.js issue search "query" --state open --limit 5
+```
+
+**PR operations:**
+```bash
+node scripts/platform.js pr create --title "Title" --source feat/x --target main --stdin
+node scripts/platform.js pr merge <ref> --squash --delete-branch
+node scripts/platform.js pr comment <ref> --stdin
+node scripts/platform.js pr diff <ref>
+node scripts/platform.js pr view <ref>
+```
+
+**Auth verification:**
+```bash
+node scripts/platform.js auth check
+```
+
+**Behavior:**
+- Reads platform config from `.claude/pipeline.yml` (`platform.*` section)
+- Dispatches to GitHub (`gh`) or Azure DevOps (`az`) backend transparently
+- All verification and retry (3 attempts, exponential backoff 2s/4s/8s) happens in Node.js code
+- Exit 0 with ref/data on stdout = success. Exit 1 with error on stderr = failure
+- Uses `execFile` (not `exec`) for shell safety — no injection via argument content
+- `--stdin` flag reads long-form content from stdin to avoid shell escaping issues
+
+---
+
 ## Auto-Persistence
 
 Every state-changing command automatically persists its outputs to the configured knowledge tier. You never need to call `/pipeline:knowledge` manually — data flows silently as commands run.
@@ -744,7 +784,7 @@ Pipeline maintains three tracking stores with a clear hierarchy:
 **`pipeline-db.js` task field updates:**
 
 ```
-update task <id> github_issue <N>     # Link task to GitHub issue
+update task <id> issue_ref <N>        # Link task to issue/work-item
 update task <id> readme_label "<text>" # Set README roadmap display label
 update task <id> category <value>     # roadmap | build | finding | internal
 ```

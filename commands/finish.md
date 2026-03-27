@@ -1,5 +1,5 @@
 ---
-allowed-tools: Bash(git*), Bash(cd*), Bash(npx*), Bash(npm*), Bash(cargo*), Bash(go*), Bash(gh*)
+allowed-tools: Bash(git*), Bash(cd*), Bash(npx*), Bash(npm*), Bash(cargo*), Bash(go*), Bash(node*), Bash(cat*)
 description: Branch completion workflow — verify tests, present options, execute choice, clean up
 ---
 
@@ -74,19 +74,23 @@ Which option? (default: 1)
 
 <!-- checkpoint:MUST finish-merge-verify -->
 
-If a PR exists for the feature branch, merge via `gh pr merge` to preserve the audit trail:
+If a PR exists for the feature branch, merge via `platform.js pr merge` to preserve the audit trail:
 
 ```bash
 # Check if PR exists
-gh pr view [feature-branch] --repo '[project.repo]' --json number,state -q '.number' 2>/dev/null
+node '[SCRIPTS_DIR]/platform.js' pr view [feature-branch] 2>/dev/null
 ```
+
+If the command fails, notify the user with the error and ask for guidance.
 
 If a PR exists:
 ```bash
-gh pr merge [PR_NUMBER] --repo '[project.repo]' --squash --delete-branch
+node '[SCRIPTS_DIR]/platform.js' pr merge [PR_NUMBER] --squash --delete-branch
 git checkout [base-branch]
 git pull
 ```
+
+If the command fails, notify the user with the error and ask for guidance.
 
 If NO PR exists, fall back to local merge:
 ```bash
@@ -131,10 +135,7 @@ Before creating the PR, check the most recent plan file in `docs.plans_dir` for 
 
 ```bash
 git push -u origin [feature-branch]
-gh pr create --title "$(cat <<'TITLE'
-[title]
-TITLE
-)" --body "$(cat <<'EOF'
+cat <<'EOF' | node '[SCRIPTS_DIR]/platform.js' pr create --title '[title]' --stdin
 ## Summary
 [2-3 bullets]
 
@@ -143,8 +144,9 @@ TITLE
 
 [If epic found: Part of #[EPIC_N]]
 EOF
-)"
 ```
+
+If the command fails, notify the user with the error and ask for guidance.
 Then cleanup worktree (Step 5).
 
 **Option 4: Keep as-is**
@@ -209,7 +211,7 @@ SQL
 
 Compile into a single comment and post to the epic:
 ```bash
-gh issue comment '[EPIC_N]' --repo '[project.repo]' --body "$(cat <<'EOF'
+cat <<'EOF' | node '[SCRIPTS_DIR]/platform.js' issue comment '[EPIC_N]' --stdin
 ## Ship Summary
 
 ### Review
@@ -229,8 +231,9 @@ gh issue comment '[EPIC_N]' --repo '[project.repo]' --body "$(cat <<'EOF'
 
 **Merged:** [SHA] → [base-branch]
 EOF
-)"
 ```
+
+If the command fails, notify the user with the error and ask for guidance.
 
 This is the ONLY comment posted to the epic by any command. All phase-level
 detail lives on task issues. The epic summary is a compiled bird's-eye view.
@@ -247,7 +250,7 @@ detail lives on task issues. The epic summary is a compiled bird's-eye view.
 2. Query Postgres for the roadmap task:
    ```bash
    PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js query "$(cat <<'SQL'
-   SELECT * FROM tasks WHERE github_issue = [N] AND category = 'roadmap'
+   SELECT * FROM tasks WHERE issue_ref = [N] AND category = 'roadmap'
    SQL
    )"
    ```
@@ -265,10 +268,12 @@ detail lives on task issues. The epic summary is a compiled bird's-eye view.
 PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update task [id] done
 ```
 
-**Close GitHub issue** — only if `integrations.github.enabled` AND the task has a `github_issue` value:
+**Close issue** — only if `platform.issue_tracker` is not `none` AND the task has an `issue_ref` value:
 ```bash
-gh issue close [N] --repo '[project.repo]' --comment '## Shipped'
+node '[SCRIPTS_DIR]/platform.js' issue close [N] --comment '## Shipped'
 ```
+
+If the command fails, notify the user with the error and ask for guidance.
 
 **Report:**
 ```

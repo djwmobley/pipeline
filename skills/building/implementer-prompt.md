@@ -71,8 +71,10 @@ Task tool (general-purpose, model: {{MODEL}}):
     Read the task issue for additional context, comments, and requirements
     from prior pipeline phases:
     ```bash
-    gh issue view [TASK_ISSUE] --repo '[GITHUB_REPO]' --json title,body,labels,comments
+    node '[SCRIPTS_DIR]/platform.js' issue view [TASK_ISSUE]
     ```
+
+    If the command fails, notify the user with the error and ask for guidance.
 
     The issue may contain discussion, clarifications, or updated requirements.
     Read it before starting implementation.
@@ -187,7 +189,7 @@ Task tool (general-purpose, model: {{MODEL}}):
 
     Post implementation report on the task issue:
     ```bash
-    gh issue comment [TASK_ISSUE] --repo '[GITHUB_REPO]' --body "$(cat <<'EOF'
+    cat <<'EOF' | node '[SCRIPTS_DIR]/platform.js' issue comment [TASK_ISSUE] --stdin
     ## Implementation — Task [TASK_NUMBER]
     **Status:** [DONE/DONE_WITH_CONCERNS/BLOCKED/NEEDS_CONTEXT]
     **Commit:** [SHA]
@@ -196,8 +198,9 @@ Task tool (general-purpose, model: {{MODEL}}):
     [For DONE_WITH_CONCERNS: list concerns]
     [For BLOCKED/NEEDS_CONTEXT: describe what's needed]
     EOF
-    )"
     ```
+
+    If the command fails, notify the user with the error and ask for guidance.
 
     ### 3. Build State
 

@@ -6,9 +6,10 @@ Use this template when dispatching the opus planner for architectural fixes.
 1. `{{MODEL}}` → value of `models.architecture` from pipeline.yml (e.g., `opus`)
 2. `[FINDING_ID]` → the finding ID (e.g., RT-AUTH-002)
 3. `{{TICKET_CONTEXT}}` → (same pattern as implementer/reviewer) Replace with ticket-reading instructions:
-   - **GitHub:** `Read the GitHub issue for full finding details: gh issue view [N] --repo '[repo]' --json title,body,labels,comments`
+   - **GitHub:** `Read the GitHub issue for full finding details: node '[SCRIPTS_DIR]/platform.js' issue view [N]`
    - **Postgres:** `Read the finding record: node scripts/pipeline-db.js get finding [ID]`
    - **Files (fallback):** Inline the finding record from triage output
+   - If the command fails, notify the user with the error and ask for guidance.
 4. `[AFFECTED_FILES]` → contents of all files involved in the finding
 5. `[PROJECT_CONTEXT]` → project name, framework, source_dirs, profile
 6. `[NON_NEGOTIABLE]` → review.non_negotiable[] from config

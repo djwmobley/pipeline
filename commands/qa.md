@@ -232,7 +232,7 @@ Find the epic number: read the spec or plan file for `github_epic: N`.
 **Plan mode:**
 - Comment on the epic that a test plan was created:
   ```bash
-  gh issue comment [N] --repo '[project.repo]' --body "$(cat <<'EOF'
+  cat <<'EOF' | node '[SCRIPTS_DIR]/platform.js' issue comment [N] --stdin
   ## QA Test Plan Created
 
   **Work packages:** [count]
@@ -241,19 +241,14 @@ Find the epic number: read the spec or plan file for `github_epic: N`.
 
   Plan: `[test plan file path]`
   EOF
-  )"
   ```
+  If the command fails, notify the user with the error and ask for guidance.
 - Update the epic status checklist (check `QA`).
 
 **Verify mode:**
 1. For each blocking FAIL where triage = code-is-wrong:
    ```bash
-   gh issue create --repo '[project.repo]' \
-     --title "$(cat <<'TITLE'
-   QA: [scenario ID] — [description]
-   TITLE
-   )" \
-     --body "$(cat <<'EOF'
+   cat <<'EOF' | node '[SCRIPTS_DIR]/platform.js' issue create --title 'QA: [scenario ID] — [description]' --labels 'pipeline:qa' --stdin
    ## QA Failure
 
    **Scenario:** [scenario ID]
@@ -263,9 +258,8 @@ Find the epic number: read the spec or plan file for `github_epic: N`.
 
    Linked to: #[EPIC_N]
    EOF
-   )" \
-     --label "pipeline:qa"
    ```
+   If the command fails, notify the user with the error and ask for guidance.
 2. Comment the verdict summary on the epic.
 
 If no epic found: skip — QA works without GitHub tracking.

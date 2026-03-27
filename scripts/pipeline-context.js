@@ -37,12 +37,14 @@ const CONFIG = loadConfig();
 // ─── SHELL HELPERS ──────────────────────────────────────────────────────────
 
 /**
- * Run gh CLI with args array (no shell interpolation — safe from injection).
+ * Run platform.js with args array (no shell interpolation — safe from injection).
+ * Routes all issue/PR operations through the platform abstraction layer.
  * Returns stdout as string, or null on failure.
  */
-function gh(args) {
+function platform(args) {
+  const platformScript = path.join(__dirname, 'platform.js');
   try {
-    return execFileSync('gh', args, {
+    return execFileSync(process.execPath, [platformScript, ...args], {
       encoding: 'utf8', timeout: 15000,
       stdio: ['pipe', 'pipe', 'pipe'],
     }).trim();
@@ -60,7 +62,7 @@ function gh(args) {
  */
 async function getTaskContext(client, taskId) {
   const { rows: [task] } = await client.query(
-    'SELECT id, title, status, phase, priority, github_issue, category FROM tasks WHERE id = $1',
+    'SELECT id, title, status, phase, priority, issue_ref, category FROM tasks WHERE id = $1',
     [taskId]
   );
   if (!task) return { error: `Task ${taskId} not found` };
@@ -73,13 +75,16 @@ async function getTaskContext(client, taskId) {
     [taskId]
   );
 
-  // GitHub issue body if linked
-  let githubBody = null;
-  if (task.github_issue) {
-    githubBody = gh(['issue', 'view', String(task.github_issue), '--json', 'body', '-q', '.body']);
+  // Issue body if linked — fetched via platform abstraction layer
+  let issueBody = null;
+  if (task.issue_ref) {
+    const raw = platform(['issue', 'view', String(task.issue_ref)]);
+    if (raw) {
+      try { issueBody = JSON.parse(raw).body || null; } catch (_) { issueBody = raw; }
+    }
   }
 
-  return { task, findings, githubBody };
+  return { task, findings, issueBody };
 }
 
 /**
@@ -125,7 +130,7 @@ async function getSecurityFindings(client, options = {}) {
   const whereClause = where.length > 0 ? `WHERE ${where.join(' AND ')}` : '';
   const { rows } = await client.query(
     `SELECT id, source, severity, confidence, location, category, description, impact,
-            remediation, effort, status, github_issue
+            remediation, effort, status, issue_ref
      FROM findings ${whereClause}
      ORDER BY CASE severity WHEN 'CRITICAL' THEN 0 WHEN 'HIGH' THEN 1 WHEN 'MEDIUM' THEN 2 ELSE 3 END
      LIMIT 50`,
@@ -163,7 +168,7 @@ async function getSessionContext(client) {
     'SELECT num, date, summary, tests FROM sessions ORDER BY num DESC LIMIT 1'
   );
   const { rows: tasks } = await client.query(
-    "SELECT id, title, status, github_issue FROM tasks WHERE status NOT IN ('done', 'deferred') ORDER BY id"
+    "SELECT id, title, status, issue_ref FROM tasks WHERE status NOT IN ('done', 'deferred') ORDER BY id"
   );
   const { rows: [{ count: gotchaCount }] } = await client.query(
     'SELECT COUNT(*) FROM gotchas WHERE active = TRUE'
@@ -192,19 +197,27 @@ function getBuildState(planPath) {
 }
 
 /**
- * GitHub issue context: body + comments for A2A communication.
- * Uses execFileSync (no shell) to prevent injection.
+ * Issue context: body + comments for A2A communication.
+ * Uses platform.js (no shell) to prevent injection and support multiple platforms.
  */
 function getGitHubContext(issueNum) {
   const num = String(issueNum);
-  const body = gh(['issue', 'view', num, '--json', 'body,title,state,labels']);
-  if (!body) return { error: `Could not fetch issue #${num} — gh CLI not available or issue not found` };
+  const raw = platform(['issue', 'view', num]);
+  if (!raw) return { error: `Could not fetch issue #${num} — platform CLI not available or issue not found` };
 
-  const comments = gh(['issue', 'view', num, '--json', 'comments', '-q', '.comments[].body']);
+  let issue;
+  try { issue = JSON.parse(raw); } catch (_) {
+    return { error: `Could not parse issue #${num} response` };
+  }
+
+  // platform.js issue view returns title,body,state,comments,labels
+  const comments = issue.comments
+    ? issue.comments.map((c) => c.body).join('\n---\n')
+    : '(no comments)';
 
   return {
-    issue: JSON.parse(body),
-    comments: comments || '(no comments)',
+    issue,
+    comments,
   };
 }
 

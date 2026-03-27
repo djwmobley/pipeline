@@ -414,16 +414,11 @@ Find the epic number: check the most recent spec or plan file for `github_epic: 
 
 1. For each CRITICAL or HIGH finding, check for existing issue first:
    ```bash
-   gh issue list --repo '[project.repo]' --search '[FINDING_ID] in:title' --state open --json number --limit 1
+   node '[SCRIPTS_DIR]/platform.js' issue search '[FINDING_ID] in:title' --state open --limit 1
    ```
    If an issue already exists for this finding ID, skip creation. Otherwise:
    ```bash
-   gh issue create --repo '[project.repo]' \
-     --title "$(cat <<'TITLE'
-   [FINDING_ID]: [brief summary]
-   TITLE
-   )" \
-     --body "$(cat <<'EOF'
+   cat <<'EOF' | node '[SCRIPTS_DIR]/platform.js' issue create --title '[FINDING_ID]: [brief summary]' --labels 'redteam,[severity]' --stdin
    ## Security Finding
 
    **Severity:** [CRITICAL/HIGH]
@@ -436,19 +431,18 @@ Find the epic number: check the most recent spec or plan file for `github_epic: 
 
    Linked to: #[EPIC_N]
    EOF
-   )" \
-     --label "redteam" --label "[severity]"
    ```
+   If the command fails, notify the user with the error and ask for guidance.
 2. Comment the summary on the epic:
    ```bash
-   gh issue comment [N] --repo '[project.repo]' --body "$(cat <<'EOF'
+   cat <<'EOF' | node '[SCRIPTS_DIR]/platform.js' issue comment [N] --stdin
    ## Red Team Assessment Complete
 
    **Findings:** [C] critical, [H] high, [M] medium, [L] low
    **Report:** `[report file path]`
    EOF
-   )"
    ```
+   If the command fails, notify the user with the error and ask for guidance.
 
 MEDIUM and LOW findings do NOT get issues — they stay in `docs/findings/` only.
 

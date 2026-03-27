@@ -198,7 +198,7 @@ If `integrations.github.enabled` AND `integrations.github.issue_tracking`:
 1. Read `github_epic: N` from the spec file's YAML frontmatter (same spec being debated).
 2. If found, post a summary comment on the epic:
    ```bash
-   gh issue comment [N] --repo '[project.repo]' --body "$(cat <<'EOF'
+   cat <<'EOF' | node '[SCRIPTS_DIR]/platform.js' issue comment [N] --stdin
    ## Design Debate
 
    **Disposition:** [proceed / proceed-with-constraints / rethink]
@@ -209,8 +209,8 @@ If `integrations.github.enabled` AND `integrations.github.issue_tracking`:
 
    Verdict: `[path to verdict file]`
    EOF
-   )"
    ```
+   If the command fails, notify the user with the error and ask for guidance.
 3. If no `github_epic` found in spec, skip — not all specs are tied to an epic.
 
 ---

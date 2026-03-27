@@ -50,8 +50,10 @@ Task tool (general-purpose, model: {{MODEL}}):
 
     Read the implementer's completion report from the task issue:
     ```bash
-    gh issue view [TASK_ISSUE] --repo '[GITHUB_REPO]' --json title,body,labels,comments
+    node '[SCRIPTS_DIR]/platform.js' issue view [TASK_ISSUE]
     ```
+
+    If the command fails, notify the user with the error and ask for guidance.
 
     Look for the most recent "## Implementation" comment — it contains the
     status, commit SHA, files changed, and any concerns. Extract the commit
@@ -254,7 +256,7 @@ Task tool (general-purpose, model: {{MODEL}}):
 
     Post review verdict on the task issue:
     ```bash
-    gh issue comment [TASK_ISSUE] --repo '[GITHUB_REPO]' --body "$(cat <<'EOF'
+    cat <<'EOF' | node '[SCRIPTS_DIR]/platform.js' issue comment [TASK_ISSUE] --stdin
     ## Post-Task Review — Task [TASK_NUMBER]
     **Verdict:** [PASS/FAIL]
     **Findings:** [N] high, [M] medium, [P] low
@@ -262,8 +264,9 @@ Task tool (general-purpose, model: {{MODEL}}):
 
     [For FAIL: list 🔴 HIGH finding IDs + one-line descriptions]
     EOF
-    )"
     ```
+
+    If the command fails, notify the user with the error and ask for guidance.
 
     ### 3. Build State
 

@@ -240,7 +240,7 @@ Task tool (general-purpose, model: {{MODEL}}):
 
     Post your domain results as a comment on the task issue:
     ```
-    gh issue comment [GITHUB_ISSUE] --repo '[GITHUB_REPO]' --body "$(cat <<'EOF'
+    cat <<'EOF' | node '[SCRIPTS_DIR]/platform.js' issue comment [GITHUB_ISSUE] --stdin
     ## Red Team Specialist: [DOMAIN_NAME] ([DOMAIN_ID])
     **Findings:** [N] ([C] critical, [H] high, [M] medium, [L] low)
     **Scan scope:** [diff-scoped N files | full scan]
@@ -248,8 +248,9 @@ Task tool (general-purpose, model: {{MODEL}}):
     [For findings: list finding IDs + one-line descriptions]
     [For clean cert: "Clean Domain Certificate issued"]
     EOF
-    )"
     ```
+
+    If the command fails, notify the user with the error and ask for guidance.
 
     ### 3. Build State
 

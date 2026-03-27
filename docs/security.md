@@ -299,3 +299,38 @@ compliance:
 | After purple team | `/pipeline:compliance` | Map findings to regulatory controls |
 | Pre-release check | `/pipeline:redteam` then full loop | Final security sweep |
 | Dependency update | `/pipeline:purpleteam` | Check if new vulnerabilities appeared |
+
+---
+
+## 10. Platform Credential Management
+
+Pipeline interacts with external platforms (GitHub, Azure DevOps) for issue tracking and PR operations via `scripts/platform.js`. Credentials must never be stored in source code, `pipeline.yml`, or committed files.
+
+### Supported Credential Methods
+
+| Platform | Recommended | Environment Variable | Credential Store |
+|----------|------------|---------------------|-----------------|
+| GitHub | `gh auth login` (interactive, stores in OS keychain) | `GITHUB_TOKEN` | macOS Keychain, Windows Credential Manager, `gh` auth token store |
+| Azure DevOps | `az login` (interactive, Entra ID) | `AZURE_DEVOPS_EXT_PAT` | Azure CLI token cache (`~/.azure/`), Windows Credential Manager |
+
+### Required PAT Scopes
+
+| Platform | Required Scopes | Why |
+|----------|----------------|-----|
+| GitHub | `repo`, `project` | Issue CRUD, PR CRUD, repo access |
+| Azure DevOps | Work Items (Read & Write), Code (Read & Write), Pull Request Threads (Read & Write) | Work item CRUD, PR CRUD, thread comments via REST API |
+
+### Security Rules
+
+1. **Never log credentials** — `platform.js` never echoes tokens, PATs, or auth headers to stdout/stderr
+2. **Validate auth before first use** — on first call, the script verifies the CLI is authenticated (e.g., `gh auth status`, `az account show`). If not, it exits with a message directing the user to authenticate
+3. **Never store credentials in pipeline.yml** — the config stores platform names and settings, never tokens or secrets
+4. **Environment variables for CI/CD** — CI environments should set `GITHUB_TOKEN` or `AZURE_DEVOPS_EXT_PAT` as pipeline/workflow secrets, never as plaintext in config files
+
+### Team Sharing
+
+For teams where multiple developers use Pipeline on the same project:
+
+- **GitHub:** Each developer authenticates with their own `gh auth login`. Pipeline uses whoever is currently authenticated.
+- **Azure DevOps:** Each developer authenticates with `az login` (Entra ID) or sets their own PAT. Organization-level PATs can be used for shared service accounts but should be stored in a secrets manager, not shared via chat/email.
+- **CI/CD:** Use repository/pipeline secrets (`GITHUB_TOKEN` in GitHub Actions, `AZURE_DEVOPS_EXT_PAT` in Azure Pipelines). Never commit tokens to source.

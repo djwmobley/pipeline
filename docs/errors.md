@@ -203,7 +203,7 @@ Pipeline detects optional tools at init time. When a tool is missing or becomes 
 |------|-------------------------|-----------------|
 | PostgreSQL | Semantic search, structured task/finding tracking | Files tier: markdown sessions, decisions, gotchas. All commands run. |
 | Ollama | Vector similarity search (embeddings) | FTS keyword search via Postgres, or no search on files tier |
-| GitHub CLI (`gh`) | PR creation from `/pipeline:finish`, lifecycle issue tracking (epics, finding issues) | Push manually, create PRs in browser, no issue tracking |
+| Platform CLI (`gh` / `az`) | PR creation from `/pipeline:finish`, lifecycle issue tracking (epics, finding issues) | Push manually, create PRs in browser, no issue tracking. Set `platform.issue_tracker: none` to suppress. |
 | Playwright | Automated screenshots (secondary path) | Chrome DevTools MCP, or provide screenshots manually |
 | Stitch / Figma MCP | AI design mockups in brainstorm and UI review | HTML wireframes via visual companion |
 | Sentry | Auto-pull recent errors in `/pipeline:debug` | Describe errors manually when prompted |
@@ -244,15 +244,49 @@ If you changed embedding models, you may need to drop and recreate the embedding
 
 ---
 
-### GitHub CLI not authenticated
+### PLATFORM_TWO_STORE: Unsupported platform
+
+**Commands:** Any command that creates issues, PRs, or comments
+
+**Why:** `platform.code_host` or `platform.issue_tracker` in `pipeline.yml` is set to an unsupported value. Supported values: `github`, `azure-devops`, `none`.
+
+**Fix:** Edit `.claude/pipeline.yml` and set the platform fields to a supported value. Run `/pipeline:init` to re-detect from git remote URL.
+
+---
+
+### Platform CLI not authenticated
 
 **Commands:** `/pipeline:finish` (PR creation), any command with issue tracking enabled
 
-**Why:** `gh auth status` shows not logged in, or `GITHUB_TOKEN` is not set or expired.
+**Why:** The platform CLI is not authenticated:
+- **GitHub:** `gh auth status` shows not logged in, or `GITHUB_TOKEN` is not set
+- **Azure DevOps:** `az account show` fails, or `AZURE_DEVOPS_EXT_PAT` is not set
 
-**Fix:** Run `gh auth login` and follow the prompts. Or set `GITHUB_TOKEN` as an environment variable.
+**Fix:**
+- **GitHub:** Run `gh auth login` or set `GITHUB_TOKEN`
+- **Azure DevOps:** Run `az login` or set `AZURE_DEVOPS_EXT_PAT`
 
-To disable issue tracking while keeping other functionality, set `integrations.github.issue_tracking: false` in `pipeline.yml`.
+To disable issue tracking entirely, set `platform.issue_tracker: none` in `pipeline.yml`.
+
+---
+
+### Azure DevOps extension not installed
+
+**Commands:** Any command that uses Azure DevOps operations
+
+**Why:** The `azure-devops` extension for Azure CLI is not installed.
+
+**Fix:** Run `az extension add --name azure-devops`.
+
+---
+
+### Azure DevOps work item state transition failed
+
+**Commands:** `/pipeline:remediate` (close finding issue), `/pipeline:finish` (close epic)
+
+**Why:** The configured `done_state` is not a valid transition for the work item's current state. State names vary by process template (Basic, Agile, Scrum, CMMI).
+
+**Fix:** Check your process template with `az devops project show --project <project> --query 'capabilities.processTemplate.templateName'`. Verify the `platform.azure_devops.done_state` in `pipeline.yml` matches your template. See `docs/security.md` section 10 for the state mapping table.
 
 ---
 

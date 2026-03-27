@@ -310,7 +310,7 @@ Controls `/pipeline:remediate` — multi-source finding remediation. Accepts fin
 **Migration:** The old `verification_rerun: true` boolean is no longer supported. Replace with the `verification` object above.
 
 **Ticket backends (checked in priority order):**
-1. GitHub Issues — when `integrations.github.enabled`. The issue body IS the finding data. Agents read with `gh issue view`.
+1. Issue tracker — when `platform.issue_tracker` is not `none`. The issue body IS the finding data. Agents read with `node scripts/platform.js issue view`.
 2. Postgres findings table — when `knowledge.tier == "postgres"`. Agents read with `pipeline-db.js get finding`.
 3. Files — always available as fallback.
 
@@ -520,7 +520,7 @@ knowledge:
 | `/pipeline:knowledge hybrid "query"` | Keyword + vector search |
 | `/pipeline:knowledge index` | Update embeddings |
 | `/pipeline:knowledge query "SQL"` | Run raw SQL |
-| `/pipeline:knowledge task ID github_issue N` | Link task to GitHub issue |
+| `/pipeline:knowledge task ID issue_ref N` | Link task to issue/work-item |
 | `/pipeline:knowledge task ID readme_label "text"` | Set README roadmap display label |
 | `/pipeline:knowledge task ID category value` | Set category: roadmap, build, finding, internal |
 | `/pipeline:knowledge export` | Export gotchas + decisions to JSON |
@@ -583,6 +583,60 @@ All profiles get the base checks (database access control, input sanitization, n
 | Mobile, Mobile + Web | Secure storage — never store tokens in plain storage |
 | API | Rate limiting, authentication, input schema validation |
 | Library | Boundary type validation — never trust caller input |
+
+---
+
+## Platform Configuration
+
+Pipeline uses a platform abstraction layer (`scripts/platform.js`) for all issue tracking and PR operations. The platform is detected during init from your git remote URL.
+
+### Supported Platforms
+
+| Platform | CLI Tool | Issue Tracking | Code Hosting | Status |
+|----------|---------|---------------|-------------|--------|
+| GitHub | `gh` (official) | Yes | Yes | Shipped |
+| Azure DevOps | `az devops` + `az rest` | Yes (Work Items) | Yes (PRs) | Shipped |
+| GitLab | `glab` (official) | Yes | Yes (MRs) | Planned |
+| Jira | `jira-cli` (community) | Yes | No (pairs with code host) | Planned |
+
+### Platform Config
+
+```yaml
+platform:
+  code_host: "github"          # github, azure-devops, none
+  issue_tracker: "github"      # github, azure-devops, none
+  azure_devops:                # Only when azure-devops is detected
+    organization: "MyOrg"
+    project: "MyProject"
+    process_template: "Agile"  # Basic, Agile, Scrum, CMMI
+    work_item_type: "Task"
+    done_state: "Closed"       # Varies by process template
+    active_state: "Active"     # Varies by process template
+```
+
+### How Agents Use It
+
+Agents call `node scripts/platform.js` like any shell command. They never know which platform is underneath:
+
+```bash
+# Create an issue
+node scripts/platform.js issue create --title 'Fix bug' --labels 'pipeline'
+
+# Comment with long content via stdin
+cat <<'EOF' | node scripts/platform.js issue comment 42 --stdin
+## Findings
+...body content...
+EOF
+
+# Merge a PR
+node scripts/platform.js pr merge 42 --squash --delete-branch
+```
+
+All verification, retry logic, and auth validation happen inside `platform.js` in Node.js code — zero token cost to agents. The script either succeeds (ref on stdout, exit 0) or fails (error on stderr, exit 1).
+
+### Credential Setup
+
+See [Security — Platform Credential Management](security.md#10-platform-credential-management) for PAT scopes, storage methods, and CI/CD patterns.
 
 ---
 

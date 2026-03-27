@@ -316,18 +316,13 @@ Find the epic number: check the most recent spec or plan file for `github_epic: 
 For each **Tier 1** control family that is within automated scope but has **no mapped findings** (from the scope analysis), create an issue to expand red team coverage:
 
 ```bash
-gh issue list --repo '[project.repo]' --search 'compliance coverage gap [CONTROL_FAMILY] in:title' --state open --json number --limit 1
+node '[SCRIPTS_DIR]/platform.js' issue search 'compliance coverage gap [CONTROL_FAMILY] in:title' --state open --limit 1
 ```
 
 If an issue already exists, skip. Otherwise:
 
 ```bash
-gh issue create --repo '[project.repo]' \
-  --title "$(cat <<'TITLE'
-Compliance coverage gap: [FRAMEWORK_ID] [CONTROL_FAMILY]
-TITLE
-)" \
-  --body "$(cat <<'EOF'
+cat <<'EOF' | node '[SCRIPTS_DIR]/platform.js' issue create --title 'Compliance coverage gap: [FRAMEWORK_ID] [CONTROL_FAMILY]' --labels 'compliance,coverage-gap' --stdin
 ## Coverage Gap
 
 **Framework:** [FRAMEWORK_NAME] (Tier [TIER])
@@ -346,13 +341,12 @@ these controls.
 
 Linked to: #[EPIC_N]
 EOF
-)" \
-  --label "compliance" --label "coverage-gap"
 ```
+If the command fails, notify the user with the error and ask for guidance.
 
 Comment the summary on the epic:
 ```bash
-gh issue comment [N] --repo '[project.repo]' --body "$(cat <<'EOF'
+cat <<'EOF' | node '[SCRIPTS_DIR]/platform.js' issue comment [N] --stdin
 ## Compliance Mapping Complete
 
 **Frameworks assessed:** [FRAMEWORK_COUNT]
@@ -362,8 +356,8 @@ gh issue comment [N] --repo '[project.repo]' --body "$(cat <<'EOF'
 **Per-framework summary:**
 [one line per framework: name, tier, MAPPED/RELATED/OUTSIDE_SCOPE counts]
 EOF
-)"
 ```
+If the command fails, notify the user with the error and ask for guidance.
 
 If no epic found: skip — compliance mapping works without GitHub tracking.
 

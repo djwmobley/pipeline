@@ -11,14 +11,14 @@
  *   node pipeline-db.js update session <num> <tests> "<summary>" # Record a session
  *   node pipeline-db.js update task new "<title>" [phase] [issue] # Create a task
  *   node pipeline-db.js update task <id> <status>                # Update task status
- *   node pipeline-db.js update task <id> github_issue <N>        # Link task to GitHub issue
+ *   node pipeline-db.js update task <id> issue_ref <N>           # Link task to issue/work-item
  *   node pipeline-db.js update task <id> readme_label "<text>"   # Set roadmap display label
  *   node pipeline-db.js update task <id> category <value>        # Set category (roadmap|build|finding|internal)
  *   node pipeline-db.js update gotcha new "<issue>" "<rule>"     # Add a gotcha
  *   node pipeline-db.js update decision "<topic>" "<decision>" "<reason>"  # Record a decision
  *   node pipeline-db.js update finding new '<json>'              # Insert finding record
  *   node pipeline-db.js update finding <id> status <status>      # Update finding status
- *   node pipeline-db.js update finding <id> github_issue <N>     # Link to GitHub issue
+ *   node pipeline-db.js update finding <id> issue_ref <N>        # Link to issue/work-item
  *   node pipeline-db.js update finding <id> commit <SHA>         # Record fix commit
  *   node pipeline-db.js get finding <id>                         # Get single finding as JSON
  *   node pipeline-db.js query findings [--status X] [--source Y] [--severity Z]  # Filter findings
@@ -97,7 +97,7 @@ async function cmdStatus() {
   const client = await connect(CONFIG);
   try {
     const sessions = await client.query('SELECT num, date, summary, tests FROM sessions ORDER BY num DESC LIMIT 3');
-    const tasks = await client.query("SELECT id, title, status, github_issue, phase FROM tasks WHERE status NOT IN ('done', 'deferred') ORDER BY id");
+    const tasks = await client.query("SELECT id, title, status, issue_ref, phase FROM tasks WHERE status NOT IN ('done', 'deferred') ORDER BY id");
     const gotchas = await client.query('SELECT issue, rule FROM gotchas WHERE active = TRUE ORDER BY id');
 
     console.log('\n' + c.bold(`═══ ${CONFIG.project} — Session Context ═══`));
@@ -125,7 +125,7 @@ async function cmdStatus() {
       console.log(`  ${c.green('No open tasks.')}`);
     } else {
       tasks.rows.forEach(t => {
-        const issue = t.github_issue ? c.dim(` #${t.github_issue}`) : '';
+        const issue = t.issue_ref ? c.dim(` #${t.issue_ref}`) : '';
         console.log(`  ${statusIcon(t.status)} [${t.id}] ${t.title}${issue}`);
       });
     }
@@ -178,7 +178,7 @@ async function cmdUpdate(args) {
           process.exit(1);
         }
         const r = await client.query(
-          'INSERT INTO tasks (title, status, phase, github_issue) VALUES ($1, $2, $3, $4) RETURNING id',
+          'INSERT INTO tasks (title, status, phase, issue_ref) VALUES ($1, $2, $3, $4) RETURNING id',
           [title, 'pending', phase, issue]
         );
         console.log(c.green(`Task #${r.rows[0].id} "${title}" created.`));
@@ -187,16 +187,16 @@ async function cmdUpdate(args) {
         const taskId = parseInt(idOrNew);
         if (isNaN(taskId)) { console.error('Task ID must be a number.'); process.exit(1); }
 
-        // Field-specific updates: update task <id> github_issue|readme_label|category <value>
-        if (fieldOrStatus === 'github_issue') {
+        // Field-specific updates: update task <id> issue_ref|readme_label|category <value>
+        if (fieldOrStatus === 'issue_ref') {
           const value = parseInt(valueParts[0]);
-          if (isNaN(value)) { console.error('Usage: update task <id> github_issue <N>'); process.exit(1); }
+          if (isNaN(value)) { console.error('Usage: update task <id> issue_ref <N>'); process.exit(1); }
           const r = await client.query(
-            'UPDATE tasks SET github_issue=$1, updated_at=NOW() WHERE id=$2 RETURNING title',
+            'UPDATE tasks SET issue_ref=$1, updated_at=NOW() WHERE id=$2 RETURNING title',
             [value, taskId]
           );
           if (r.rowCount === 0) { console.error(`Task #${taskId} not found.`); process.exit(1); }
-          console.log(c.green(`Task #${taskId} "${r.rows[0].title}" linked to issue #${value}`));
+          console.log(c.green(`Task #${taskId} "${r.rows[0].title}" linked to issue/work-item #${value}`));
 
         } else if (fieldOrStatus === 'readme_label') {
           const value = valueParts.join(' ');
@@ -227,7 +227,7 @@ async function cmdUpdate(args) {
           const status = fieldOrStatus;
           const valid = ['pending', 'in_progress', 'done', 'deferred'];
           if (!valid.includes(status)) {
-            console.error(`Status must be one of: ${valid.join(', ')}\nOr use a field name: github_issue | readme_label | category`);
+            console.error(`Status must be one of: ${valid.join(', ')}\nOr use a field name: issue_ref | readme_label | category`);
             process.exit(1);
           }
           const r = await client.query(
@@ -316,13 +316,13 @@ async function cmdUpdate(args) {
           if (r.rowCount === 0) { console.error(`Finding ${idOrNew} not found.`); process.exit(1); }
           console.log(c.green(`Finding ${idOrNew} → ${value}`));
 
-        } else if (field === 'github_issue') {
+        } else if (field === 'issue_ref') {
           const r = await client.query(
-            'UPDATE findings SET github_issue=$1, updated_at=NOW() WHERE id=$2 RETURNING id',
+            'UPDATE findings SET issue_ref=$1, updated_at=NOW() WHERE id=$2 RETURNING id',
             [parseInt(value), idOrNew]
           );
           if (r.rowCount === 0) { console.error(`Finding ${idOrNew} not found.`); process.exit(1); }
-          console.log(c.green(`Finding ${idOrNew} linked to issue #${value}`));
+          console.log(c.green(`Finding ${idOrNew} linked to issue/work-item #${value}`));
 
         } else if (field === 'commit') {
           const r = await client.query(
@@ -333,7 +333,7 @@ async function cmdUpdate(args) {
           console.log(c.green(`Finding ${idOrNew} commit → ${value.substring(0, 8)}`));
 
         } else {
-          console.error(`Unknown finding field "${field}". Use: status | github_issue | commit`);
+          console.error(`Unknown finding field "${field}". Use: status | issue_ref | commit`);
           process.exit(1);
         }
       }
@@ -400,7 +400,7 @@ async function cmdQueryFindings(args) {
   if (filters.severity) { params.push(filters.severity.toUpperCase()); conditions.push(`severity = $${params.length}`); }
 
   const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-  const sql = `SELECT id, source, severity, confidence, location, category, description, effort, status, github_issue, commit_sha
+  const sql = `SELECT id, source, severity, confidence, location, category, description, effort, status, issue_ref, commit_sha
                FROM findings ${where}
                ORDER BY CASE severity WHEN 'CRITICAL' THEN 0 WHEN 'HIGH' THEN 1 WHEN 'MEDIUM' THEN 2 WHEN 'LOW' THEN 3 ELSE 4 END, created_at`;
 
@@ -555,14 +555,14 @@ ${c.dim(`Database: ${CONFIG.database} @ ${CONFIG.host}:${CONFIG.port}`)}
   ${c.cyan('update session')} <num> <tests> "<summary>"
       Insert or replace a session record
 
-  ${c.cyan('update task new')} "<title>" [phase] [github_issue_num]
+  ${c.cyan('update task new')} "<title>" [phase] [issue_ref_num]
       Add a new task
 
   ${c.cyan('update task')} <id> <status>
       Update task status (pending | in_progress | done | deferred)
 
-  ${c.cyan('update task')} <id> github_issue <N>
-      Link task to a GitHub issue
+  ${c.cyan('update task')} <id> issue_ref <N>
+      Link task to an issue/work-item
 
   ${c.cyan('update task')} <id> readme_label "<text>"
       Set the roadmap display label (shown in README)
@@ -584,8 +584,8 @@ ${c.dim(`Database: ${CONFIG.database} @ ${CONFIG.host}:${CONFIG.port}`)}
   ${c.cyan('update finding')} <id> status <status>
       Update finding status (triaged | in_progress | fixed | verified | wontfix)
 
-  ${c.cyan('update finding')} <id> github_issue <N>
-      Link finding to a GitHub issue
+  ${c.cyan('update finding')} <id> issue_ref <N>
+      Link finding to an issue/work-item
 
   ${c.cyan('update finding')} <id> commit <SHA>
       Record the fix commit for a finding

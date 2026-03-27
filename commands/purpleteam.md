@@ -71,10 +71,11 @@ If `knowledge.tier` is `"files"`:
 
 Store results as `KNOWLEDGE_CONTEXT`.
 
-If GitHub enabled, fetch issue state:
+If `platform.issue_tracker` is not `none`, fetch issue state:
 ```bash
-gh issue list --repo '[project.repo]' --label 'redteam' --state all --json number,title,state,labels --limit 100
+node '[SCRIPTS_DIR]/platform.js' issue list --labels 'redteam' --state all --limit 100
 ```
+If the command fails, notify the user with the error and ask for guidance.
 
 **Present the assessment plan:**
 
@@ -212,7 +213,7 @@ mkdir -p docs/findings
 
 For each VERIFIED finding that has a GitHub issue number:
 ```bash
-gh issue comment [N] --repo '[project.repo]' --body "$(cat <<'EOF'
+cat <<'EOF' | node '[SCRIPTS_DIR]/platform.js' issue comment [N] --stdin
 ## Purple Team Verification: VERIFIED
 
 Attack vector confirmed closed.
@@ -221,17 +222,19 @@ Attack vector confirmed closed.
 **Confidence:** [confidence level from verifier result]
 **Defensive rule:** [defensive pattern extracted for this finding]
 EOF
-)"
 ```
+If the command fails, notify the user with the error and ask for guidance.
+
 Close the issue if not already closed:
 ```bash
-gh issue close [N] --repo '[project.repo]' 2>/dev/null
+node '[SCRIPTS_DIR]/platform.js' issue close [N] 2>/dev/null
 ```
+If the command fails, notify the user with the error and ask for guidance.
 
 For each REGRESSION finding that has a GitHub issue number:
 ```bash
-gh issue reopen [N] --repo '[project.repo]' 2>/dev/null
-gh issue comment [N] --repo '[project.repo]' --body "$(cat <<'EOF'
+node '[SCRIPTS_DIR]/platform.js' issue reopen [N] 2>/dev/null
+cat <<'EOF' | node '[SCRIPTS_DIR]/platform.js' issue comment [N] --stdin
 ## Purple Team Verification: REGRESSION
 
 Fix introduced a regression.
@@ -242,13 +245,13 @@ Fix introduced a regression.
 
 Requires additional remediation.
 EOF
-)"
 ```
+If the command fails, notify the user with the error and ask for guidance.
 
 For each INCOMPLETE finding that has a GitHub issue number:
 ```bash
-gh issue reopen [N] --repo '[project.repo]' 2>/dev/null
-gh issue comment [N] --repo '[project.repo]' --body "$(cat <<'EOF'
+node '[SCRIPTS_DIR]/platform.js' issue reopen [N] 2>/dev/null
+cat <<'EOF' | node '[SCRIPTS_DIR]/platform.js' issue comment [N] --stdin
 ## Purple Team Verification: INCOMPLETE
 
 Code was changed but the exploitation scenario was not fully closed.
@@ -258,8 +261,8 @@ Code was changed but the exploitation scenario was not fully closed.
 
 Requires additional remediation.
 EOF
-)"
 ```
+If the command fails, notify the user with the error and ask for guidance.
 
 **Shell safety:** All comment bodies use heredocs with single-quoted delimiters (`<<'EOF'`) to prevent injection from report-derived content.
 

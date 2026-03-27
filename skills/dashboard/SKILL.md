@@ -121,8 +121,10 @@ If not found in spec, check the most recent plan file from `docs.plans_dir`.
 If a `github_epic` number is found:
 
 ```bash
-gh issue view [N] --repo '[project.repo]' --json title,body,state,comments,labels
+node '[SCRIPTS_DIR]/platform.js' issue view [N]
 ```
+
+If the command fails, notify the user with the error and ask for guidance.
 
 **Parse the issue body** for the status checklist (brainstorm creates this):
 - `- [x] Brainstorm` → done
@@ -138,8 +140,10 @@ If no `github_epic` found or `issue_tracking` is false: set EPIC_DATA to null.
 ### Step 5b — Fetch open issues
 
 ```bash
-gh issue list --repo '[project.repo]' --state open --limit 20 --json number,title,labels,url
+node '[SCRIPTS_DIR]/platform.js' issue search '' --state open --limit 20
 ```
+
+If the command fails, notify the user with the error and ask for guidance.
 
 If `issue_tracking` is true, group issues by label:
 - `pipeline:qa` → QA Failures

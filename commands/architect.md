@@ -194,7 +194,7 @@ If `integrations.github.enabled` AND `integrations.github.issue_tracking`:
 1. Find epic number from the spec file (`github_epic: N`).
 2. Comment on the epic with the decisions summary table:
    ```bash
-   gh issue comment [N] --repo '[project.repo]' --body "$(cat <<'EOF'
+   cat <<'EOF' | node '[SCRIPTS_DIR]/platform.js' issue comment [N] --stdin
    ## Architectural Decisions
 
    | # | Domain | Decision | Confidence |
@@ -203,16 +203,11 @@ If `integrations.github.enabled` AND `integrations.github.issue_tracking`:
 
    Architecture saved to `docs/architecture.md`
    EOF
-   )"
    ```
+   If the command fails, notify the user with the error and ask for guidance.
 3. For each LOW-confidence decision, create a child issue:
    ```bash
-   gh issue create --repo '[project.repo]' \
-     --title "$(cat <<'TITLE'
-   [DECISION-NNN]: [title] (needs review)
-   TITLE
-   )" \
-     --body "$(cat <<'EOF'
+   cat <<'EOF' | node '[SCRIPTS_DIR]/platform.js' issue create --title '[DECISION-NNN]: [title] (needs review)' --labels 'pipeline:decision' --stdin
    ## Architectural Decision — Needs Review
 
    **Domain:** [domain]
@@ -222,9 +217,8 @@ If `integrations.github.enabled` AND `integrations.github.issue_tracking`:
 
    Linked to: #[EPIC_N]
    EOF
-   )" \
-     --label "pipeline:decision"
    ```
+   If the command fails, notify the user with the error and ask for guidance.
 4. If no epic found in spec: skip linking.
 
 ---

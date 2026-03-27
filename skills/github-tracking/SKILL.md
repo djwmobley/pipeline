@@ -112,8 +112,10 @@ Commands find the epic number through this chain:
 
 ```bash
 # Verify epic exists before commenting
-gh issue view [N] --repo '[project.repo]' --json state -q '.state' 2>/dev/null
+node '[SCRIPTS_DIR]/platform.js' issue view [N] 2>/dev/null
 ```
+
+If the command fails, notify the user with the error and ask for guidance.
 
 If the epic is closed or deleted, log a warning and skip. Do not create a new epic — that is brainstorm's job.
 
@@ -151,8 +153,10 @@ Do not post status updates, progress announcements, or activity signals. These a
 Before creating any child issue, check for an existing issue with the same finding ID:
 
 ```bash
-gh issue list --repo '[project.repo]' --search '[FINDING_ID] in:title' --state open --json number --limit 1
+node '[SCRIPTS_DIR]/platform.js' issue search '[FINDING_ID] in:title' --state open --limit 1
 ```
+
+If the command fails, notify the user with the error and ask for guidance.
 
 If an issue already exists, skip creation. This prevents duplicate issues when commands are re-run.
 

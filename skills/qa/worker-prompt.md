@@ -212,7 +212,7 @@ Task tool (general-purpose, model: {{MODEL}}):
     Post your results as a comment on the task issue. This is the handoff —
     the QA verifier reads this comment to synthesize worker results.
     ```
-    gh issue comment [GITHUB_ISSUE] --repo '[GITHUB_REPO]' --body "$(cat <<'EOF'
+    cat <<'EOF' | node '[SCRIPTS_DIR]/platform.js' issue comment [GITHUB_ISSUE] --stdin
     ## QA Worker [WORK_PACKAGE_ID]: [WORK_PACKAGE_NAME]
     **Result:** [PASS/FAIL/BLOCKED] — [N] scenarios, [M] pass, [F] fail, [K] flaky
     **Confidence:** [HIGH/MEDIUM/LOW]
@@ -220,8 +220,9 @@ Task tool (general-purpose, model: {{MODEL}}):
     [For FAIL: list failing scenario IDs + one-line reason each]
     [For BLOCKED: state what blocked execution]
     EOF
-    )"
     ```
+
+    If the command fails, notify the user with the error and ask for guidance.
 
     Do NOT post to the epic — `/pipeline:finish` compiles a single epic
     summary from all phase results. Task-level comments go on the task issue.

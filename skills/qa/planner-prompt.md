@@ -213,7 +213,7 @@ Task tool (general-purpose, model: {{MODEL}}):
     Post the test plan summary as a comment on the task issue. This is the
     handoff — QA workers read this to understand their work packages.
     ```
-    gh issue comment [GITHUB_ISSUE] --repo '[GITHUB_REPO]' --body "$(cat <<'EOF'
+    cat <<'EOF' | node '[SCRIPTS_DIR]/platform.js' issue comment [GITHUB_ISSUE] --stdin
     ## QA Test Plan
     **Scenarios:** [N] ([P0 count] P0, [P1 count] P1)
     **Work packages:** [M] + WP-SEAM
@@ -223,8 +223,9 @@ Task tool (general-purpose, model: {{MODEL}}):
 
     Artifact: `docs/test-plans/[feature-name]-test-plan.md`
     EOF
-    )"
     ```
+
+    If the command fails, notify the user with the error and ask for guidance.
 
     ### 3. Build State
 

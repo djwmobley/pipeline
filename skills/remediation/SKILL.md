@@ -36,7 +36,7 @@ Agents are stateless — they receive a ticket reference, read their own context
 
 | Priority | Backend | When Available | Ticket Reference | How Agents Read |
 |----------|---------|---------------|-----------------|----------------|
-| 1 | **GitHub Issues** | `integrations.github.enabled` | Issue number (`#42`) | `gh issue view 42 --json title,body,labels,comments` |
+| 1 | **Issue Tracker** | `platform.issue_tracker` is not `none` | Issue/work-item ref (`42`) | `node '[SCRIPTS_DIR]/platform.js' issue view 42` |
 | 2 | **Postgres** | `knowledge.tier == "postgres"` AND `integrations.postgres.enabled` (runs alongside GitHub when both are available) | Finding ID (`RT-INJ-001`) | `node scripts/pipeline-db.js get finding RT-INJ-001` |
 | 3 | **Files** | Always (fallback) | Finding ID in tracking file | Inline context in prompt (only fallback) |
 
@@ -227,7 +227,7 @@ BODY
 
 Post fix status as a comment on the finding's GitHub issue:
 ```
-gh issue comment [FINDING_ISSUE] --repo '[GITHUB_REPO]' --body "$(cat <<'EOF'
+cat <<'EOF' | node '[SCRIPTS_DIR]/platform.js' issue comment [FINDING_ISSUE] --stdin
 ## Fix Applied
 **Finding:** [FINDING_ID]
 **Commit:** [SHA]
@@ -236,8 +236,9 @@ gh issue comment [FINDING_ISSUE] --repo '[GITHUB_REPO]' --body "$(cat <<'EOF'
 
 Awaiting verification by [verification strategy].
 EOF
-)"
 ```
+
+If the command fails, notify the user with the error and ask for guidance.
 
 ### 3. Build State
 

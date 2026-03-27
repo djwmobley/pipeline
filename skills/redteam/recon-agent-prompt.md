@@ -294,7 +294,7 @@ Task tool (general-purpose, model: {{MODEL}}):
     Post your results as a comment on the task issue. This is the handoff —
     the red team lead reads this to assign specialist domains.
     ```
-    gh issue comment [GITHUB_ISSUE] --repo '[GITHUB_REPO]' --body "$(cat <<'EOF'
+    cat <<'EOF' | node '[SCRIPTS_DIR]/platform.js' issue comment [GITHUB_ISSUE] --stdin
     ## Recon — Attack Surface Map
     - Entry points: [N]
     - Auth boundaries: [N]
@@ -303,8 +303,9 @@ Task tool (general-purpose, model: {{MODEL}}):
     - Scan scope: [diff-scoped N files | full scan]
     - SBOM: [N components | disabled]
     EOF
-    )"
     ```
+
+    If the command fails, notify the user with the error and ask for guidance.
 
     Do NOT post to the epic — `/pipeline:finish` compiles a single epic
     summary from all phase results. Task-level comments go on the task issue.
