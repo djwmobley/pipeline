@@ -6,7 +6,9 @@
   <img src="docs/assets/hero.png" alt="Pipeline — one plugin, full pipeline" width="700">
 </p>
 
-An agent workflow engine for [Claude Code](https://docs.anthropic.com/en/docs/claude-code). A content-blind orchestrator routes stateless AI agents through a 13-step quality pipeline — from brainstorm to deploy — with agents reading context from and writing results to shared stores. A one-line fix gets committed in seconds. A new feature gets designed, debated, built, reviewed, and security-tested — automatically.
+A web-first agent workflow engine for [Claude Code](https://docs.anthropic.com/en/docs/claude-code). A content-blind orchestrator routes stateless AI agents through a 13-step quality pipeline — from brainstorm to deploy — with agents reading context from and writing results to shared stores. First-class support for web and mobile development; adapted profiles for services, data pipelines, and automation.
+
+A one-line fix gets committed in seconds. A new feature gets designed, debated, built, reviewed, and security-tested — automatically.
 
 ## What Using It Looks Like
 
@@ -117,6 +119,18 @@ Then, in any project:
 Init detects your stack — language, framework, test runner, linter, type checker — and generates `.claude/pipeline.yml`. Takes about a minute.
 
 Want zero interaction? Use `/pipeline:init --quick` — it auto-detects everything, installs what it can, and prints a summary. Adjust later with `/pipeline:update`.
+
+## Scope and Boundaries
+
+Pipeline operates on **source code during development**. It reads, analyzes, and helps you write better source files. It does not compile, build, bundle, deploy, or manage runtime infrastructure.
+
+**First-class support** — Web applications (SPA, full-stack, mobile-web), mobile apps, APIs, CLIs, and libraries. Deep security analysis, 25 framework-specific checklists, and optimized defaults.
+
+**Adapted profiles** — Background services, data pipelines, and automation scripts. Source code analysis works well; defaults are tuned to reduce noise and activate domain-relevant concerns (resilience, idempotency, credential management).
+
+**Outside scope** — Compiled output, container images, infrastructure-as-code, runtime behavior, deployment orchestration. Pipeline's output is source code, configuration, and documentation. Compilation, containerization, and deployment are handled by your project's existing build toolchain.
+
+When `build.artifact` is configured, Pipeline includes a deployment handoff checklist in the finish report listing what requires out-of-band verification.
 
 ## Two Starting Points
 

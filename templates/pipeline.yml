@@ -24,6 +24,15 @@ routing:
   medium_max_files: 3
   review_gate_threshold: 3   # files changed >= this requires review
 
+# Build artifact declaration (optional — helps Pipeline scope review and report handoffs)
+# Set artifact to describe what the project produces beyond source code.
+# When set, finish reports include a deployment handoff checklist.
+build:
+  artifact: null               # null, "source", "bundle", "binary", "docker-image"
+  artifact_cmd: null            # e.g., "npm run build", "go build", "docker build ."
+  artifact_dir: null            # e.g., "dist/", "build/", not reviewed by default
+  exclude_from_review: []       # Globs excluded from review diff (e.g., ["dist/**", "*.exe"])
+
 # Review
 review:
   non_negotiable: []
@@ -67,16 +76,23 @@ redteam:
     format: "cyclonedx"        # Only CycloneDX 1.6 supported currently
     output_dir: "docs/findings/"  # Where to write the .cdx.json file
   recon_patterns:             # Grep patterns for Phase 0 recon
+    # Universal patterns (all profiles)
     - { pattern: "eval\\(", label: "eval-usage" }
-    - { pattern: "innerHTML", label: "inner-html" }
-    - { pattern: "document\\.write", label: "doc-write" }
     - { pattern: "\\$\\{.*\\}", label: "template-literal-in-query" }
     - { pattern: "exec\\(", label: "exec-usage" }
     - { pattern: "spawn\\(", label: "spawn-usage" }
     - { pattern: "SELECT.*\\+|INSERT.*\\+", label: "string-concat-sql" }
-    - { pattern: "localStorage\\.setItem.*token", label: "token-in-localstorage" }
-    - { pattern: "cors\\(\\)", label: "permissive-cors" }
-    - { pattern: "disable.*csrf|csrf.*false", label: "csrf-disabled" }
+    # Web-specific patterns (only for web profiles)
+    - { pattern: "innerHTML", label: "inner-html", profiles: [spa, fullstack, mobile-web] }
+    - { pattern: "document\\.write", label: "doc-write", profiles: [spa, fullstack, mobile-web] }
+    - { pattern: "localStorage\\.setItem.*token", label: "token-in-localstorage", profiles: [spa, fullstack, mobile-web] }
+    - { pattern: "cors\\(\\)", label: "permissive-cors", profiles: [spa, fullstack, mobile-web, api] }
+    - { pattern: "disable.*csrf|csrf.*false", label: "csrf-disabled", profiles: [spa, fullstack, mobile-web] }
+    # Additional profile-scoped patterns
+    - { pattern: "JSON\\.parse\\((?!.*try)", label: "json-parse-no-try", profiles: [service, data-pipeline, api] }
+    - { pattern: "console\\.(log|info|debug).*(?:password|token|secret|key|credential)", label: "sensitive-data-in-log", profiles: [service, data-pipeline, automation] }
+    - { pattern: "child_process", label: "child-process-import", profiles: [service, automation] }
+    - { pattern: "process\\.on\\(['\"]uncaughtException", label: "unhandled-exception-listener" }
 
 # Engineering Architect — technology decisions
 # Silent recon for MEDIUM (auto-runs inside /pipeline:plan)

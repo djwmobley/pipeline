@@ -1,6 +1,6 @@
 {
   "name": "pipeline",
-  "description": "Agent workflow engine — content-blind orchestrator routes stateless AI agents through a 13-step quality pipeline with three-store A2A reporting",
+  "description": "Web-first agent workflow engine — content-blind orchestrator routes stateless AI agents through a 13-step quality pipeline with three-store A2A reporting",
   "version": "0.2.0-alpha",
   "author": {
     "name": "DJ Mobley"
