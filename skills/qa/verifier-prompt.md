@@ -176,4 +176,17 @@ Task tool (general-purpose, model: {{MODEL}}):
     - **HIGH** — All scenarios executed, seam pass complete, failures triaged
     - **MEDIUM** — Some workers blocked, seam pass complete
     - **LOW** — Significant gaps in execution — flag what's missing
+
+    ## Reporting Contract
+
+    Your output (the test report above) is consumed by the orchestrator for:
+    1. **Postgres** — the orchestrator writes your verdict, pass/fail counts, and
+       failure triage to the knowledge DB. You produce the data; you do not write it.
+    2. **PR comment** — the orchestrator posts a summary to the PR. Your report is
+       the source. Include enough structure that a summary can be extracted
+       mechanically (verdict line, failures section, coverage metrics).
+    3. **GitHub issues** — for each `code-is-wrong` failure, the orchestrator
+       creates a sub-issue. Include finding IDs (FAIL-NNN) so they can be referenced.
+
+    You produce the report. The orchestrator handles routing and persistence.
 ```
