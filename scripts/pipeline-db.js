@@ -30,7 +30,7 @@
 const { Client } = require('pg');
 const fs = require('fs');
 const path = require('path');
-const { loadConfig, connect, c } = require('./lib/shared');
+const { loadConfig, connect, c, tryEmbed } = require('./lib/shared');
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────────
 
@@ -294,6 +294,9 @@ async function cmdUpdate(args) {
            f.verification_domain || null, f.report_path || null]
         );
         console.log(c.green(`Finding ${f.id} saved.`));
+        // Auto-embed: description + impact + remediation
+        await tryEmbed(client, 'findings', 'id', f.id,
+          `${f.description} ${f.impact} ${f.remediation}`, CONFIG);
 
       } else {
         // update finding <id> <field> <value>
