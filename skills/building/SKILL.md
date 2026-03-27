@@ -163,7 +163,7 @@ Update `.claude/build-state.json` with task status and commit SHA for crash reco
 ## Prompt Templates
 
 - `./implementer-prompt.md` — Dispatch implementer subagent (reads context from stores)
-- `./reviewer-prompt.md` — Dispatch post-task reviewer (spec compliance + quality)
+- `./reviewer-prompt.md` — Dispatch post-task reviewer (spec compliance + quality + arch compliance)
 
 ## Red Flags
 
