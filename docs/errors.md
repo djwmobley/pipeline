@@ -331,3 +331,65 @@ FTS keyword search still works without Ollama — only vector similarity search 
 **Why:** Filesystem-level issue outside Pipeline's control.
 
 **Fix:** Free disk space or fix file permissions. Pipeline cannot recover from these automatically.
+
+---
+
+## Orchestrator & Workflow Errors
+
+### "No active workflow."
+
+**Commands:** `orchestrator.js status`, `orchestrator.js next`, `orchestrator.js complete`
+
+**Why:** No workflow has been started, or the Postgres `workflow_state` table is empty.
+
+**Fix:** Start a workflow with `node scripts/orchestrator.js start <workflow-id>` (typically called by `/pipeline:init`).
+
+---
+
+### "Workflow already exists."
+
+**Commands:** `orchestrator.js start`
+
+**Why:** A workflow with the same ID already exists in `workflow_state`.
+
+**Fix:** Use a different workflow ID, or check the existing workflow's status with `orchestrator.js status`.
+
+---
+
+### "Blocked: [step] — missing inputs"
+
+**Commands:** `orchestrator.js next`
+
+**Why:** The next step's preconditions are not met (e.g., review hasn't passed, plan file doesn't exist).
+
+**Fix:** Complete the prerequisite step. The orchestrator shows which inputs are missing. See [workflow reference](workflow-reference.md) for the full step graph.
+
+---
+
+### "Loopback: [step] failed Nx — routing to architect"
+
+**Commands:** `orchestrator.js next` (after purple team failure)
+
+**Why:** A purple team finding has failed verification twice. The orchestrator routes to the architect step to re-examine whether the architectural standard is flawed.
+
+**Fix:** This is intentional routing, not an error. Run `/pipeline:architect` to review the standard, then re-run the remediation and verification cycle.
+
+---
+
+### Postgres connection errors during orchestrator operations
+
+**Commands:** Any command that calls `orchestrator.js`
+
+**Why:** Postgres is unreachable. The orchestrator requires Postgres for workflow state.
+
+**Fix:** Ensure PostgreSQL is running. Check connection settings. For TINY/MEDIUM changes that don't need orchestration, individual commands still work without Postgres (they use the files tier).
+
+---
+
+### "Task status mismatch" (three-store sync)
+
+**Commands:** `/pipeline:dashboard`, `/pipeline:finish`
+
+**Why:** Postgres, GitHub issues, and build-state have divergent data for the same task (e.g., Postgres shows "done" but GitHub issue is still open).
+
+**Fix:** Postgres is the master store. Run `/pipeline:dashboard` to regenerate from Postgres. If GitHub issues are stale, manually close them or let `/pipeline:finish` reconcile on merge.

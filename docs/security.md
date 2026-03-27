@@ -48,6 +48,24 @@ Pipeline's security agents find these before your users do. Two agents, two jobs
 
 Each step is a separate command. You control when to move to the next step. This is deliberate — you need to review findings before fixes start, and you need to review fixes before verification.
 
+### When Security Steps Run Automatically
+
+Your `security.policy` setting (configured during `/pipeline:init`) controls when red team and purple team run as part of the orchestrated workflow:
+
+| Policy | Behavior |
+|--------|----------|
+| `every-feature` | Red team runs after every QA pass. Recommended for fintech, healthcare, or compliance-heavy projects. |
+| `milestone` | Red team runs only on MILESTONE-sized changes. Good for most projects. |
+| `on-demand` | Red team only runs when you explicitly invoke `/pipeline:redteam`. For teams with external security review. |
+
+### Diff-Scoped Scanning
+
+Both review (SAST) and red team assessments are **scoped to your feature branch diff** — they only scan changed files plus one hop of imports/importers. This keeps assessments focused and fast. Full-codebase scans are available via `/pipeline:audit`.
+
+### Three-Store Persistence
+
+All security findings are written to three stores: Postgres (master), GitHub issues (per-finding tickets), and build-state (crash recovery). This means remediation agents can read findings from GitHub issues without the orchestrator forwarding content — each agent is stateless and reads its own context.
+
 ---
 
 ## 3. What Each Agent Does

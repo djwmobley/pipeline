@@ -2,8 +2,9 @@
 
 ## What This Is
 
-Pipeline is a Claude Code plugin that provides a config-driven development pipeline.
-It merges size-routed quality gates with systematic TDD, debugging, and review workflows.
+Pipeline is an agent workflow engine for Claude Code. A content-blind orchestrator routes
+stateless AI agents through a 13-step quality pipeline, with agents reading context from
+and writing results to shared stores (three-store A2A protocol).
 
 ## Structure
 
