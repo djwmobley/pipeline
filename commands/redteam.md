@@ -193,7 +193,7 @@ Read the recon prompt template from `skills/redteam/recon-agent-prompt.md` (loca
 
 **Substitution checklist:**
 1. `{{MODEL}}` → value of `models.cheap` from config
-2. `[RECON_PATTERNS]` → all entries from `redteam.recon_patterns[]`
+2. `[RECON_PATTERNS]` → entries from `redteam.recon_patterns[]` filtered by profile: include patterns that either have no `profiles` field (universal) or have a `profiles` array containing the current `project.profile`. Skip patterns whose `profiles` array excludes the current profile.
 3. `[SOURCE_DIRS]` → `routing.source_dirs` from config
 4. `[DETECTED_FRAMEWORK]` → framework detected in Step 1
 5. `[KNOWLEDGE_CONTEXT]` → security decisions/gotchas from Step 0 (or "None" if empty)
@@ -215,6 +215,9 @@ Dispatch the recon agent. Store its output as `ATTACK_SURFACE_MAP`.
 | api | INJ, AUTH, CRYPTO, CONFIG, DEPS, ACL, RATE, DATA |
 | cli | INJ, CONFIG, DEPS, FILE, ACL |
 | library | INJ, DEPS, FILE, DATA |
+| service | INJ, AUTH, CRYPTO, CONFIG, DEPS, ACL, DATA, FILE |
+| data-pipeline | INJ, CRYPTO, CONFIG, DEPS, DATA, FILE |
+| automation | INJ, CONFIG, DEPS, FILE |
 
 If `redteam.specialists` is an explicit list (e.g., `[INJ, AUTH, XSS]`), use that instead.
 
@@ -259,6 +262,7 @@ For each selected specialist, dispatch a subagent:
 11. `[URL]` → `redteam.url` from config (for black-box mode)
 12. `[SOURCE_DIRS]` → `routing.source_dirs` from config
 13. `[SECURITY_AUDIT_CMD]` → `commands.security_audit` from config (or `"null"` if not configured)
+14. `[PROFILE]` → `project.profile` from config
 
 Launch **all specialists in parallel** using the Agent tool. Each agent gets `description: "Red Team Specialist [DOMAIN_ID]: [DOMAIN_NAME]"`.
 

@@ -238,6 +238,24 @@ If the command fails, notify the user with the error and ask for guidance.
 This is the ONLY comment posted to the epic by any command. All phase-level
 detail lives on task issues. The epic summary is a compiled bird's-eye view.
 
+**Deployment Handoff Checklist** — When `build.artifact` is set in pipeline.yml (not null and not "source"), append a "Deployment Handoff" section to the ship summary:
+
+```markdown
+### Deployment Handoff
+
+Source review complete. The following require out-of-band verification before deployment:
+
+| Artifact | Verification |
+|----------|-------------|
+| [artifact type from config] | Build, test compiled output, verify in target environment |
+| Container image (if docker-image) | Image scan, secret-free layers, runtime smoke test |
+| Obfuscated output (if noted) | Verify obfuscation didn't break runtime behavior |
+
+Pipeline reviewed source code and configuration. Build artifacts, container images, and deployment topology are outside Pipeline's scope.
+```
+
+If `build.artifact` is null or "source", skip this section entirely — source-only projects have no handoff gap.
+
 ---
 
 ### Step 4b — Ship transition

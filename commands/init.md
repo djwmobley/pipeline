@@ -288,6 +288,9 @@ Set both to `none`. Issue tracking and PR operations will be skipped. Warn the u
 | `bin` field in package.json, or `src/cli.*`, or Cobra/Clap in deps | `cli` |
 | `main`/`exports` in package.json + no `src/pages`/`src/routes`/`src/app` dirs | `library` |
 | Express/Fastify/Koa/Hono in deps + no frontend framework | `api` |
+| Queue consumer deps (bull, bullmq, amqplib, kafka-node) or worker process pattern (no HTTP server) | `service` |
+| ETL/pipeline deps (pandas, dbt, airflow, prefect, dagster) or batch processing scripts + data source configs | `data-pipeline` |
+| CI/CD helpers, scheduled tasks, or scripts with no persistent process (cron jobs, GitHub Actions custom) | `automation` |
 | Cargo.toml with `[[bin]]` and no frontend | `cli` or `api` (check for web framework like Axum/Actix) |
 | go.mod with `cmd/` directory | `cli` |
 | go.mod with web framework (Echo, Gin, Fiber) | `api` |
@@ -295,14 +298,14 @@ Set both to `none`. Issue tracking and PR operations will be skipped. Warn the u
 Present the inference for confirmation, scaled by engagement style:
 
 **Expert (established):**
-> "Profile: [inferred] ([evidence]). OK? (Y/n, or: spa/fullstack/mobile/mobile-web/api/cli/library)"
+> "Profile: [inferred] ([evidence]). OK? (Y/n, or: spa/fullstack/mobile/mobile-web/api/cli/library/service/data-pipeline/automation)"
 
 **Expert (greenfield):**
-> "Profile? (spa/fullstack/mobile/mobile-web/api/cli/library)"
+> "Profile? (spa/fullstack/mobile/mobile-web/api/cli/library/service/data-pipeline/automation)"
 
 **Guided (established):**
 > "Based on your project structure, this looks like a **[inferred profile]** project ([evidence]).
-> Sound right? (Y/n, or pick a different profile: spa, fullstack, mobile, mobile-web, api, cli, library)"
+> Sound right? (Y/n, or pick a different profile: spa, fullstack, mobile, mobile-web, api, cli, library, service, data-pipeline, automation)"
 
 **Guided (greenfield):**
 > "What type of project is this?
@@ -313,14 +316,17 @@ Present the inference for confirmation, scaled by engagement style:
 > 4. **Mobile + Web** — Shared codebase with web fallback
 > 5. **API** — Backend service
 > 6. **CLI** — Command-line tool
-> 7. **Library** — Reusable package/module"
+> 7. **Library** — Reusable package/module
+> 8. **Service** — Background worker, integration service, queue consumer. Reviews add resilience and error handling.
+> 9. **Data Pipeline** — ETL, data sync, batch processing. Reviews add idempotency and data integrity.
+> 10. **Automation** — Scripts, scheduled tasks, CI/CD helpers. Reviews focus on security and error handling."
 
 **Full guidance (established):**
 > "Based on your project structure, this looks like a **[inferred profile]** project.
 >
 > Evidence: [detailed evidence list]
 >
-> The profile controls which review criteria Pipeline applies (e.g., accessibility checks for UI projects, battery-impact analysis for mobile). Sound right? (Y/n, or pick: spa, fullstack, mobile, mobile-web, api, cli, library)"
+> The profile controls which review criteria Pipeline applies (e.g., accessibility checks for UI projects, battery-impact analysis for mobile). Sound right? (Y/n, or pick: spa, fullstack, mobile, mobile-web, api, cli, library, service, data-pipeline, automation)"
 
 **Full guidance (greenfield):**
 > "What type of project is this? The profile controls which review criteria, security checks, and recommendations Pipeline applies throughout the workflow.
@@ -331,9 +337,12 @@ Present the inference for confirmation, scaled by engagement style:
 > 4. **Mobile + Web** — Shared codebase with web fallback (Capacitor, Expo Web). Reviews add responsive design.
 > 5. **API** — Backend service or REST/GraphQL API. Reviews focus on security, error handling, data integrity.
 > 6. **CLI** — Command-line tool. Reviews focus on error handling and UX.
-> 7. **Library** — Reusable package/module. Reviews add backwards-compatibility and documentation."
+> 7. **Library** — Reusable package/module. Reviews add backwards-compatibility and documentation.
+> 8. **Service** — Background worker, integration service, queue consumer. Reviews add resilience and error handling.
+> 9. **Data Pipeline** — ETL, data sync, batch processing. Reviews add idempotency and data integrity.
+> 10. **Automation** — Scripts, scheduled tasks, CI/CD helpers. Reviews focus on security and error handling."
 
-Set `project.profile` to the chosen value: `spa`, `fullstack`, `mobile`, `mobile-web`, `api`, `cli`, `library`.
+Set `project.profile` to the chosen value: `spa`, `fullstack`, `mobile`, `mobile-web`, `api`, `cli`, `library`, `service`, `data-pipeline`, `automation`.
 
 **If greenfield**, follow up with stack recommendations (guided and full-guidance only — skip for expert):
 
@@ -348,6 +357,9 @@ For each profile, suggest a proven starter stack. Present these as recommendatio
 | **API** | Express/Fastify + TypeScript + Vitest (Node) or Axum + Rust or Echo + Go | Depends on performance needs and team expertise |
 | **CLI** | Node + Commander/Yargs or Rust + Clap or Go + Cobra | Depends on distribution needs |
 | **Library** | TypeScript + Vitest + tsup (bundler) | Tree-shakeable, well-tested, easy to publish |
+| **Service** | Node + BullMQ + TypeScript or Go + goroutines | Depends on workload, concurrency needs |
+| **Data Pipeline** | Python + pandas/dbt or Node + streaming transforms | Depends on data volume and transform complexity |
+| **Automation** | Node scripts + TypeScript or Bash + shellcheck | Depends on complexity and distribution |
 
 **Guided:**
 > "Since you're starting fresh, here's what works well for [profile] projects: **[Stack recommendation]**. Want me to scaffold with this stack, or do you have a different setup in mind?"
@@ -378,6 +390,13 @@ Based on the chosen profile, pre-configure review criteria and security checks. 
 | API | `[dead-code, security, simplicity, solid, api-design, data-integrity, error-handling, performance]` |
 | CLI | `[dead-code, security, simplicity, solid, error-handling, ux]` |
 | Library | `[dead-code, security, simplicity, solid, api-design, backwards-compatibility, documentation]` |
+| Service | `[dead-code, security, simplicity, solid, error-handling, data-integrity, performance, resilience]` |
+| Data Pipeline | `[dead-code, security, simplicity, solid, error-handling, data-integrity, idempotency]` |
+| Automation | `[dead-code, security, simplicity, solid, error-handling]` |
+
+**New criteria (available for all profiles via config override):**
+- **resilience** — Retry logic with backoff, circuit breakers, graceful shutdown, health check endpoints, timeout handling
+- **idempotency** — Safe reruns, cursor/watermark management, deduplication strategies, at-least-once vs exactly-once semantics
 
 **Security checklist additions by profile:**
 
@@ -387,6 +406,22 @@ Based on the chosen profile, pre-configure review criteria and security checks. 
 | Mobile, Mobile + Web | `{ check: "Stores data on device?", rule: "Use secure storage for tokens — never use plain storage for secrets" }` |
 | API | `{ check: "Exposes endpoint?", rule: "Rate limit, authenticate, validate input schema" }` |
 | Library | `{ check: "Accepts external input?", rule: "Validate types at boundary — never trust caller input" }` |
+| Service | `{ check: "Credentials for external systems?", rule: "Secrets manager or env vars — never embed in source or bake into container images" }` |
+| Data Pipeline | `{ check: "Moves data between systems?", rule: "Validate schema at both ends — never trust upstream data shapes. Log redacted — never log full records containing PII" }` |
+| Automation | `{ check: "Runs with elevated privileges?", rule: "Least privilege — request only permissions needed" }` |
+
+**QA defaults by profile:**
+
+| Profile | browser_testing | api_testing | db_verification |
+|---------|----------------|-------------|-----------------|
+| SPA, Full-stack, Mobile + Web | true | true | true |
+| Mobile | true | true | true |
+| API | false | true | true |
+| CLI | false | false | false |
+| Library | false | false | false |
+| Service | false | false | true |
+| Data Pipeline | false | false | true |
+| Automation | false | false | false |
 
 ---
 
