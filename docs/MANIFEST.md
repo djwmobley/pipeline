@@ -17,6 +17,7 @@ Every documentation file, its content scope, and what triggers updates. When a f
 | `docs/big-4.md` | Big 4 framework concept — functionality, usability, performance, security | Anyone understanding Pipeline's design philosophy |
 | `docs/index.html` | Static documentation site — install, command tables, scenarios, security lifecycle, config overview | Users browsing docs via GitHub Pages or locally |
 | `docs/errors.md` | Error messages, recovery paths, graceful degradation model | Users operating Pipeline who hit an error |
+| `docs/workflow-reference.md` | Exhaustive 13-step pipeline workflow — steps, agents, routing, failure paths, three-store contracts | Contributors, architects, anyone understanding the orchestrated pipeline |
 | `docs/MANIFEST.md` | This file — docs inventory and change triggers | Contributors maintaining docs |
 
 ---
@@ -100,6 +101,16 @@ When you ship a feature, check which docs are affected.
 | GitHub | **Automatic** — `/pipeline:finish` closes the linked GitHub issue |
 
 All three stores update automatically on merge. No manual intervention needed.
+
+### Changing Orchestrator Steps or Routing
+
+| Doc | What to Update |
+|-----|---------------|
+| `docs/workflow-reference.md` | Primary — update step definitions, routing rules, three-store contract table |
+| `docs/reference.md` | Update affected command sections |
+| `docs/security.md` | Update if security steps (redteam, purple) routing changes |
+| `docs/index.html` | Update workflow overview if user-facing workflow changes |
+| `scripts/orchestrator.js` | Source of truth — doc must match code |
 
 ### Changing the Security Lifecycle
 
