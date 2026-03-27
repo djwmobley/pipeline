@@ -133,5 +133,5 @@ When `integrations.github.enabled` and `integrations.github.issue_tracking` are 
 Verdict: `[path to verdict file]`
 ```
 
-If the user declined the debate sell, skip tracking entirely.
 If the epic is not found, skip tracking silently.
+If the debate was not run (user declined the sell or change size below threshold), there is no verdict to post — skip tracking.

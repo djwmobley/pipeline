@@ -301,13 +301,13 @@ This is NOT a monolithic roadmap. Each decision stands alone with its own invali
 
 ## Issue Tracker Contract
 
-Architecture is a **Category 3 — Decision Command** per `skills/github-tracking/SKILL.md`.
+Architecture spans **Category 2 (Issue-Creating)** and **Category 3 (Decision Command)** per `skills/github-tracking/SKILL.md`. Category 3 governs the summary comment; Category 2 governs child issue creation for LOW-confidence decisions.
 
 When `integrations.github.enabled` and `integrations.github.issue_tracking` are both `true`:
 
 1. Read `github_epic: N` from the plan or spec metadata
-2. Post a summary comment on the epic after completing the decision records
-3. Do NOT create child issues unless a decision has LOW confidence
+2. Post a summary comment on the epic after completing the decision records (Category 3)
+3. For each LOW-confidence decision, create a child issue with label `pipeline:decision` (Category 2). HIGH/MEDIUM decisions do not get child issues.
 
 **Comment format:**
 

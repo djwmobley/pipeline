@@ -33,6 +33,25 @@ Task tool (general-purpose, model: {{MODEL}}):
 
     {{TDD_SECTION}}
 
+    ## Step 0 — Record In-Progress
+
+    Before doing anything else, write an in-progress sentinel to build-state
+    so the orchestrator can detect a mid-implementation crash:
+
+    ```bash
+    node -e "
+      const fs = require('fs');
+      const p = '.claude/build-state.json';
+      const s = fs.existsSync(p) ? JSON.parse(fs.readFileSync(p,'utf8')) : {};
+      if (!s.tasks) s.tasks = {};
+      s.tasks['[TASK_NUMBER]'] = { status: 'in_progress', started: new Date().toISOString() };
+      fs.writeFileSync(p, JSON.stringify(s, null, 2));
+    "
+    ```
+
+    If the write fails, continue — context gathering and implementation are
+    more important than the sentinel.
+
     ## Context — Read From Stores
 
     Before writing any code, gather your context from the project's data stores.

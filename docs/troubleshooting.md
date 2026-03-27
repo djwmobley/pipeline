@@ -44,15 +44,17 @@ If it shows `false`, edit the file to set it to `true`, or run the sync hook (se
 
 ### Check 3: Is the cache stale?
 
-```bash
-# Check what version is cached
-cat ~/.claude/plugins/installed_plugins.json | grep -A3 '"version"'
+The sync hook compares **git commit SHAs**, not version strings. Check the stored SHA against the current HEAD:
 
-# Compare to what the source says
-cat .claude-plugin/marketplace.json | grep version
+```bash
+# Check what SHA the cache was built from
+cat ~/.claude/plugins/installed_plugins.json | grep -A2 '"gitCommitSha"'
+
+# Compare to the current HEAD
+git rev-parse HEAD
 ```
 
-If they differ, the cache is stale. The sync hook (below) fixes this automatically. To force a manual sync:
+If they differ, the cache is stale. The sync hook (below) fixes this automatically on the next session start. To force a manual sync:
 
 ```bash
 node hooks/sync-cache.mjs

@@ -193,4 +193,12 @@ When `integrations.github.enabled` and `integrations.github.issue_tracking` are 
 Plan: `[path to plan file]`
 ```
 
+**Epic checklist update** (step 3 — replace `- [ ] Plan` with `- [x] Plan`):
+
+```bash
+BODY=$(node '[SCRIPTS_DIR]/platform.js' issue view [N] | node -p "JSON.parse(require('fs').readFileSync('/dev/stdin','utf8')).body")
+UPDATED=$(printf '%s' "$BODY" | sed 's/- \[ \] Plan/- [x] Plan/')
+printf '%s' "$UPDATED" | node '[SCRIPTS_DIR]/platform.js' issue edit [N] --stdin
+```
+
 If the epic is not found, skip tracking silently. Do not fail the plan run.

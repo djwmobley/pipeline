@@ -824,7 +824,7 @@ Pipeline registers hooks via `hooks/hooks.json`. The plugin manifest (`plugin.js
 ### `SessionStart` — Cache Sync
 
 **Hook:** `hooks/sync-cache.mjs`
-**Matcher:** `startup|resume`
+**Matcher:** `startup|resume` (pipe-delimited alternation — matches either the `startup` or `resume` SessionStart event type)
 **Purpose:** Keeps the plugin cache in sync with source when working in the pipeline repo.
 
 **Behavior:**
