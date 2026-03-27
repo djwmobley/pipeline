@@ -35,6 +35,15 @@ Task tool (general-purpose, model: {{MODEL}}):
     insertion into the HTML output. Never emit raw HTML from report content.
     Use textContent semantics, not innerHTML.
 
+    <ANTI-RATIONALIZATION>
+    These thoughts mean STOP and reconsider:
+    - "The finding text is safe to put directly in the HTML" → All content from DATA tags must be HTML-entity-escaped. No exceptions. Use textContent, not innerHTML.
+    - "A CDN font makes this look better" → No external resources. All CSS inline. The report must render with no network access.
+    - "Critical findings should default to collapsed to keep it clean" → Critical and High findings use <details open>. Medium and below default closed.
+    - "I should summarize or interpret the findings in the HTML" → Your job is presentation only. The markdown is the source of truth. Never add, remove, or reframe content.
+    - "The print stylesheet can omit severity colors" → Print must preserve severity badge colors for color printers. Use print-color-adjust: exact.
+    </ANTI-RATIONALIZATION>
+
     ## Requirements
 
     Generate a single HTML file with these characteristics:

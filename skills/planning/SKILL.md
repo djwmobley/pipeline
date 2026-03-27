@@ -169,3 +169,28 @@ If inline: execute tasks sequentially following the plan
 - Model routing per task
 - DRY, YAGNI, TDD, frequent commits
 - Every task MUST have a `tdd` field (`required` or `optional`) — the build system uses this to gate TDD enforcement
+
+## Issue Tracker Contract
+
+Planning is a **Category 1 — Phase Command** per `skills/github-tracking/SKILL.md`.
+
+When `integrations.github.enabled` and `integrations.github.issue_tracking` are both `true`:
+
+1. Read `github_epic: N` from the spec metadata
+2. After saving the plan, post a summary comment on the epic
+3. Update the epic checklist to check the `Plan` item
+
+**Comment format:**
+
+```
+## Plan
+
+**Tasks:** [N]
+**Files touched:** [count created + count modified]
+**Build sequence:** [task N] → [task M] → ...
+**TDD required:** [count tasks with tdd:required]
+
+Plan: `[path to plan file]`
+```
+
+If the epic is not found, skip tracking silently. Do not fail the plan run.
