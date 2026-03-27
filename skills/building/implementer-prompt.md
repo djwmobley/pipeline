@@ -12,7 +12,7 @@
 8. `[DIRECTORY]` → actual working directory path
 9. `{{TDD_SECTION}}` → If task has `tdd: required`, replace with the content of skills/tdd/SKILL.md. If `tdd: optional` or absent, remove the placeholder line entirely.
 10. `{{FRAMEWORK}}` → Read `project.profile` from pipeline.yml (e.g., `spa`, `fullstack`, `api`). If null, omit the line.
-11. `{{TICKET_CONTEXT}}` → (remediation only) Replace with ticket-reading instructions based on backend. Not remediation → remove the `## Finding Context` section entirely.
+11. `{{TICKET_CONTEXT}}` → (remediation only) Replace with ticket-reading instructions based on backend. Not remediation → remove the `{{TICKET_CONTEXT}}` line entirely.
 
 **Removed from v1:** `[Scene-setting]`, `{{DECISION_REGISTER}}`, `{{ARCHITECTURAL_CONSTRAINTS}}`, `{{PRIOR_TASKS}}` — the agent reads these from stores directly.
 

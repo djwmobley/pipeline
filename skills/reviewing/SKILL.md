@@ -47,8 +47,10 @@ Configured via `static_analysis` in pipeline.yml.
 
 1. **Check config:** Read `static_analysis.semgrep.enabled` from pipeline.yml.
    - `false` → skip SAST entirely
-   - `"auto"` → probe for semgrep binary (see step 2)
+   - `"auto"` or **missing/undefined** → probe for semgrep binary (see step 2)
    - `true` → require semgrep (warn if missing, but continue)
+   If the `static_analysis` section is absent from pipeline.yml, treat as `"auto"`.
+   If `static_analysis.grep_fallback` is missing/undefined, treat as `false`.
 
 2. **Probe for semgrep:**
    ```bash
@@ -131,14 +133,14 @@ All three stores, every time. This is the A2A contract — the QA agent reads
 review results to understand what was validated and what needs testing focus.
 
 **Runtime placeholders** (resolved by the review command before executing):
-- `[GITHUB_REPO]` — `integrations.github.repo` from pipeline.yml. Empty if GitHub disabled.
+- `[SCRIPTS_DIR]` — path to pipeline's scripts/ directory (absolute).
 - `[GITHUB_ISSUE]` — task issue number for this review phase. Empty if GitHub disabled.
 
 ### 1. Postgres Write
 
 Record results in the knowledge DB:
 ```
-PROJECT_ROOT=$(git rev-parse --show-toplevel) node "$PROJECT_ROOT/scripts/pipeline-db.js" insert knowledge \
+node '[SCRIPTS_DIR]/pipeline-db.js' insert knowledge \
   --category 'review' \
   --label 'review-verdict' \
   --body "$(cat <<'BODY'
@@ -168,10 +170,11 @@ If the command fails, notify the user with the error and ask for guidance.
 
 Update `build-state.json` with review status for crash recovery.
 
-### Fallback (GitHub disabled)
+### Fallback
 
-If GitHub is not enabled, skip the issue comment.
-Postgres write, build state update, and the findings report are always required.
+- **GitHub/issue tracker disabled** (`[GITHUB_ISSUE]` is empty): skip the issue comment.
+- **Postgres unreachable:** log the failure in the review report. The findings file in `docs/findings/` is the fallback record. The orchestrator retries the Postgres write on next dispatch.
+- Build state update and the findings report are always required.
 
 ## Severity Calibration
 
