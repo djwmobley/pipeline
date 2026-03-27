@@ -141,6 +141,77 @@ EXCEPTION WHEN OTHERS THEN
 END $$;
 
 -- ═══════════════════════════════════════════════════════════════════════════════
+-- WORKFLOW DISCOVERY — findings, cross-cutting behaviors, decisions, workflow steps
+-- from structured review sessions (e.g. roleplay walkthroughs)
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+CREATE TABLE IF NOT EXISTS workflow_discovery (
+  id SERIAL PRIMARY KEY,
+  step TEXT,                             -- pipeline step name (init, debate, plan, etc.)
+  item_type TEXT,                        -- finding, cross_cutting, decision, workflow_step
+  number INTEGER,
+  title TEXT NOT NULL,
+  detail TEXT,
+  status TEXT DEFAULT 'open',
+  persona TEXT,                          -- which persona surfaced this (advocate, skeptic, etc.)
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- FTS on title + detail
+ALTER TABLE workflow_discovery ADD COLUMN IF NOT EXISTS fts_vec TSVECTOR
+  GENERATED ALWAYS AS (
+    to_tsvector('english', coalesce(title, '') || ' ' || coalesce(detail, ''))
+  ) STORED;
+
+CREATE INDEX IF NOT EXISTS wd_fts_idx ON workflow_discovery USING gin(fts_vec);
+CREATE INDEX IF NOT EXISTS wd_item_type_idx ON workflow_discovery (item_type);
+CREATE INDEX IF NOT EXISTS wd_step_idx ON workflow_discovery (step);
+
+-- Add vector column if pgvector is available (idempotent)
+DO $$ BEGIN
+  ALTER TABLE workflow_discovery ADD COLUMN IF NOT EXISTS embedding vector(1024);
+EXCEPTION WHEN OTHERS THEN
+  RAISE NOTICE 'Skipping vector column on workflow_discovery — pgvector not installed.';
+END $$;
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- AGENT REWRITES — AS-IS/TO-BE agent transformation specs from v2 planning
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+CREATE TABLE IF NOT EXISTS agent_rewrites (
+  id SERIAL PRIMARY KEY,
+  agent_name TEXT NOT NULL,
+  skill_path TEXT,
+  as_is TEXT,
+  to_be TEXT,
+  gap TEXT,
+  effort TEXT,                           -- small, large, rewrite
+  depends_on TEXT,
+  status TEXT DEFAULT 'pending',
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- FTS on agent_name + as_is + to_be + gap
+ALTER TABLE agent_rewrites ADD COLUMN IF NOT EXISTS fts_vec TSVECTOR
+  GENERATED ALWAYS AS (
+    to_tsvector('english',
+      coalesce(agent_name, '') || ' ' ||
+      coalesce(as_is, '') || ' ' ||
+      coalesce(to_be, '') || ' ' ||
+      coalesce(gap, ''))
+  ) STORED;
+
+CREATE INDEX IF NOT EXISTS ar_fts_idx ON agent_rewrites USING gin(fts_vec);
+CREATE INDEX IF NOT EXISTS ar_effort_idx ON agent_rewrites (effort);
+
+-- Add vector column if pgvector is available (idempotent)
+DO $$ BEGIN
+  ALTER TABLE agent_rewrites ADD COLUMN IF NOT EXISTS embedding vector(1024);
+EXCEPTION WHEN OTHERS THEN
+  RAISE NOTICE 'Skipping vector column on agent_rewrites — pgvector not installed.';
+END $$;
+
+-- ═══════════════════════════════════════════════════════════════════════════════
 -- FILE CACHE — hash-based cache to skip re-reading unchanged files
 -- ═══════════════════════════════════════════════════════════════════════════════
 
