@@ -121,6 +121,74 @@ async function connect(config) {
   return client;
 }
 
+// ─── OLLAMA EMBED ──────────────────────────────────────────────────────────
+
+const http = require('http');
+
+/**
+ * Call Ollama /api/embed to generate vector embeddings for one or more texts.
+ * Returns an array of embedding arrays (one per input text).
+ */
+function ollamaEmbed(texts, config) {
+  const model = (config && config.embedding_model) || ollamaDefaults.model;
+  const host = ollamaDefaults.host;
+  const port = ollamaDefaults.port;
+
+  return new Promise((resolve, reject) => {
+    const body = JSON.stringify({ model, input: texts });
+    const opts = {
+      hostname: host, port, path: '/api/embed', method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
+    };
+    const req = http.request(opts, (res) => {
+      let data = '';
+      res.on('data', d => { data += d; });
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(data);
+          if (!parsed.embeddings) return reject(new Error(`Ollama error: ${JSON.stringify(parsed).slice(0, 200)}`));
+          resolve(parsed.embeddings);
+        } catch (e) { reject(e); }
+      });
+    });
+    req.on('error', (e) => {
+      reject(new Error(`Cannot reach Ollama at ${host}:${port} — is it running? (${e.message})`));
+    });
+    req.write(body);
+    req.end();
+  });
+}
+
+/**
+ * Embed a single text and write the vector to a table row. Degrades gracefully —
+ * if Ollama is not running or the embedding column doesn't exist, the row is
+ * written without an embedding (can be backfilled later with `pipeline-embed.js index`).
+ *
+ * @param {Client} client - connected pg Client
+ * @param {string} table - table name (MUST be a static constant, never user input)
+ * @param {string} idCol - column name for the row identifier
+ * @param {*} idVal - value of the row identifier
+ * @param {string} text - text to embed
+ * @param {object} config - pipeline config (for embedding_model)
+ */
+async function tryEmbed(client, table, idCol, idVal, text, config) {
+  try {
+    // Check if embedding column exists
+    const { rows } = await client.query(
+      "SELECT 1 FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = $1 AND column_name = 'embedding'",
+      [table]
+    );
+    if (rows.length === 0) return; // no embedding column — skip silently
+
+    const [embedding] = await ollamaEmbed([text], config);
+    const vec = `[${embedding.join(',')}]`;
+    await client.query(`UPDATE ${table} SET embedding = $1 WHERE ${idCol} = $2`, [vec, idVal]);
+  } catch (_) {
+    // Ollama not running or embed failed — row exists without embedding.
+    // Backfill later with: node pipeline-embed.js index
+  }
+}
+
 // ─── EXPORTS ────────────────────────────────────────────────────────────────
 
-module.exports = { findProjectRoot, loadConfig, connect, c, ollamaDefaults, projectToDbName };
+module.exports = { findProjectRoot, loadConfig, connect, c, ollamaDefaults, projectToDbName, ollamaEmbed, tryEmbed };

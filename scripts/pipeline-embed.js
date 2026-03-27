@@ -22,8 +22,7 @@
  *   - PostgreSQL with pgvector extension
  */
 
-const http = require('http');
-const { loadConfig, connect, c, ollamaDefaults } = require('./lib/shared');
+const { loadConfig, connect, c, ollamaDefaults, ollamaEmbed, tryEmbed } = require('./lib/shared');
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────────
 
@@ -70,37 +69,6 @@ const TABLES = [
     ftsCol: 'fts_vec',
   },
 ];
-
-// ─── OLLAMA EMBED API ────────────────────────────────────────────────────────
-
-function ollamaEmbed(texts) {
-  return new Promise((resolve, reject) => {
-    const body = JSON.stringify({ model: EMBED_MODEL, input: texts });
-    const opts = {
-      hostname: OLLAMA_HOST,
-      port: OLLAMA_PORT,
-      path: '/api/embed',
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
-    };
-    const req = http.request(opts, (res) => {
-      let data = '';
-      res.on('data', d => { data += d; });
-      res.on('end', () => {
-        try {
-          const parsed = JSON.parse(data);
-          if (!parsed.embeddings) return reject(new Error(`Ollama error: ${JSON.stringify(parsed).slice(0, 200)}`));
-          resolve(parsed.embeddings);
-        } catch (e) { reject(e); }
-      });
-    });
-    req.on('error', (e) => {
-      reject(new Error(`Cannot reach Ollama at ${OLLAMA_HOST}:${OLLAMA_PORT} — is it running? (${e.message})`));
-    });
-    req.write(body);
-    req.end();
-  });
-}
 
 // ─── INTROSPECTION HELPERS ──────────────────────────────────────────────────
 
@@ -163,7 +131,7 @@ async function cmdIndex(forceAll) {
         for (let i = 0; i < rows.length; i += BATCH) {
           const batch = rows.slice(i, i + BATCH);
           const texts = batch.map(tbl.textFn);
-          const embeddings = await ollamaEmbed(texts);
+          const embeddings = await ollamaEmbed(texts, CONFIG);
 
           if (embeddings.length !== batch.length) {
             throw new Error(
@@ -210,7 +178,9 @@ async function cmdAdd(filepath, description) {
       [filepath, description]
     );
     console.log(c.green(`Indexed: ${filepath}`));
-    console.log(c.dim('Run "index" to generate embedding for this entry.'));
+    await tryEmbed(client, 'code_index', 'path', filepath,
+      `File: ${filepath}\n\n${description}`, CONFIG);
+    console.log(c.dim('Embedding generated (or will be backfilled with "index").'));
   } finally {
     await client.end();
   }
@@ -233,7 +203,7 @@ async function cmdSearch(query) {
       return;
     }
 
-    const [qEmbedding] = await ollamaEmbed([query]);
+    const [qEmbedding] = await ollamaEmbed([query], CONFIG);
     const vec = `[${qEmbedding.join(',')}]`;
 
     let resultNum = 0;
@@ -304,7 +274,7 @@ async function cmdHybrid(query) {
       } else if (!hasFts) {
         // Vector-only (fts_vec missing — schema not updated)
         console.log(c.yellow(`  (${tbl.name}: no fts_vec column — vector-only results. Run setup to enable hybrid.)`));
-        if (!qEmb) { [qEmb] = await ollamaEmbed([query]); }
+        if (!qEmb) { [qEmb] = await ollamaEmbed([query], CONFIG); }
         const vec = `[${qEmb.join(',')}]`;
 
         const result = await client.query(
@@ -319,7 +289,7 @@ async function cmdHybrid(query) {
         rows = result.rows;
       } else {
         // Hybrid: 30% FTS + 70% vector
-        if (!qEmb) { [qEmb] = await ollamaEmbed([query]); }
+        if (!qEmb) { [qEmb] = await ollamaEmbed([query], CONFIG); }
         const vec = `[${qEmb.join(',')}]`;
 
         const result = await client.query(
