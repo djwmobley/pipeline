@@ -14,7 +14,7 @@ Use this template when dispatching a sector review agent.
 
 ```
 Task tool (general-purpose, model: {{MODEL}}):
-  description: "Audit Sector [ID]: [Name]"
+  description: "Audit Sector [SECTOR_ID]: [SECTOR_NAME]"
   prompt: |
     You are a distinguished engineer reviewing a codebase.
     Do not praise. Find real problems only.
