@@ -5,9 +5,13 @@ description: Engineering Architect — technology decisions via recon + parallel
 
 ## Pipeline Architect
 
-Produce architectural decision records that constrain downstream planning and implementation.
+Produce `docs/architecture.md` — a committed engineering standards document that constrains
+downstream planning, implementation, review, and security testing. This is the project's
+engineering bible: code patterns, typed contracts, security standards, and banned patterns.
 
-For MEDIUM changes, architecture runs silently inside `/pipeline:plan` — this command is for LARGE/MILESTONE changes that need full orchestration with parallel domain specialists.
+For MEDIUM changes, architecture runs silently inside `/pipeline:plan` (recon only).
+This command is for LARGE/MILESTONE changes or initial project setup that need the full
+document with parallel domain specialists.
 
 ---
 
@@ -20,7 +24,7 @@ Read `.claude/pipeline.yml` from the project root. Extract:
 - `models.cheap`, `models.review`, `models.architecture`
 - `review.non_negotiable[]`
 - `knowledge.tier`
-- `docs.plans_dir`, `docs.specs_dir`
+- `docs.specs_dir`
 - `integrations.github.enabled`, `integrations.github.issue_tracking`
 - `project.repo` — GitHub repo (owner/repo)
 
@@ -137,16 +141,29 @@ DETAIL
 
 ### Step 6 — Save artifact
 
-Save to `[docs.plans_dir]/YYYY-MM-DD-{feature}-decisions.md` using the format defined in the architecture SKILL.md.
+Save to `docs/architecture.md` at the project root. The format is defined in the architecture
+SKILL.md Full Mode output section.
+
+**If `docs/architecture.md` already exists, merge:**
+
+1. Match existing decisions by domain and technology area — if the new run covers the
+   same domain, the new decision wins; annotate with `**Updated:** [date]`
+2. Existing decisions whose domain is NOT in the domains analyzed this run are kept unchanged
+3. New decisions are appended, numbered sequentially after the last existing number
+4. Sections (Project Structure, Code Patterns, Security Standards, Testing Standards, Banned
+   Patterns) are merged by appending new items that do not already appear verbatim
+5. Typed Contracts: new endpoints/interfaces are appended; existing ones with the same
+   path or interface name are replaced
+6. Regenerate the Constraints Summary from all sections after merging
 
 ---
 
 ### Step 7 — Present to builder
 
-Show a summary table:
+Show a summary:
 
 ```
-## Architectural Decisions — [Feature Name]
+## Architecture — [Project Name]
 
 | # | Domain | Decision | Confidence |
 |---|--------|----------|------------|
@@ -155,16 +172,18 @@ Show a summary table:
 | DECISION-003 | STATE | Server components + React Query | MEDIUM |
 
 [N] decisions across [M] domains. [K] require your review (LOW confidence).
+[P] typed contracts. [Q] security rules. [R] banned patterns.
 
-Saved to: [path]
+Saved to: docs/architecture.md
 
 What next?
-a) Proceed to planning  (/pipeline:plan — decisions will be consumed as constraints)
+a) Proceed to planning  (/pipeline:plan — architecture.md consumed as constraints)
 b) Review/override decisions  (I'll walk you through LOW confidence items)
 c) Re-run with different domains  (add/remove from analysis)
 ```
 
-If the builder chooses to override, apply the override annotation to the artifact and update knowledge tier.
+If the builder chooses to override, apply the override annotation to `docs/architecture.md`
+and update knowledge tier.
 
 ---
 
@@ -182,7 +201,7 @@ If `integrations.github.enabled` AND `integrations.github.issue_tracking`:
    |---|--------|----------|------------|
    [table rows from decisions]
 
-   Decisions saved to `[artifact path]`
+   Architecture saved to `docs/architecture.md`
    EOF
    )"
    ```

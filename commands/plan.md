@@ -76,12 +76,12 @@ Follow the architecture skill's **Silent Mode** (MEDIUM path):
 2. The recon agent returns a **Constraints Block** (existing stack, patterns, relevant domains, test coverage)
 3. Inject the Constraints Block into the planning skill as an `## Architectural Constraints` section
 
-**LARGE/MILESTONE auto-invoke:** If the recon agent identifies 3+ relevant domains AND no decision records file exists in `docs.plans_dir` for the current spec, auto-invoke the full architecture mode:
+**LARGE/MILESTONE auto-invoke:** If the recon agent identifies 3+ relevant domains AND `docs/architecture.md` does not exist, auto-invoke the full architecture mode:
 1. Read the full architecture SKILL.md and follow the **Full Mode** path
-2. This dispatches domain specialists and produces a decisions artifact
-3. The decisions artifact's Constraints Summary replaces the inline recon constraints
+2. This dispatches domain specialists and produces `docs/architecture.md`
+3. The Constraints Summary from `docs/architecture.md` replaces the inline recon constraints
 
-If the user has already run `/pipeline:architect` explicitly (decision records file exists), skip recon entirely — read the existing decisions and inject their Constraints Summary.
+If `docs/architecture.md` already exists (user ran `/pipeline:architect` explicitly), skip recon entirely — read the existing Constraints Summary and inject it.
 
 ---
 
