@@ -206,7 +206,7 @@ Verifies each red team finding's fix by replaying the exploitation scenario agai
 | **Next** | finish |
 | **On fail** | N/A (preflight gate blocks, user resolves) |
 
-Preflight gate chain: typecheck → lint → test → review gate. If all pass, creates the commit. Category 4 utility — skips GitHub issue comments.
+Preflight gate chain: review gate (hard stop on source file count) → typecheck → lint → test → agent template lint. If all pass, creates the commit. Category 4 utility — skips GitHub issue comments.
 
 ### 12. Finish
 
@@ -270,10 +270,7 @@ The `security.policy` config controls when red team and purple team steps run:
 | `milestone` | Runs on MILESTONE-sized changes only | Same | Standard projects with periodic security checks |
 | `on-demand` | User must invoke `/pipeline:redteam` manually | User must invoke `/pipeline:purpleteam` manually | Low-risk projects or teams with external security review |
 
-When the orchestrator reaches the redteam step:
-- If policy is `every-feature`: inputs are checked, step proceeds if qa=PASS
-- If policy is `milestone` and change size < MILESTONE: step is recorded as `skipped`
-- If policy is `on-demand`: step is recorded as `skipped` unless user explicitly ran the command
+**Important:** The orchestrator does NOT read `security.policy`. It is content-blind — it only checks the `required: false` flag and whether input artifacts exist. Security policy routing is handled by the **commands themselves** (e.g., `/pipeline:redteam` reads the policy and decides whether to proceed or skip). The orchestrator records the result (done/skipped) regardless of how the command made that decision.
 
 ## Three-Store Reporting Contract
 
@@ -288,7 +285,7 @@ Every agent that produces output writes to all applicable stores. The orchestrat
 | Architect | Decision records | Epic comment | N/A | Command handles persistence |
 | Build | Per-task impl result | Per-task issue comment | Task status + commit SHA | Implementer + reviewer self-report |
 | Review | Review verdict | Task issue comment | Review status | Self-reports |
-| QA | Per-WP results + verdict | Task issue comments | QA status | Planner, workers, verifier self-report |
+| QA | Per-WP results + verdict | Task issue comments | QA status | Planner + workers self-report; verifier produces report, command handles persistence |
 | Red Team | Per-domain findings | Task issue comments | Redteam status | Recon, specialists self-report; lead delegates to command |
 | Purple | Per-finding verdict | Task issue comments | Purple status | Verifier delegates to command |
 | Commit | N/A | N/A | Commit SHA | Category 4 utility — skips GitHub |
@@ -323,16 +320,26 @@ node scripts/orchestrator.js graph
 
 ## Data Access Layer
 
-Agents read context from stores via `scripts/pipeline-context.js`:
+Agents read context via `scripts/pipeline-context.js`, invoked as a **CLI tool** (not imported as a module):
 
-| Function | What it returns | Used by |
-|----------|----------------|---------|
-| `getTaskContext(taskNum)` | Task description, status, dependencies | Implementer, reviewer |
-| `getArchPlan()` | `docs/architecture.md` contents | Implementer, reviewer, QA |
-| `getSecurityFindings()` | Open findings from Postgres | Redteam, purple, remediation |
-| `getRecentDecisions(n)` | Last N architectural decisions | Implementer, reviewer |
-| `getActiveGotchas()` | Active gotchas/constraints | Implementer, reviewer |
-| `getSessionContext()` | Current session metadata | Dashboard |
-| `getBuildState()` | `.claude/build-state.json` contents | All build-phase agents |
-| `getGitHubContext()` | Issue/PR state from GitHub CLI | Review, finish |
-| `getFullContext()` | Combined output of all above | Debug, investigation |
+```bash
+PROJECT_ROOT=$(git rev-parse --show-toplevel) node '[SCRIPTS_DIR]/pipeline-context.js' <command> [args]
+```
+
+| CLI Command | JS Function | What it returns |
+|-------------|-------------|-----------------|
+| `decisions [n]` | `getRecentDecisions(client, limit)` | Last N architectural decisions from Postgres |
+| `gotchas` | `getActiveGotchas(client)` | Active gotchas/constraints from Postgres |
+| `task [id]` | `getTaskContext(client, taskId)` | Task description, status, dependencies from Postgres |
+| `arch-plan` | `getArchPlan()` | `docs/architecture.md` contents (file read, no Postgres) |
+| `findings` | `getSecurityFindings(client, options)` | Open findings from Postgres |
+| `session` | `getSessionContext(client)` | Current session metadata from Postgres |
+| `build-state` | `getBuildState(planPath)` | `.claude/build-state.json` contents (file read) |
+| `github [issue]` | `getGitHubContext(issueNum)` | Issue/PR state via GitHub CLI |
+| `full [taskId]` | `getFullContext(client, taskId)` | Combined output of all above |
+
+**Which agents call which commands:**
+- **Implementer, reviewer:** `decisions 10`, `gotchas` (via CLI). Also read `docs/architecture.md` and `.claude/build-state.json` directly as file reads.
+- **Dashboard:** `session` (via CLI)
+- **Debug/investigation:** `full` (via CLI)
+- Other agents read stores directly (e.g., `gh issue view`, `cat .claude/build-state.json`) rather than going through pipeline-context.js.
