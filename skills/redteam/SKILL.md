@@ -162,6 +162,15 @@ When dispatching subagents, read and use these prompt template files (located in
 
 This distinction exists because `{{MODEL}}` controls which model runs the agent, while `[PLACEHOLDER]` values are injected into the prompt the agent receives.
 
+**Runtime placeholders** (resolved by the red team command before dispatching):
+- `[SCRIPTS_DIR]` — absolute path to the pipeline plugin's scripts/ directory
+- `[GITHUB_REPO]` — `integrations.github.repo` from pipeline.yml. Empty if GitHub disabled.
+- `[GITHUB_ISSUE]` — task issue number for this red team phase. Empty if GitHub disabled.
+- `[SOURCE_DIRS]` — `routing.source_dirs` from pipeline.yml
+- `[DIFF_FILES]` — diff-scoped file list or "FULL_SCAN"
+
+Full substitution checklists are in each prompt template file.
+
 ## Key Principles
 
 - **Read-only** — never modify code during assessment

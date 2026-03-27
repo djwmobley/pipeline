@@ -273,12 +273,17 @@ Substitutions per worker:
 - `[WORK_PACKAGE_ID]` → work package ID (e.g., `WP-001`)
 - `[WORK_PACKAGE_NAME]` → work package name
 - `[SCENARIOS]` → full text of all test scenarios assigned to this work package
-- `[TOOLS_AVAILABLE]` → tools this worker can use (from work package definition)
+- `[TOOLS_LIST]` → tools this worker can use (from work package definition)
 - `[SOURCE_DIRS]` → `routing.source_dirs` from pipeline.yml
 - `[TEST_COMMAND]` → `commands.test` from pipeline.yml
 - `[BROWSER_TESTING]` → `qa.browser_testing` from pipeline.yml (true/false)
 - `[DB_VERIFICATION]` → `qa.db_verification` from pipeline.yml (true/false)
 - `[FLAKE_RETRIES]` → `qa.flake_retries` from pipeline.yml (default: 1)
+- `[EXISTING_TEST_PATTERNS]` → summary of existing test framework, file organization, fixture patterns
+- `[ARCH_PLAN]` → contents of `docs/architecture.md` if it exists, or "No architecture document available"
+- `[GITHUB_REPO]` → `integrations.github.repo` from pipeline.yml. Empty string if GitHub disabled.
+- `[GITHUB_ISSUE]` → task issue number for this QA phase. Empty string if GitHub disabled.
+- `[SCRIPTS_DIR]` → path to pipeline's scripts/ directory (absolute)
 
 Workers return structured results per scenario: PASS/FAIL + evidence.
 

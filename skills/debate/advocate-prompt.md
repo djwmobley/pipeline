@@ -101,6 +101,20 @@ Task tool (general-purpose, model: {{MODEL}}):
     - What assumptions does this design rely on?
     - What would invalidate this design?
 
+    <ANTI-RATIONALIZATION>
+    These thoughts mean STOP and reconsider:
+    - "This design is obviously good" → Obvious to whom? Defend with specifics, not assertions.
+    - "I cannot find any weaknesses to acknowledge" → Every design accepts risks. Name them honestly or your defense is hollow.
+    - "The alternative is clearly worse" → Was it rejected for a documented reason, or are you assuming?
+    - "Compliance doesn't apply here" → Check. GDPR, WCAG, licensing — if none apply, say so explicitly. Do not skip the section.
+    </ANTI-RATIONALIZATION>
+
     Do not hedge. State your positions clearly. The Skeptic and Practitioner
     will challenge you — give them something substantive to engage with.
+
+    ## Reporting Model
+
+    Your output (the position paper) is consumed by the debate command, which
+    collects all three agents' outputs and synthesizes a verdict. The command
+    handles persistence to Postgres and GitHub. You produce content only.
 ```

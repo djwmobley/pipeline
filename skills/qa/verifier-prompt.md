@@ -115,6 +115,15 @@ Task tool (general-purpose, model: {{MODEL}}):
     If in doubt, classify as "code-is-wrong" — it's better to investigate a
     false positive than to miss a real bug.
 
+    <ANTI-RATIONALIZATION>
+    These thoughts mean STOP and reconsider:
+    - "The workers covered everything" → Workers test within boundaries. Nobody tests across them without the seam pass.
+    - "This failure is probably flaky" → Classify it FIRST. code-is-wrong vs test-is-wrong vs flaky. Do not guess.
+    - "The test failed but the code is fine" → That is a triage decision (test-is-wrong), not a dismissal. Document WHY.
+    - "I can skip the seam pass, workers found no issues" → Clean worker results make seam tests MORE important, not less.
+    - "Coverage is high enough" → Coverage measures execution, not correctness. Check the coverage MATRIX, not the percentage.
+    </ANTI-RATIONALIZATION>
+
     ## Step 4 — Coverage Gap Analysis
 
     Cross-reference the coverage matrix against results:

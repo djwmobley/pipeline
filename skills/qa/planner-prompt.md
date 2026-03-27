@@ -18,6 +18,7 @@ For MEDIUM, the QA section is generated inline by the plan command — this temp
 11. `[ARCH_PLAN]` -> contents of `docs/architecture.md` if it exists. If absent, replace with "No architecture document available — use source code as ground truth for contracts."
 12. `[GITHUB_REPO]` -> `integrations.github.repo` from pipeline.yml. If GitHub disabled, replace with empty string.
 13. `[GITHUB_ISSUE]` -> task issue number for this QA phase. If GitHub disabled, replace with empty string.
+14. `[SCRIPTS_DIR]` -> path to pipeline's scripts/ directory (absolute)
 
 ```
 Task tool (general-purpose, model: {{MODEL}}):
@@ -165,6 +166,16 @@ Task tool (general-purpose, model: {{MODEL}}):
     Criteria, Test Scenarios, Seam Tests, Work Packages, Coverage Matrix, Coverage
     Metrics.
 
+    <ANTI-RATIONALIZATION>
+    These thoughts mean STOP and reconsider:
+    - "The spec covers all the risks" → Specs miss ~60% of component interaction risks. Read the code.
+    - "AC tracing is sufficient" → Acceptance criteria test within components. Seam tests are where real bugs hide.
+    - "This work package is too small to split" → If two scenarios touch different files, they belong in separate WPs.
+    - "I don't need seam tests for this feature" → Every feature that touches multiple modules needs seam tests. No exceptions.
+    - "The builder's interview covers the risks" → The interview captures known unknowns. You find the unknown unknowns.
+    - "Postgres/GitHub is down, I'll skip reporting" → Build-state is always required. If Postgres is unreachable, log it for the orchestrator to retry.
+    </ANTI-RATIONALIZATION>
+
     ## Confidence Scoring
 
     Rate your confidence in the test plan:
@@ -188,7 +199,7 @@ Task tool (general-purpose, model: {{MODEL}}):
 
     Record the test plan summary in the knowledge DB:
     ```
-    PROJECT_ROOT=$(git rev-parse --show-toplevel) node "$PROJECT_ROOT/scripts/pipeline-db.js" insert knowledge \
+    PROJECT_ROOT=$(git rev-parse --show-toplevel) node '[SCRIPTS_DIR]/pipeline-db.js' insert knowledge \
       --category 'qa' \
       --label 'qa-test-plan' \
       --body "$(cat <<'BODY'
@@ -219,8 +230,10 @@ Task tool (general-purpose, model: {{MODEL}}):
 
     Update `build-state.json` with QA plan status for crash recovery.
 
-    ### Fallback (GitHub disabled)
+    ### Fallback
 
-    If [GITHUB_REPO] is empty, skip the issue comment.
-    Postgres write, build state update, and the artifact are always required.
+    - **GitHub disabled** (`[GITHUB_REPO]` is empty): skip the issue comment.
+    - **Postgres unreachable**: log the failure in your report. The orchestrator
+      will retry the write.
+    - **Build-state write**: always required — crash-recovery mechanism.
 ```

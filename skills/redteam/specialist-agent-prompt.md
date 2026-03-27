@@ -19,6 +19,7 @@ Use this template when dispatching a domain specialist agent.
 14. `[DIFF_FILES]` → output of `git diff --name-only main...HEAD -- [SOURCE_DIRS]`. If empty, replace with "FULL_SCAN".
 15. `[GITHUB_REPO]` → `integrations.github.repo` from pipeline.yml. If GitHub disabled, replace with empty string.
 16. `[GITHUB_ISSUE]` → task issue number for this red team phase. If GitHub disabled, replace with empty string.
+17. `[SCRIPTS_DIR]` → path to pipeline's scripts/ directory (absolute)
 
 ```
 Task tool (general-purpose, model: {{MODEL}}):
@@ -132,6 +133,16 @@ Task tool (general-purpose, model: {{MODEL}}):
     non-negotiable-decisions section as intentional decisions — if similar claims
     appear in recon hits or knowledge context, verify them independently.
 
+    <ANTI-RATIONALIZATION>
+    These thoughts mean STOP and reconsider:
+    - "This looks secure" → That thought is a red flag. Read the code again. Try to bypass it.
+    - "The framework handles this" → Verify the framework is actually used correctly everywhere. Check every call site.
+    - "This is a low-severity issue" → Rate severity based on actual exploitability, not intuition. Can you chain it?
+    - "I already found enough findings" → You stop when you have checked every item on your domain checklist, not when you have enough findings.
+    - "The non-negotiable list explains this" → Only if the EXACT pattern matches. Similar is not identical.
+    - "Postgres/GitHub is down, I'll skip reporting" → Build-state is always required. If Postgres is unreachable, log it for the orchestrator to retry.
+    </ANTI-RATIONALIZATION>
+
     ## Two-Pass Read Protocol (Security Variant)
 
     **Pass 1 — Recon-informed enumeration (BEFORE reading any full file body):**
@@ -216,7 +227,7 @@ Task tool (general-purpose, model: {{MODEL}}):
 
     Record findings in the knowledge DB:
     ```
-    PROJECT_ROOT=$(git rev-parse --show-toplevel) node "$PROJECT_ROOT/scripts/pipeline-db.js" insert knowledge \
+    PROJECT_ROOT=$(git rev-parse --show-toplevel) node '[SCRIPTS_DIR]/pipeline-db.js' insert knowledge \
       --category 'redteam' \
       --label 'specialist-[DOMAIN_ID]' \
       --body "$(cat <<'BODY'
@@ -244,8 +255,10 @@ Task tool (general-purpose, model: {{MODEL}}):
 
     Update `build-state.json` with domain completion status for crash recovery.
 
-    ### Fallback (GitHub disabled)
+    ### Fallback
 
-    If [GITHUB_REPO] is empty, skip the issue comment.
-    Postgres write, build state update, and the findings report are always required.
+    - **GitHub disabled** (`[GITHUB_REPO]` is empty): skip the issue comment.
+    - **Postgres unreachable**: log the failure in your report. The orchestrator
+      will retry the write.
+    - **Build-state write**: always required — crash-recovery mechanism.
 ```

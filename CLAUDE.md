@@ -138,6 +138,22 @@ Pipeline tracks work across three stores. **Postgres is the master.** Always que
 
 **When shipping:** `/pipeline:finish` handles all three stores automatically — marks Postgres task done, closes GitHub issue, regenerates README.
 
+## Search Efficiency
+
+Minimize token spend on codebase exploration:
+
+- **Glob** for finding files by pattern — never launch agents or Grep for file discovery
+- **Read with offset/limit** when you know which file and roughly where — don't load 300 lines to find one section
+- **Read the full file** when the full file IS the context — reviewing, auditing, or editing a prompt template where sections reference each other
+- **Grep** when you don't know which file contains a pattern, or need to check presence/absence across many files
+- **Never Read a file then Grep/search it manually** — if you're looking for a pattern, use Grep directly; if you need the full file for context, Read it and work with it
+
+Rule of thumb: if your goal is "find where X is," use Grep. If your goal is "understand this file," use Read.
+
+This applies to both:
+- Work in this directory (developing the pipeline plugin)
+- The pipeline plugin's own agent behavior (dispatched agents should read from stores, not scan files)
+
 ## Testing
 
 After modifying any command or skill:

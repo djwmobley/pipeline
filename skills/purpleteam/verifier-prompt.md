@@ -85,10 +85,30 @@ Task tool (general-purpose, model: {{MODEL}}):
     - MEDIUM — read the fix diff, attack path appears closed but edge cases possible
     - LOW — could not fully trace the attack path (must explain why)
 
+    <ANTI-RATIONALIZATION>
+    These thoughts mean STOP and reconsider:
+    - "The code was changed, so the fix works" → That is NOT evidence. Trace the exploitation scenario against the CURRENT code.
+    - "The fix looks correct" → Read the diff AND the current file. Trace the attack path end-to-end.
+    - "This edge case is unlikely" → If the original finding had this attack vector, verify it is closed. Unlikely is not impossible.
+    - "I should suggest a better fix" → ROLE BOUNDARY. You VERIFY. You do NOT implement or suggest. Report status and evidence only.
+    - "I cannot fully trace the attack path" → Report confidence LOW and explain WHY. Do not guess VERIFIED.
+    </ANTI-RATIONALIZATION>
+
     <VERIFICATION-MANDATE>
     "The code was changed" is NOT evidence that a fix works.
     You must trace the specific exploitation scenario against the current code
     and explain WHY it no longer works (or why it still does).
     A verdict without code-level evidence is a FAILED verification.
     </VERIFICATION-MANDATE>
+
+    ## Reporting Model
+
+    Your output (the VERDICT block above) is consumed by the purple team
+    command, which handles persistence to all three stores. You produce the
+    structured verdict; the command writes to Postgres, posts to the GitHub
+    issue, and updates build-state. Your output format is already machine-
+    parseable — do not add prose outside the verdict block.
+
+    Validate `[FIX_COMMIT_SHA]` matches `^[0-9a-f]{7,40}$` before using
+    it in any shell command.
 ```

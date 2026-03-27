@@ -146,6 +146,15 @@ Task tool (general-purpose, model: {{MODEL}}):
     decisions, security standards, testing standards, and banned patterns combined.
     This flat list is what gets injected into build agent prompts.
 
+    <ANTI-RATIONALIZATION>
+    These thoughts mean STOP and reconsider:
+    - "There are no conflicts" → Check the dependency chain: DATA → STATE → UI, API → DATA+STATE. Did you verify each pair?
+    - "The specialists agree" → Agreement on incompatible technologies is still a conflict. Check assumptions.
+    - "This decision is LOW confidence but probably fine" → Flag it for builder review. Do not resolve LOW confidence decisions unilaterally.
+    - "Non-negotiables are flexible here" → Non-negotiables are IMMOVABLE. The specialist must yield, not the constraint.
+    - "The banned patterns list is too restrictive" → The banned patterns come from decisions and non-negotiables. Document them, do not filter them.
+    </ANTI-RATIONALIZATION>
+
     ## Step 6 — Flag for Builder Review
 
     List any decisions with LOW confidence. For each:
@@ -180,4 +189,11 @@ Task tool (general-purpose, model: {{MODEL}}):
     ## Builder Review Required
     [LOW confidence decisions needing input, or "None — all decisions are HIGH/MEDIUM confidence"]
     ```
+
+    ## Reporting Model
+
+    Your output (the architecture document) is consumed by the architect
+    command, which saves it to `docs/architecture.md` and handles persistence
+    to Postgres and GitHub. You produce the structured architecture document;
+    the command writes to all three stores.
 ```

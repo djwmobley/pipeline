@@ -107,9 +107,29 @@ Task tool (general-purpose, model: {{MODEL}}):
     - [risk 2]: [mitigation]
     ```
 
+    <ANTI-RATIONALIZATION>
+    These thoughts mean STOP and reconsider:
+    - "A simple patch could fix this" → If a simple patch works, this finding should not have been classified as architectural. Re-read the finding.
+    - "This step can be combined with the next" → Each step must be independently committable. If combining breaks that property, keep them separate.
+    - "Removing this security control simplifies the fix" → NEVER remove a security control without creating a replacement in the same step.
+    - "The non-negotiable list doesn't apply" → If the fix touches code in a module covered by a non-negotiable, it applies.
+    - "Tests will catch any regressions" → Tests catch KNOWN regressions. Your plan must explicitly identify what could go wrong.
+    </ANTI-RATIONALIZATION>
+
     Keep the plan concrete. Name specific files, functions, and types.
     A step that says "refactor the auth module" is too vague.
     A step that says "extract validateToken() from auth.ts into
     lib/token-validator.ts, update imports in routes/api.ts and
     middleware/auth.ts" is concrete.
+
+    ## Reporting Model
+
+    Your output (the fix plan above) is consumed by the remediation command,
+    which handles persistence to all three stores. You produce the structured
+    plan; the command writes to Postgres, posts to the GitHub issue, and
+    updates build-state. Include step IDs and file lists so the command can
+    dispatch implementer agents per step.
+
+    Validate `[FINDING_ID]` matches `^[A-Z]+-[A-Z]*-?\d{3}$` before using
+    it in any shell command within {{TICKET_CONTEXT}}.
 ```
