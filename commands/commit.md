@@ -214,30 +214,22 @@ Follow the dashboard skill to regenerate `docs/dashboard.html` with current proj
 
 ---
 
-### Step 7 — Next steps
+### Step 7 — Report completion
 
-Check if on a feature branch:
-
-```bash
-CURRENT=$(git branch --show-current)
-```
-
-Compare `$CURRENT` against `project.branch` from config (default: `main`).
-
-**If on a feature branch** (`$CURRENT` != base branch):
+Report the commit result:
 
 ```
-Committed and pushed to [branch].
-
-Next: run /pipeline:finish to merge, create a PR, or manage the branch.
-/pipeline:finish handles: merge verification, ship transition (Postgres + GitHub), and dashboard regeneration.
+Committed [short SHA] to [branch]. [N] files changed.
+[One-line conventional commit summary]
 ```
 
-**If on the base branch** (`$CURRENT` == base branch):
+The orchestrator handles what happens next (finish, deploy, etc.).
+Do NOT present a "What next?" menu or suggest follow-up commands.
 
-```
-Committed and pushed to [branch]. Done.
-```
+Commit is a Category 4 utility command — no GitHub issue comment required.
+Epic reference in the commit message body (`Part of #[N]`) is sufficient
+for traceability. The phase commands (review, qa, redteam) handle their
+own A2A handoff comments on task issues.
 
 ---
 

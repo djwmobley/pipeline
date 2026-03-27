@@ -108,9 +108,31 @@ The `remediate.auto_issue_threshold` config controls which findings get GitHub i
 | Medium | Multi-file or pattern change | Sonnet implementer + sonnet reviewer |
 | Architectural | Structural change, new abstractions | Opus planner → sonnet implementer + reviewer per step |
 
-## Verification Strategies
+## Implementation / Verification Split
 
-Each source type has a verification strategy configured in `remediate.verification`:
+Remediation implements fixes ONLY. It does NOT dispatch verification.
+
+The orchestrator routes to the appropriate verification step after fixes are committed:
+- Red team findings → purple team verification
+- Audit findings → audit sector re-run
+- Review findings → review re-run
+- UI findings → screenshot verification
+
+This split ensures:
+1. Each fix goes through build gates (lint + post-task review) before verification
+2. The orchestrator controls the loopback — if verification fails, it routes back to remediation
+3. Remediation agents are stateless — they fix one finding, commit, and report done
+
+### Architecture Plan Compliance
+
+If `docs/architecture.md` exists, the implementer agent reads it for:
+- **Banned patterns** — the fix must not introduce a banned pattern
+- **Module boundaries** — the fix must respect defined interfaces
+- **Typed contracts** — the fix must match contract shapes
+
+The arch plan is passed via the `{{ARCHITECTURAL_CONSTRAINTS}}` slot in the implementer prompt.
+
+### Verification Strategies (reference — dispatched by orchestrator, not by remediation)
 
 | Strategy | Source Default | Dispatch | Scope |
 |----------|--------------|----------|-------|
@@ -119,11 +141,6 @@ Each source type has a verification strategy configured in `remediate.verificati
 | `review-rerun` | review | Review logic with `--since BASELINE_SHA` | Changed files |
 | `screenshot` | ui-review | Chrome DevTools + haiku analysis | Full page |
 | `none` | external | Skip | Print "Run the appropriate review command manually." |
-
-All verification outputs the same table:
-```
-| Domain | Original | Remaining | New | Status |
-```
 
 ## Model Routing
 
@@ -181,6 +198,55 @@ The ID prefix carries the source type. No source-specific commit formatting.
 ```
 
 Labels: `[source-type]`, `[severity-lowercase]`. Always two labels, same pattern.
+
+## Reporting Contract
+
+All three stores, every time. This is the A2A contract — the orchestrator and
+verification agents read remediation results to understand what was fixed.
+
+**Runtime placeholders** (resolved per finding during the fix cycle):
+- `[FINDING_ID]` — from the triage artifact model (the finding being fixed, e.g., `RT-INJ-001`)
+- `[FINDING_ISSUE]` — GitHub issue number created during the ticket step
+- `[GITHUB_REPO]` — `integrations.github.repo` from pipeline.yml. Empty if GitHub disabled.
+- `[SHA]` — commit SHA from the fix commit
+
+### 1. Postgres Write
+
+Update finding status in the knowledge DB after each fix:
+```
+PROJECT_ROOT=$(git rev-parse --show-toplevel) node "$PROJECT_ROOT/scripts/pipeline-db.js" insert knowledge \
+  --category 'remediation' \
+  --label 'fix-[FINDING_ID]' \
+  --body "$(cat <<'BODY'
+{"finding_id": "[FINDING_ID]", "status": "fixed|blocked", "commit_sha": "[SHA]", "effort": "quick|medium|architectural"}
+BODY
+)"
+```
+
+### 2. GitHub Issue Comment (if task issue is available)
+
+Post fix status as a comment on the finding's GitHub issue:
+```
+gh issue comment [FINDING_ISSUE] --repo '[GITHUB_REPO]' --body "$(cat <<'EOF'
+## Fix Applied
+**Finding:** [FINDING_ID]
+**Commit:** [SHA]
+**Effort:** [quick|medium|architectural]
+**Build gates:** [lint PASS, review PASS | details if failed]
+
+Awaiting verification by [verification strategy].
+EOF
+)"
+```
+
+### 3. Build State
+
+Update `build-state.json` with fix status for crash recovery.
+
+### Fallback (GitHub disabled)
+
+If GitHub is not enabled, skip the issue comment.
+Postgres write, build state update, and commit are always required.
 
 ## Red Flags — Rationalization Prevention
 

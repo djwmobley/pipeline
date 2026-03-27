@@ -15,6 +15,21 @@ Execute plan by dispatching fresh subagent per task, with review after each.
 - Tasks are mostly independent
 - Want automated review between tasks
 
+## Context Injection
+
+Agents read their own context from stores — the orchestrator passes references, not full text.
+
+| Context Source | How Agent Reads | Fallback |
+|----------------|----------------|----------|
+| Architecture plan | `docs/architecture.md` (file read) | Skip if missing |
+| Decisions | `pipeline-context.js decisions` (Postgres) | Skip if Postgres unavailable |
+| Gotchas | `pipeline-context.js gotchas` (Postgres) | Skip if Postgres unavailable |
+| Task issue | `gh issue view N` (GitHub) | Skip if GitHub disabled |
+| Prior tasks | `.claude/build-state.json` (file read) | First task in build |
+| Task description | Pasted in prompt (from plan) | Always available |
+
+The orchestrator substitutes reference IDs (issue numbers, script paths) into the prompt template. The agent uses those references to fetch its own context. This replaces the v1 pattern of pasting full context blocks into the prompt.
+
 ## The Process
 
 ```
@@ -39,7 +54,7 @@ Post-task review
 Review OK? ──issues──▶ (fix, re-dispatch)
   │ OK
   ▼
-Checkpoint: update build-state.json (task → done)
+Checkpoint: write to all three stores (Postgres + GitHub issue + build-state.json)
   │
   ▼
 More tasks? ──yes──▶ Dispatch implementer subagent
@@ -81,9 +96,73 @@ Note observations and proceed.
 
 **Never** ignore escalations or force retry without changes.
 
+## Architecture Plan Compliance
+
+If `docs/architecture.md` exists, the implementer agent reads it and checks:
+
+- **Module boundaries** — code respects the module structure and public interfaces
+- **Typed contracts** — function signatures match contract shapes in the arch plan
+- **Banned patterns** — code does not use any explicitly banned pattern
+- **Code patterns** — implementation follows established patterns from the arch plan
+
+Arch compliance is part of the implementer's self-review checklist. The post-task reviewer independently verifies compliance.
+
+If no arch plan exists, skip compliance checks silently.
+
+## Reporting Contract
+
+All three stores, every time. This is the A2A contract — the post-task reviewer
+reads implementation results to understand what was built and where to focus.
+
+**Runtime placeholders** (resolved by the build command before dispatching).
+Full substitution checklist is in the prompt template — these are the key placeholders:
+- `[TASK_NUMBER]` — task number from the plan.
+- `[TASK_NAME]` — task name from the plan.
+- `[TASK_DESCRIPTION]` — full task text from the plan.
+- `[TASK_ISSUE]` — GitHub issue number for this task. Empty if GitHub disabled.
+- `[GITHUB_REPO]` — `integrations.github.repo` from pipeline.yml. Empty if GitHub disabled.
+- `[SCRIPTS_DIR]` — absolute path to the pipeline plugin's scripts/ directory.
+- `[DIRECTORY]` — working directory path.
+
+### 1. Postgres Write
+
+Record implementation result in the knowledge DB:
+```
+PROJECT_ROOT=$(git rev-parse --show-toplevel) node '[SCRIPTS_DIR]/pipeline-db.js' insert knowledge \
+  --category 'build' \
+  --label 'task-[TASK_NUMBER]-impl' \
+  --body "$(cat <<'BODY'
+{"task": [TASK_NUMBER], "status": "DONE|...", "commit_sha": "[SHA]", "files_changed": [N]}
+BODY
+)"
+```
+
+### 2. GitHub Issue Comment (if task issue is available)
+
+Post implementation report on the task issue:
+```
+gh issue comment [TASK_ISSUE] --repo '[GITHUB_REPO]' --body "$(cat <<'EOF'
+## Implementation — Task [TASK_NUMBER]
+**Status:** [DONE/DONE_WITH_CONCERNS/BLOCKED/NEEDS_CONTEXT]
+**Commit:** [SHA]
+**Files changed:** [list]
+EOF
+)"
+```
+
+### 3. Build State
+
+Update `.claude/build-state.json` with task status and commit SHA for crash recovery.
+
+### Fallback
+
+- **GitHub disabled**: skip the issue comment.
+- **Postgres unreachable**: agent logs the failure in its report. The orchestrator retries the write on next dispatch.
+- **Build-state write**: always required — crash-recovery mechanism.
+
 ## Prompt Templates
 
-- `./implementer-prompt.md` — Dispatch implementer subagent
+- `./implementer-prompt.md` — Dispatch implementer subagent (reads context from stores)
 - `./reviewer-prompt.md` — Dispatch post-task reviewer (spec compliance + quality)
 
 ## Red Flags
@@ -93,7 +172,7 @@ Note observations and proceed.
 - Proceed with unfixed issues
 - Dispatch multiple implementation subagents in parallel (conflicts)
 - Make subagent read plan file (provide full text instead)
-- Skip scene-setting context
+- Skip context reads (arch plan, decisions, gotchas, task issue)
 - Accept "close enough" on spec compliance
 - Move to next task while review has open issues
 
