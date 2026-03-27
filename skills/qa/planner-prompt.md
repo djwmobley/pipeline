@@ -15,7 +15,7 @@ For MEDIUM, the QA section is generated inline by the plan command — this temp
 8. `[TEST_COMMAND]` -> `commands.test` from pipeline.yml
 9. `[BROWSER_TESTING]` -> `qa.browser_testing` from pipeline.yml (true/false)
 10. `[DB_VERIFICATION]` -> `qa.db_verification` from pipeline.yml (true/false)
-11. `[ARCH_PLAN]` -> contents of `docs/architecture.md` if it exists. If absent, replace with "No architecture document available."
+11. `[ARCH_PLAN]` -> contents of `docs/architecture.md` if it exists. If absent, replace with "No architecture document available — use source code as ground truth for contracts."
 12. `[GITHUB_REPO]` -> `integrations.github.repo` from pipeline.yml. If GitHub disabled, replace with empty string.
 13. `[GITHUB_ISSUE]` -> task issue number for this QA phase. If GitHub disabled, replace with empty string.
 

@@ -180,11 +180,21 @@ Then cleanup worktree (Step 5).
 **Runs for Options 1 and 2 (merge paths).** Skip if GitHub is not enabled or no epic is found.
 
 This is the single compiled summary posted to the epic — no other command posts to the epic.
-Query Postgres for all phase results from this workflow:
+
+**Validate epic number** before any GitHub operations:
+```bash
+echo '[EPIC_N]' | grep -qE '^[0-9]+$' || { echo "Invalid epic number: [EPIC_N]"; }
+```
+
+**Scope filter:** Use the workflow start time from `build-state.json` (the `started_at` field)
+to filter knowledge rows to the current workflow only. If no start time is available, fall back
+to results from the last 7 days.
+
+Query Postgres for phase results from this workflow:
 
 ```bash
 PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js query "$(cat <<'SQL'
-SELECT label, body FROM knowledge WHERE category IN ('review', 'qa', 'redteam', 'remediation') ORDER BY created_at
+SELECT label, body FROM knowledge WHERE category IN ('review', 'qa', 'redteam', 'remediation') AND created_at >= '[WORKFLOW_START]' ORDER BY created_at
 SQL
 )"
 ```
@@ -192,14 +202,14 @@ SQL
 Also query for deferred features from the brainstorm/spec:
 ```bash
 PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js query "$(cat <<'SQL'
-SELECT label, body FROM knowledge WHERE category = 'deferred' ORDER BY created_at
+SELECT label, body FROM knowledge WHERE category = 'deferred' AND created_at >= '[WORKFLOW_START]' ORDER BY created_at
 SQL
 )"
 ```
 
 Compile into a single comment and post to the epic:
 ```bash
-gh issue comment [EPIC_N] --repo '[project.repo]' --body "$(cat <<'EOF'
+gh issue comment '[EPIC_N]' --repo '[project.repo]' --body "$(cat <<'EOF'
 ## Ship Summary
 
 ### Review

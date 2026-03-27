@@ -129,6 +129,10 @@ If no arch plan exists, skip this section silently.
 All three stores, every time. This is the A2A contract — the QA agent reads
 review results to understand what was validated and what needs testing focus.
 
+**Runtime placeholders** (resolved by the review command before executing):
+- `[GITHUB_REPO]` — `integrations.github.repo` from pipeline.yml. Empty if GitHub disabled.
+- `[GITHUB_ISSUE]` — task issue number for this review phase. Empty if GitHub disabled.
+
 ### 1. Postgres Write
 
 Record results in the knowledge DB:

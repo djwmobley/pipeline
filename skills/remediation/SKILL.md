@@ -204,6 +204,12 @@ Labels: `[source-type]`, `[severity-lowercase]`. Always two labels, same pattern
 All three stores, every time. This is the A2A contract — the orchestrator and
 verification agents read remediation results to understand what was fixed.
 
+**Runtime placeholders** (resolved per finding during the fix cycle):
+- `[FINDING_ID]` — from the triage artifact model (the finding being fixed, e.g., `RT-INJ-001`)
+- `[FINDING_ISSUE]` — GitHub issue number created during the ticket step
+- `[GITHUB_REPO]` — `integrations.github.repo` from pipeline.yml. Empty if GitHub disabled.
+- `[SHA]` — commit SHA from the fix commit
+
 ### 1. Postgres Write
 
 Update finding status in the knowledge DB after each fix:
