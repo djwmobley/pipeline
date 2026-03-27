@@ -8,5 +8,6 @@
   "homepage": "https://github.com/djwmobley/pipeline",
   "repository": "https://github.com/djwmobley/pipeline",
   "license": "MIT",
-  "keywords": ["pipeline", "review", "tdd", "debugging", "quality-gates", "workflows", "size-routing", "dashboard"]
+  "keywords": ["pipeline", "review", "tdd", "debugging", "quality-gates", "workflows", "size-routing", "dashboard"],
+  "commands": "./commands/"
 }
