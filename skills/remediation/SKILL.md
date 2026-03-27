@@ -130,7 +130,7 @@ If `docs/architecture.md` exists, the implementer agent reads it for:
 - **Module boundaries** — the fix must respect defined interfaces
 - **Typed contracts** — the fix must match contract shapes
 
-The arch plan is passed via the `{{ARCHITECTURAL_CONSTRAINTS}}` slot in the implementer prompt.
+The implementer agent reads `docs/architecture.md` directly from the project root as part of its context-gathering step (v2 store-read pattern).
 
 ### Verification Strategies (reference — dispatched by orchestrator, not by remediation)
 

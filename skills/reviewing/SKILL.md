@@ -213,10 +213,60 @@ Detect the project's framework from dependencies:
 
 Apply framework-specific correctness checks automatically based on detection.
 
+## Cross-File Contract Verification
+
+Do not review files in isolation. Trace contracts across file boundaries:
+
+1. **Placeholder contracts** — if a file defines a substitution checklist (e.g., `[SCRIPTS_DIR]`, `[TASK_ISSUE]`), verify every use of that placeholder in the prompt body matches the checklist definition. Then verify the parent SKILL.md's "Runtime placeholders" section lists the same set. Mismatches are 🔴 HIGH.
+
+2. **Pattern consistency** — if the change uses a pattern (e.g., `node '[SCRIPTS_DIR]/pipeline-db.js'`), check how the same operation is done in related files (other prompt templates, the parent SKILL.md, already-shipped agents). Divergence without documented rationale is 🟡 MEDIUM.
+
+3. **Reporting contract alignment** — if the file has a Reporting Contract section, verify the Postgres write JSON fields, GitHub comment format, and build-state update are consistent with what the parent SKILL.md documents. The SKILL.md is the contract; the prompt must match it.
+
+**How to trace:** Read the substitution checklist first. Then search the prompt body for every `[BRACKET]` and `{{BRACE}}` placeholder. Confirm each one is (a) in the checklist and (b) used correctly per the checklist's definition. Then read the parent SKILL.md and confirm the runtime placeholders section matches.
+
+## Structural Completeness Audit
+
+After reviewing code quality, verify the document's internal structure is self-consistent:
+
+1. **Section references** — if the text says "remove the `## Finding Context` section" or "skip Part 3", verify that section/part exists in the document. Dangling references are 🔴 HIGH.
+
+2. **Required sections** — every agent prompt in the v2 architecture must have:
+   - Substitution checklist (top of file)
+   - DATA tags on all externally-sourced content
+   - Context read instructions (if agent reads from stores)
+   - ANTI-RATIONALIZATION block
+   - Reporting Contract (Postgres + GitHub + build-state + fallback)
+   - Output format (structured for orchestrator parsing)
+   Missing sections are 🔴 HIGH.
+
+3. **Enumerable completeness** — if the document promises "N items" or "every X has Y" (e.g., "every question has three engagement variants"), enumerate them. List each X and verify it has Y. Do not scan — count. Missing items are 🟡 MEDIUM.
+
+## Fallback Symmetry
+
+For every operation that can fail, verify the failure path is documented:
+
+1. **Read/write pairs** — if a Postgres READ has a fallback ("continue without"), the corresponding Postgres WRITE must also have a fallback. Check both directions for every store (Postgres, GitHub, build-state, file system).
+
+2. **Shell command validation** — every shell command that uses externally-sourced values (commit SHAs from issue comments, project names from directories, finding IDs from triage) must have a validation instruction. Check: is the value validated before it reaches a shell command? If not, 🔴 HIGH.
+
+3. **Disabled-service paths** — if GitHub can be disabled, trace every `gh` command to confirm it has a guard. If Postgres can be unavailable, trace every `pipeline-db.js` / `pipeline-context.js` call to confirm it has a fallback. Unguarded commands are 🔴 HIGH.
+
+## Fix Quality Requirements
+
+Every 🔴 HIGH finding MUST include:
+- The **specific replacement text** (not just "fix this" — show exactly what the code should say)
+- The **rationale** (why this specific fix, not another approach)
+- A **verification instruction** (how to confirm the fix is correct — e.g., "check that this placeholder matches item N in the substitution checklist")
+
+Without all three, the implementer may apply a cargo-cult fix that changes syntax without fixing the underlying issue. 🟡 MEDIUM findings should include replacement text when the fix is non-obvious.
+
 ## Key Principles
 
 - **Real problems only** — if you wouldn't block a PR for it, it's 🔵 LOW at most
 - **Full context** — read the whole file, not just the diff
 - **Non-negotiable respect** — never flag intentional patterns
-- **Actionable fixes** — every 🔴 HIGH finding includes a specific fix description
+- **Actionable fixes** — every 🔴 HIGH finding includes a specific fix description with rationale
+- **Cross-file verification** — trace contracts across files, not just within each file
+- **Enumerate, don't scan** — if something should be complete, count it
 - **Simplify handoff** — collect simplicity/SOLID findings for /pipeline:simplify
