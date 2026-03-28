@@ -892,14 +892,18 @@ This is the first entry in the project's issue trail. All subsequent pipeline co
 
 ### Orchestrator
 
-Record step completion so the workflow state machine knows init is done:
+Start a new workflow using the project name as the workflow ID, then record init completion:
 
 ```bash
+node '[SCRIPTS_DIR]/orchestrator.js' start '[project.name]-[YYYY-MM-DD]'
 node '[SCRIPTS_DIR]/orchestrator.js' complete init PASS '.claude/pipeline.yml'
 ```
 
-If init failed (e.g., pipeline.yml was not written), record the failure:
+If init failed (e.g., pipeline.yml was not written), still start the workflow but record the failure:
 
 ```bash
+node '[SCRIPTS_DIR]/orchestrator.js' start '[project.name]-[YYYY-MM-DD]'
 node '[SCRIPTS_DIR]/orchestrator.js' complete init FAIL
 ```
+
+If `orchestrator.js start` reports the workflow already exists, skip the start call — a prior init already created it.

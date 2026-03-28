@@ -283,10 +283,10 @@ async function cmdNext(client, workflowId) {
   }
 
   // Check inputs for next step
-  const { met, missing } = await checkInputs(client, wfId, nextStep);
+  let { met, missing } = await checkInputs(client, wfId, nextStep);
 
-  // Skip non-required steps with unmet inputs
-  if (!met && !STEPS[nextStep].required) {
+  // Skip non-required steps with unmet inputs (may skip multiple consecutive optional steps)
+  while (!met && !STEPS[nextStep].required) {
     console.log(c.dim(`Skipping ${nextStep} (optional, inputs not met)`));
     // Record as skipped
     await client.query(
@@ -295,6 +295,8 @@ async function cmdNext(client, workflowId) {
     );
     nextStep = STEPS[nextStep].next;
     if (!nextStep) { console.log(c.green('Workflow complete.')); return; }
+    // Re-check inputs for the new next step
+    ({ met, missing } = await checkInputs(client, wfId, nextStep));
   }
 
   if (met) {
