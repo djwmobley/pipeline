@@ -157,21 +157,21 @@ echo "=== DONE ==="
 > "No git remote. Repo name? (e.g., `owner/repo`, Enter to skip, or `create` to make one)"
 
 **Guided:**
-> "No git remote detected. Pipeline uses GitHub for issue tracking and PR workflows.
+> "No git remote detected. Pipeline uses an issue tracker for issue tracking and PR workflows.
 >
 > Options:
 > - Enter a repo name (e.g., `owner/repo`)
-> - Type `create` — I'll create a GitHub repo and set the remote
-> - Press Enter to skip (GitHub features will be disabled)"
+> - Type `create` — I'll create a repo and set the remote
+> - Press Enter to skip (issue tracking features will be disabled)"
 
 **Full guidance:**
-> "No git remote detected. Pipeline's workflow tracks all work through GitHub issues — every feature, fix, and finding gets an issue with description, commentary, and status. The `/pipeline:finish` command creates PRs automatically.
+> "No git remote detected. Pipeline's workflow tracks all work through issues — every feature, fix, and finding gets an issue with description, commentary, and status. The `/pipeline:finish` command creates PRs automatically.
 >
-> Without a GitHub repo, these features are disabled. You can still use Pipeline for local development, but you'll lose the audit trail.
+> Without a remote repo, these features are disabled. You can still use Pipeline for local development, but you'll lose the audit trail.
 >
 > Options:
 > - Enter an existing repo name (e.g., `owner/repo`)
-> - Type `create` — I'll create a new GitHub repo using `gh repo create` and set the remote
+> - Type `create` — I'll create a new repo using `gh repo create` and set the remote
 > - Press Enter to skip for now (you can add it later with `/pipeline:update`)"
 
 If `create`: validate that `project_name` matches `[a-zA-Z0-9_.-]+` only. If it contains shell metacharacters or single quotes, reject with: "Project name contains unsafe characters. Rename the directory or provide a safe repo name." Then run `gh repo create '[project_name]' --private --source=. --remote=origin --push`. Extract `owner/repo` from the output. If `gh` is not installed, show: "GitHub CLI not available. Install it first: https://cli.github.com"

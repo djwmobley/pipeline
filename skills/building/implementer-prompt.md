@@ -6,8 +6,8 @@
 2. `[TASK_NUMBER]` → the task number from the plan (e.g., `1`, `2`, `3`)
 3. `[TASK_NAME]` → actual task name from the plan
 4. `[TASK_DESCRIPTION]` → full text of the task from the plan (still pasted — this is the primary input the agent works from)
-5. `[TASK_ISSUE]` → GitHub issue number for this task (from build-state.json or plan). Empty string if GitHub disabled.
-6. `[GITHUB_REPO]` → `integrations.github.repo` from pipeline.yml. Empty string if GitHub disabled.
+5. `[TASK_ISSUE]` → issue number for this task (from build-state.json or plan). Empty string if issue tracking is disabled.
+6. `[GITHUB_REPO]` → `integrations.github.repo` from pipeline.yml. Empty string if issue tracking is disabled.
 7. `[SCRIPTS_DIR]` → path to pipeline's scripts/ directory (absolute)
 8. `[DIRECTORY]` → actual working directory path
 9. `{{TDD_SECTION}}` → If task has `tdd: required`, replace with the content of skills/tdd/SKILL.md. If `tdd: optional` or absent, remove the placeholder line entirely.
@@ -85,7 +85,7 @@ Task tool (general-purpose, model: {{MODEL}}):
     If the commands fail (Postgres unavailable), continue without — these
     reads are best-effort context, not blockers.
 
-    ### 3. GitHub Task Issue
+    ### 3. Task Issue
 
     Read the task issue for additional context, comments, and requirements
     from prior pipeline phases:
@@ -98,7 +98,7 @@ Task tool (general-purpose, model: {{MODEL}}):
     The issue may contain discussion, clarifications, or updated requirements.
     Read it before starting implementation.
 
-    If `[TASK_ISSUE]` is empty (GitHub disabled), skip this step.
+    If `[TASK_ISSUE]` is empty (issue tracking disabled), skip this step.
 
     ### 4. Prior Tasks in This Build
 
@@ -182,7 +182,7 @@ Task tool (general-purpose, model: {{MODEL}}):
     - "The existing code does it this way" → Existing patterns are not always correct. Check the spec.
     - "The arch plan doesn't apply here" → If you're touching code in a module the arch plan covers, it applies.
     - "I'll read the context later" → Read ALL context sources before writing any code.
-    - "Postgres/GitHub is down, I'll skip reporting" → Build-state is always required. If Postgres is unreachable, log it for the orchestrator to retry. GitHub comment is skippable only if GitHub is disabled in config.
+    - "Postgres/issue tracker is down, I'll skip reporting" → Build-state is always required. If Postgres is unreachable, log it for the orchestrator to retry. Issue comment is skippable only if issue tracking is disabled in config.
     </ANTI-RATIONALIZATION>
 
     ## Reporting Contract
@@ -204,7 +204,7 @@ Task tool (general-purpose, model: {{MODEL}}):
     )"
     ```
 
-    ### 2. GitHub Issue Comment (if task issue is available)
+    ### 2. Issue Comment (if task issue is available)
 
     Post implementation report on the task issue:
     ```bash
@@ -228,7 +228,7 @@ Task tool (general-purpose, model: {{MODEL}}):
 
     ### Fallback
 
-    - **GitHub disabled** (`[TASK_ISSUE]` is empty): skip the issue comment.
+    - **Issue tracking disabled** (`[TASK_ISSUE]` is empty): skip the issue comment.
     - **Postgres unreachable**: log the failure in your report to the orchestrator.
       The orchestrator will retry the write. Build-state update is always required
       regardless of Postgres availability.

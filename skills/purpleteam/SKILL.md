@@ -140,5 +140,5 @@ This distinction exists because `{{MODEL}}` controls which model runs the agent,
 - **Aggregate** — verifies the whole, not just individual parts
 - **Chain-aware** — exploit chains verified as composite attack paths
 - **Codifying** — verified fixes become reusable defensive rules in knowledge tier
-- **Ticket-integrated** — updates existing GitHub issues, never creates new ones
+- **Ticket-integrated** — updates existing issues, never creates new ones
 - **Defense-specialist identity** — agents understand OWASP, CWE, and defense-in-depth

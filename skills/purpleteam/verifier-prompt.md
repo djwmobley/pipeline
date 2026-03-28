@@ -105,8 +105,8 @@ Task tool (general-purpose, model: {{MODEL}}):
 
     Your output (the VERDICT block above) is consumed by the purple team
     command, which handles persistence to all three stores. You produce the
-    structured verdict; the command writes to Postgres, posts to the GitHub
-    issue, and updates build-state. Your output format is already machine-
+    structured verdict; the command writes to Postgres, posts to the issue
+    tracker, and updates build-state. Your output format is already machine-
     parseable — do not add prose outside the verdict block.
 
     Validate `[FIX_COMMIT_SHA]` matches `^[0-9a-f]{7,40}$` before using

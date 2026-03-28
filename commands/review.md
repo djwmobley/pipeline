@@ -37,7 +37,7 @@ Read `.claude/pipeline.yml` from the project root. Extract:
 - `static_analysis.severity_mapping` — semgrep severity to pipeline severity
 - `static_analysis.grep_fallback` — use grep patterns when semgrep unavailable
 - `integrations.github.enabled`, `integrations.github.issue_tracking`
-- `project.repo` — GitHub repo (owner/repo)
+- `project.repo` — repo identifier (owner/repo)
 
 If no config file exists, report: "No `.claude/pipeline.yml` found. Run `/pipeline:init` first." and stop.
 
@@ -266,7 +266,7 @@ DETAIL
 
 ---
 
-### GitHub Finding Tracking
+### Finding Tracking
 
 If `integrations.github.enabled` AND `integrations.github.issue_tracking`:
 
@@ -314,7 +314,7 @@ Find the epic number: check the most recent plan file in `docs.plans_dir` for `g
    ```
    If the command fails, notify the user with the error and ask for guidance.
 
-If no epic found: skip — review works without GitHub tracking.
+If no epic found: skip — review works without issue tracking.
 
 ---
 
@@ -347,4 +347,4 @@ node '[SCRIPTS_DIR]/orchestrator.js' complete review [PASS|FAIL]
 
 After applying fixes: `/pipeline:commit` → `/pipeline:finish` (if on a feature branch).
 
-`/pipeline:finish` handles merge verification, ship transition (Postgres task closure + GitHub issue close), and dashboard regeneration. Do not manually merge — finish keeps the three stores in sync.
+`/pipeline:finish` handles merge verification, ship transition (Postgres task closure + issue close), and dashboard regeneration. Do not manually merge — finish keeps the three stores in sync.

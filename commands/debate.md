@@ -18,7 +18,7 @@ Read `.claude/pipeline.yml` from the project root. Extract:
 - `models.review` — model for debate agents (default: sonnet)
 - `knowledge.tier` — `postgres` or `files`
 - `integrations.postgres.enabled` — whether postgres is available
-- `integrations.github.enabled` — whether GitHub CLI is available
+- `integrations.github.enabled` — whether issue tracker is available
 - `integrations.github.issue_tracking` — whether to link issues
 - `dashboard.enabled` — whether to regenerate dashboard
 
@@ -191,7 +191,7 @@ Report: "Verdict saved to `[path]`. The plan command will read this automaticall
 
 ---
 
-### GitHub Epic Tracking
+### Epic Tracking
 
 If `integrations.github.enabled` AND `integrations.github.issue_tracking`:
 

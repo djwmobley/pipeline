@@ -8,14 +8,14 @@ Dispatch this reviewer after each implementer completes a task. It checks spec c
 2. `[TASK_NUMBER]` → the task number from the plan (e.g., `1`, `2`, `3`)
 3. `[TASK_NAME]` → the task name from the plan
 4. `[TASK_DESCRIPTION]` → full text of the task requirements from the plan
-5. `[TASK_ISSUE]` → GitHub issue number for this task. Empty string if GitHub disabled.
-6. `[GITHUB_REPO]` → `integrations.github.repo` from pipeline.yml. Empty string if GitHub disabled.
+5. `[TASK_ISSUE]` → issue number for this task. Empty string if issue tracking is disabled.
+6. `[GITHUB_REPO]` → `integrations.github.repo` from pipeline.yml. Empty string if issue tracking is disabled.
 7. `[SCRIPTS_DIR]` → path to pipeline's scripts/ directory (absolute)
 8. `[DIRECTORY]` → actual working directory path
 9. `[NON_NEGOTIABLES]` → the actual list from `review.non_negotiable` in pipeline.yml
 10. `{{TICKET_CONTEXT}}` → (remediation only) Replace with ticket-reading instructions based on backend. Not remediation → remove the `{{TICKET_CONTEXT}}` line entirely.
 
-**Removed from v1:** `[FULL TEXT of task requirements]` (now `[TASK_DESCRIPTION]`), `[From implementer's report]` (agent reads from GitHub issue / build-state instead).
+**Removed from v1:** `[FULL TEXT of task requirements]` (now `[TASK_DESCRIPTION]`), `[From implementer's report]` (agent reads from task issue / build-state instead).
 
 ```
 Task tool (general-purpose, model: {{MODEL}}):
@@ -64,7 +64,7 @@ Task tool (general-purpose, model: {{MODEL}}):
     git diff [SHA_FROM_COMMENT]~1..[SHA_FROM_COMMENT]
     ```
 
-    If `[TASK_ISSUE]` is empty (GitHub disabled), read `.claude/build-state.json`
+    If `[TASK_ISSUE]` is empty (issue tracking disabled), read `.claude/build-state.json`
     for the task's commit SHA and use `git show` to inspect the changes.
 
     ### 2. Architecture Plan
@@ -190,8 +190,8 @@ Task tool (general-purpose, model: {{MODEL}}):
 
     ### Fallback symmetry
     - For every Postgres READ with a fallback, verify the corresponding WRITE
-      also has a fallback. For every `gh` command, verify it has a GitHub-disabled
-      guard. Unguarded commands or asymmetric fallbacks are 🔴 HIGH.
+      also has a fallback. For every platform CLI command, verify it has an
+      issue-tracking-disabled guard. Unguarded commands or asymmetric fallbacks are 🔴 HIGH.
     - For every shell command using externally-sourced values (SHAs, names, IDs),
       verify a validation instruction exists before the value reaches the shell.
 
@@ -230,7 +230,7 @@ Task tool (general-purpose, model: {{MODEL}}):
     - "The arch plan doesn't quite apply here" → If the changed file is in a module the arch plan covers, it applies.
     - "I already found enough issues" → You stop when you have checked every criterion, not when you have enough findings.
     - "This looks fine overall" → That thought is a red flag. Read the code again.
-    - "Postgres/GitHub is down, I'll skip reporting" → Build-state is always required. If Postgres is unreachable, log it for the orchestrator to retry.
+    - "Postgres/issue tracker is down, I'll skip reporting" → Build-state is always required. If Postgres is unreachable, log it for the orchestrator to retry.
     - "I can't complete the review" → Report Assessment: Blocked with what is missing. Do not silently skip checks.
     </ANTI-RATIONALIZATION>
 
@@ -252,7 +252,7 @@ Task tool (general-purpose, model: {{MODEL}}):
     )"
     ```
 
-    ### 2. GitHub Issue Comment (if task issue is available)
+    ### 2. Issue Comment (if task issue is available)
 
     Post review verdict on the task issue:
     ```bash
@@ -274,7 +274,7 @@ Task tool (general-purpose, model: {{MODEL}}):
 
     ### Fallback
 
-    - **GitHub disabled** (`[TASK_ISSUE]` is empty): skip the issue comment.
+    - **Issue tracking disabled** (`[TASK_ISSUE]` is empty): skip the issue comment.
     - **Postgres unreachable**: log the failure in your report to the orchestrator.
       The orchestrator will retry the write.
     - **Build-state write**: always required.

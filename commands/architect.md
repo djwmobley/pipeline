@@ -26,7 +26,7 @@ Read `.claude/pipeline.yml` from the project root. Extract:
 - `knowledge.tier`
 - `docs.specs_dir`
 - `integrations.github.enabled`, `integrations.github.issue_tracking`
-- `project.repo` — GitHub repo (owner/repo)
+- `project.repo` — repo identifier (owner/repo)
 
 If no config exists: "No `.claude/pipeline.yml` found. Run `/pipeline:init` first." Stop.
 
@@ -187,7 +187,7 @@ and update knowledge tier.
 
 ---
 
-### GitHub Decision Tracking
+### Decision Tracking
 
 If `integrations.github.enabled` AND `integrations.github.issue_tracking`:
 

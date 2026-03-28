@@ -130,7 +130,7 @@ Executed: [list of steps that ran]
 | Chain → Orchestrator (skip only) | `complete <step> PASS 'skipped-by-chain'` for steps excluded from scope |
 | Chain → Sub-command | Skill invocation (no arguments, no context) |
 | Sub-command → Orchestrator | `complete <step> PASS\|FAIL [artifact]` |
-| Sub-command → Stores | Reads context from Postgres/GitHub/files; writes results back |
+| Sub-command → Stores | Reads context from Postgres/issue tracker/files; writes results back |
 | Chain → Sub-command return | Nothing. Chain doesn't inspect what the sub-command did. |
 
 The chain never reads result codes, fail counts, artifacts, or store contents. It asks one question ("what's next?") and follows the answer. The only write it makes to the orchestrator is recording skips for steps the user excluded from scope.

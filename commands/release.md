@@ -176,7 +176,7 @@ git push origin [project.branch from config] --follow-tags
 > - Changelog updated
 > - Tagged and pushed
 >
-> [If GitHub integration enabled: 'Create a GitHub release? (y/N)']"
+> [If release creation supported: 'Create a release? (y/N)']"
 
 If yes and GitHub CLI available, extract only the new version's section from CHANGELOG.md (from `## [version]` to the next `## ` heading or end of file) and pass it as release notes:
 ```bash

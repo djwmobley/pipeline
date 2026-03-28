@@ -307,7 +307,7 @@ PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-files.js prune
 
 ---
 
-### Step 9 — GitHub issue creation
+### Step 9 — Issue creation
 
 If `integrations.github.enabled` AND `integrations.github.issue_tracking`:
 
@@ -359,7 +359,7 @@ EOF
 ```
 If the command fails, notify the user with the error and ask for guidance.
 
-If no epic found: skip — compliance mapping works without GitHub tracking.
+If no epic found: skip — compliance mapping works without issue tracking.
 
 ---
 

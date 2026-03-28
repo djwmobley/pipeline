@@ -26,7 +26,7 @@ Read `.claude/pipeline.yml` from the project root. Extract:
 - `docs.plans_dir`, `docs.specs_dir`
 - `knowledge.tier`
 - `integrations.github.enabled`, `integrations.github.issue_tracking`
-- `project.repo` — GitHub repo (owner/repo)
+- `project.repo` — repo identifier (owner/repo)
 
 If no config exists: "No `.claude/pipeline.yml` found. Run `/pipeline:init` first." Stop.
 
@@ -223,7 +223,7 @@ EOF
 
 ---
 
-### GitHub QA Tracking
+### QA Tracking
 
 If `integrations.github.enabled` AND `integrations.github.issue_tracking`:
 
@@ -262,7 +262,7 @@ Find the epic number: read the spec or plan file for `github_epic: N`.
    If the command fails, notify the user with the error and ask for guidance.
 2. Comment the verdict summary on the epic.
 
-If no epic found: skip — QA works without GitHub tracking.
+If no epic found: skip — QA works without issue tracking.
 
 ---
 

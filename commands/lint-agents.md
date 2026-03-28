@@ -27,7 +27,7 @@ Read `.claude/pipeline.yml` from the project root. Extract:
 - `project.repo` — repository identifier
 - `knowledge.tier` — `postgres` or `files`
 - `integrations.postgres.enabled` — whether postgres is available
-- `integrations.github.enabled` — whether GitHub CLI is available
+- `integrations.github.enabled` — whether issue tracker is available
 - `integrations.github.issue_tracking` — whether to link issues
 
 If `lint_agents.enabled` is `false`, report: "Agent template linting is disabled in config." and stop.
@@ -64,7 +64,7 @@ If the user passed `--fix`:
 3. For findings that cannot be auto-fixed (orphan placeholders, missing checklist), list them and explain what manual action is needed
 4. Re-run the lint script to verify fixes
 
-### GitHub Epic Tracking
+### Epic Tracking
 
 If `integrations.github.enabled` AND `integrations.github.issue_tracking`:
 

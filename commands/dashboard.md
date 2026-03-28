@@ -31,7 +31,7 @@ Follow the dashboard skill exactly. Execute all steps in order:
 1. Derive phase from artifact existence
 2. Collect state data (Postgres queries or file parsing, depending on knowledge tier)
 3. Collect git state
-4. Collect GitHub issues and feature epic (if enabled)
+4. Collect issues and feature epic (if enabled)
 5. Collect security lifecycle data (if findings exist)
 6. Generate health summary (rule-based)
 7. Generate rule-based recommendations

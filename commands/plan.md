@@ -20,9 +20,9 @@ Read `.claude/pipeline.yml` from the project root. Extract:
 - `architect` — architect config section (if present)
 - `qa` — QA config section (if present)
 - `project.profile` — project profile
-- `integrations.github.enabled` — whether GitHub CLI is available
+- `integrations.github.enabled` — whether issue tracker is available
 - `integrations.github.issue_tracking` — whether to create/link issues across lifecycle
-- `project.repo` — GitHub repo (owner/repo)
+- `project.repo` — repo identifier (owner/repo)
 
 If no config file exists, report: "No `.claude/pipeline.yml` found. Run `/pipeline:init` first." and stop.
 
@@ -209,7 +209,7 @@ DETAIL
 
 ---
 
-### GitHub Epic Update
+### Epic Update
 
 If `integrations.github.enabled` AND `integrations.github.issue_tracking`:
 
@@ -228,7 +228,7 @@ If `integrations.github.enabled` AND `integrations.github.issue_tracking`:
      ```
      If the command fails, notify the user with the error and ask for guidance.
    - Update the epic status checklist (edit the issue body to check `Plan`).
-3. If not found: skip — user may have started from plan directly or GitHub tracking was added after brainstorm.
+3. If not found: skip — user may have started from plan directly or issue tracking was added after brainstorm.
 
 ---
 

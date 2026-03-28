@@ -1,19 +1,19 @@
 ---
 name: github-tracking
-description: Mandatory GitHub issue tracking ceremony — every command that produces output must update the associated epic
+description: Mandatory issue tracking ceremony — every command that produces output must update the associated epic
 ---
 
-# GitHub Issue Tracking — Mandatory Ceremony
+# Issue Tracking — Mandatory Ceremony
 
 ## Overview
 
-**This is a hard rule.** Every pipeline command that produces meaningful output MUST interact with the associated GitHub issue. GitHub Issues is the source of truth for project tracking. Work that is not reflected in GitHub did not happen.
+**This is a hard rule.** Every pipeline command that produces meaningful output MUST interact with the associated issue. The issue tracker is the source of truth for project tracking. Work that is not reflected in the issue tracker did not happen.
 
-This skill defines what every command must do. It is not optional. It is not best-effort. Commands that produce output without updating GitHub are broken commands.
+This skill defines what every command must do. It is not optional. It is not best-effort. Commands that produce output without updating the issue tracker are broken commands.
 
 ## Prerequisites
 
-All GitHub tracking is gated on two config flags:
+All issue tracking is gated on two config flags:
 
 ```yaml
 integrations:
@@ -22,13 +22,13 @@ integrations:
     issue_tracking: true
 ```
 
-If either flag is false, GitHub tracking is skipped with a silent no-op. Commands must still function without GitHub — findings go to files/Postgres, workflow continues. But when GitHub is enabled, tracking is mandatory.
+If either flag is false, issue tracking is skipped with a silent no-op. Commands must still function without issue tracking — findings go to files/Postgres, workflow continues. But when issue tracking is enabled, tracking is mandatory.
 
 ## The Epic Model
 
 Pipeline uses a **feature epic** model:
 
-1. `/pipeline:brainstorm` creates the epic — a GitHub issue with a status checklist
+1. `/pipeline:brainstorm` creates the epic — an issue with a status checklist
 2. Every downstream command reads `github_epic: N` from spec or plan metadata
 3. Each command posts a summary comment on the epic when it completes
 4. Commands that produce findings create child issues linked to the epic
@@ -68,7 +68,7 @@ These commands represent major workflow phases. They MUST:
 ### Category 2: Finding Commands (create child issues)
 
 These commands produce findings. They MUST:
-1. Create GitHub issues for findings at or above their severity threshold
+1. Create issues for findings at or above their severity threshold
 2. Link child issues to the epic (`Linked to: #[EPIC_N]`)
 3. Post a summary comment on the epic with finding counts
 
@@ -92,12 +92,12 @@ These commands produce decisions or verdicts. They MUST:
 | debate | Disposition, points of agreement count, contested points count, risk count |
 | architect | Decisions table with confidence levels |
 
-### Category 4: Utility Commands (no GitHub interaction required)
+### Category 4: Utility Commands (no issue tracking interaction required)
 
 These commands are mechanical operations that don't produce trackable output:
 - commit, simplify, dashboard, debug, init, update, worktree, knowledge, security (checklist only), triage, test, release, markdown-review
 
-These commands do NOT require GitHub interaction. They may optionally reference the epic in commit messages or PR bodies when the context is available.
+These commands do NOT require issue tracking interaction. They may optionally reference the epic in commit messages or PR bodies when the context is available.
 
 **Exception — commit.md:** When a plan file with `github_epic: N` is available, the commit message SHOULD include `Part of #[N]` in the body for traceability.
 
@@ -108,7 +108,7 @@ Commands find the epic number through this chain:
 1. Read `github_epic: N` from the **plan file** metadata (most common)
 2. If no plan, read from the **spec file** metadata
 3. If no spec, check the **most recent plan** in `docs.plans_dir`
-4. If nothing found, skip GitHub tracking silently — not all work is tied to an epic
+4. If nothing found, skip issue tracking silently — not all work is tied to an epic
 
 ```bash
 # Verify epic exists before commenting
@@ -164,18 +164,18 @@ If an issue already exists, skip creation. This prevents duplicate issues when c
 
 When `integrations.github.enabled` is false or `integrations.github.issue_tracking` is false:
 
-- Skip all GitHub operations silently
-- Do not warn, do not error — GitHub is optional per project
+- Skip all issue tracking operations silently
+- Do not warn, do not error — issue tracking is optional per project
 - Findings still go to files/Postgres as normal
-- The workflow is complete without GitHub
+- The workflow is complete without issue tracking
 
-When GitHub is enabled but `gh` CLI fails (network error, auth issue):
+When issue tracking is enabled but the platform CLI fails (network error, auth issue):
 
-- Log a warning: `GitHub tracking failed: [error]. Continuing without GitHub updates.`
-- Do not block the command — GitHub tracking is important but not blocking
+- Log a warning: `Issue tracking failed: [error]. Continuing without issue updates.`
+- Do not block the command — issue tracking is important but not blocking
 - The user can re-run the command or manually update the issue
 
-## Adding GitHub Tracking to a New Command
+## Adding Issue Tracking to a New Command
 
 When writing a new command:
 
@@ -183,7 +183,7 @@ When writing a new command:
 2. **Add config extraction**: `integrations.github.enabled`, `integrations.github.issue_tracking`, `project.repo`
 3. **Add epic resolution**: follow the chain above
 4. **Add the appropriate behavior**: checklist update, child issue creation, or summary comment
-5. **Gate on config**: wrap all GitHub operations in `if integrations.github.enabled AND integrations.github.issue_tracking`
+5. **Gate on config**: wrap all issue tracking operations in `if integrations.github.enabled AND integrations.github.issue_tracking`
 6. **Use heredocs**: all `--body` and `--comment` content must use heredocs with single-quoted delimiters for shell safety
 
 ## Red Flags / Rationalization Prevention
@@ -191,7 +191,7 @@ When writing a new command:
 | Thought | Reality |
 |---------|---------|
 | "This command doesn't produce important output" | If it produces output the user should see, it belongs on the epic. If it doesn't, it's a utility command — classify it correctly. |
-| "I'll add GitHub tracking later" | No. Add it now. Commands without tracking are broken commands. |
+| "I'll add issue tracking later" | No. Add it now. Commands without tracking are broken commands. |
 | "The epic doesn't exist yet" | Then the workflow started wrong. Brainstorm creates the epic. If there's no epic, the command can skip tracking — but log why. |
-| "GitHub is optional" | GitHub tracking is optional per project (config flags). But when enabled, it is mandatory per command. |
+| "Issue tracking is optional" | Issue tracking is optional per project (config flags). But when enabled, it is mandatory per command. |
 | "The comment will be noise" | Concise summaries are not noise. Full report dumps are noise. Follow the comment format. |

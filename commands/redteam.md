@@ -22,7 +22,7 @@ Read `.claude/pipeline.yml` from the project root. Extract:
 - `review.non_negotiable[]`
 - `knowledge.tier`
 - `integrations.github.enabled`, `integrations.github.issue_tracking`
-- `project.repo` — GitHub repo (owner/repo)
+- `project.repo` — repo identifier (owner/repo)
 
 If no config exists: "No `.claude/pipeline.yml` found. Run `/pipeline:init` first." Stop.
 
@@ -410,7 +410,7 @@ PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-files.js prune
 
 ---
 
-### GitHub Security Tracking
+### Security Tracking
 
 If `integrations.github.enabled` AND `integrations.github.issue_tracking`:
 
@@ -450,7 +450,7 @@ Find the epic number: check the most recent spec or plan file for `github_epic: 
 
 MEDIUM and LOW findings do NOT get issues — they stay in `docs/findings/` only.
 
-If no epic found: skip — red team works without GitHub tracking.
+If no epic found: skip — red team works without issue tracking.
 
 ---
 

@@ -21,7 +21,7 @@ Read `.claude/pipeline.yml` from the project root. Extract:
 - `integrations.stitch.project_id` — existing Stitch project for this pipeline project (may be null)
 - `integrations.stitch.device_type` — target device for generated screens
 - `integrations.figma.enabled` — whether Figma MCP is available for design reference
-- `integrations.github.enabled` — whether GitHub CLI is available
+- `integrations.github.enabled` — whether issue tracker is available
 - `integrations.github.issue_tracking` — whether to create/link issues across lifecycle
 
 If no config file exists, report: "No `.claude/pipeline.yml` found. Run `/pipeline:init` first." and stop.
@@ -96,7 +96,7 @@ DETAIL
 
 ---
 
-### GitHub Issue Tracking
+### Issue Tracking
 
 If `integrations.github.enabled` AND `integrations.github.issue_tracking`:
 
@@ -137,16 +137,16 @@ Using the same `SCRIPTS_DIR` resolved earlier for the locked-decisions query:
 
 **If `knowledge.tier` is `"postgres"` AND `integrations.postgres.enabled`:**
 
-**Case 1 — GitHub epic was created (issue number is available):**
+**Case 1 — Epic was created (issue number is available):**
 
 Create a task linked to the epic:
 ```bash
 PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update task new '[feature name]' 'design' [issue_ref_number]
 ```
 
-**Case 2 — GitHub is NOT enabled but Postgres IS (no issue number):**
+**Case 2 — Issue tracker is NOT enabled but Postgres IS (no issue number):**
 
-Create a task without the GitHub link:
+Create a task without the issue link:
 ```bash
 PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update task new '[feature name]' 'design'
 ```
@@ -159,7 +159,7 @@ PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update task [new_id] categ
 PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update task [new_id] readme_label '[feature name]'
 ```
 
-Report: "Created Postgres task #[new_id] for [feature name] (linked to epic #[N])" — or without the epic reference if GitHub was skipped.
+Report: "Created Postgres task #[new_id] for [feature name] (linked to epic #[N])" — or without the epic reference if issue tracking was skipped.
 
 If `knowledge.tier` is not `"postgres"` OR `integrations.postgres.enabled` is false: skip this section entirely.
 

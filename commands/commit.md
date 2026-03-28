@@ -232,7 +232,7 @@ node '[SCRIPTS_DIR]/orchestrator.js' complete commit PASS
 The orchestrator handles what happens next (finish, deploy, etc.).
 Do NOT present a "What next?" menu or suggest follow-up commands.
 
-Commit is a Category 4 utility command — no GitHub issue comment required.
+Commit is a Category 4 utility command — no issue comment required.
 Epic reference in the commit message body (`Part of #[N]`) is sufficient
 for traceability. The phase commands (review, qa, redteam) handle their
 own A2A handoff comments on task issues.

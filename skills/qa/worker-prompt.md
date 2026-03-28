@@ -15,8 +15,8 @@ Use this template when dispatching a QA worker agent to execute one work package
 10. `[FLAKE_RETRIES]` -> `qa.flake_retries` from pipeline.yml (default: 1)
 11. `[EXISTING_TEST_PATTERNS]` -> summary of existing test framework, file organization, fixture patterns
 12. `[ARCH_PLAN]` -> contents of `docs/architecture.md` if it exists. If absent, replace with "No architecture document available — use source code as ground truth for contracts."
-13. `[GITHUB_REPO]` -> `integrations.github.repo` from pipeline.yml (e.g., `owner/repo`). If GitHub disabled, replace with empty string.
-14. `[GITHUB_ISSUE]` -> task issue number for this QA phase. If GitHub disabled, replace with empty string.
+13. `[GITHUB_REPO]` -> `integrations.github.repo` from pipeline.yml (e.g., `owner/repo`). If issue tracking is disabled, replace with empty string.
+14. `[GITHUB_ISSUE]` -> task issue number for this QA phase. If issue tracking is disabled, replace with empty string.
 15. `[SCRIPTS_DIR]` -> path to pipeline's scripts/ directory (absolute)
 
 ```
@@ -173,7 +173,7 @@ Task tool (general-purpose, model: {{MODEL}}):
     - "The test passes, so the code is correct" → A passing test proves one path works. Does the scenario cover edge cases?
     - "I'll skip the test intent comment" → MANDATORY. Every test needs a business behavior comment. No exceptions.
     - "This failure is flaky" → Classify it first. Unit test flakes indicate concurrency bugs. Do not dismiss them.
-    - "Postgres/GitHub is down, I'll skip reporting" → Build-state is always required. If Postgres is unreachable, log it for the orchestrator to retry.
+    - "Postgres/issue tracker is down, I'll skip reporting" → Build-state is always required. If Postgres is unreachable, log it for the orchestrator to retry.
     </ANTI-RATIONALIZATION>
 
     ## When You're Blocked
@@ -207,7 +207,7 @@ Task tool (general-purpose, model: {{MODEL}}):
     )"
     ```
 
-    ### 2. GitHub Issue Comment (if [GITHUB_ISSUE] is set)
+    ### 2. Issue Comment (if [GITHUB_ISSUE] is set)
 
     Post your results as a comment on the task issue. This is the handoff —
     the QA verifier reads this comment to synthesize worker results.
@@ -233,7 +233,7 @@ Task tool (general-purpose, model: {{MODEL}}):
 
     ### Fallback
 
-    - **GitHub disabled** (`[GITHUB_REPO]` is empty): skip the issue comment.
+    - **Issue tracking disabled** (`[GITHUB_REPO]` is empty): skip the issue comment.
     - **Postgres unreachable**: log the failure in your report. The orchestrator
       will retry the write.
     - **Build-state write**: always required — crash-recovery mechanism.

@@ -179,11 +179,11 @@ Then cleanup worktree (Step 5).
 
 ### Step 4a — Compile epic summary from Postgres
 
-**Runs for Options 1 and 2 (merge paths).** Skip if GitHub is not enabled or no epic is found.
+**Runs for Options 1 and 2 (merge paths).** Skip if issue tracker is not enabled or no epic is found.
 
 This is the single compiled summary posted to the epic — no other command posts to the epic.
 
-**Validate epic number** before any GitHub operations:
+**Validate epic number** before any issue tracker operations:
 ```bash
 echo '[EPIC_N]' | grep -qE '^[0-9]+$' || { echo "Invalid epic number: [EPIC_N]"; }
 ```
@@ -298,7 +298,7 @@ If the command fails, notify the user with the error and ask for guidance.
 Shipped: [task title] (task #[id], issue #[N] closed)
 ```
 
-If there was no GitHub issue to close, omit the issue portion:
+If there was no issue to close, omit the issue portion:
 ```
 Shipped: [task title] (task #[id])
 ```

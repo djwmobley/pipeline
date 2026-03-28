@@ -37,7 +37,7 @@ Agents are stateless — they receive a ticket reference, read their own context
 | Priority | Backend | When Available | Ticket Reference | How Agents Read |
 |----------|---------|---------------|-----------------|----------------|
 | 1 | **Issue Tracker** | `platform.issue_tracker` is not `none` | Issue/work-item ref (`42`) | `node '[SCRIPTS_DIR]/platform.js' issue view 42` |
-| 2 | **Postgres** | `knowledge.tier == "postgres"` AND `integrations.postgres.enabled` (runs alongside GitHub when both are available) | Finding ID (`RT-INJ-001`) | `node scripts/pipeline-db.js get finding RT-INJ-001` |
+| 2 | **Postgres** | `knowledge.tier == "postgres"` AND `integrations.postgres.enabled` (runs alongside issue tracker when both are available) | Finding ID (`RT-INJ-001`) | `node scripts/pipeline-db.js get finding RT-INJ-001` |
 | 3 | **Files** | Always (fallback) | Finding ID in tracking file | Inline context in prompt (only fallback) |
 
 **Critical rules:**
@@ -55,7 +55,7 @@ digraph remediation {
 
     source [label="Detect source\nfrom docs/findings/"];
     triage [label="Triage (haiku)\nParse any format\n→ uniform records"];
-    tickets [label="Write tickets\nGitHub / DB / files"];
+    tickets [label="Write tickets\nIssue tracker / DB / files"];
     present [label="Present plan\nUser approves"];
     quick [label="Quick wins\n(implementer only)"];
     medium [label="Medium effort\n(impl + reviewer)"];
@@ -85,7 +85,7 @@ digraph remediation {
 
 ## Issue Creation Thresholds
 
-The `remediate.auto_issue_threshold` config controls which findings get GitHub issues:
+The `remediate.auto_issue_threshold` config controls which findings get issues:
 
 | Threshold | Creates Issues For |
 |-----------|-------------------|
@@ -173,7 +173,7 @@ For implementer/reviewer agents, reuse the building skill templates:
 
 The ID prefix carries the source type. No source-specific commit formatting.
 
-**GitHub issue body template (same for all sources):**
+**Issue body template (same for all sources):**
 ```markdown
 ## Finding
 
@@ -206,8 +206,8 @@ verification agents read remediation results to understand what was fixed.
 
 **Runtime placeholders** (resolved per finding during the fix cycle):
 - `[FINDING_ID]` — from the triage artifact model (the finding being fixed, e.g., `RT-INJ-001`)
-- `[FINDING_ISSUE]` — GitHub issue number created during the ticket step
-- `[GITHUB_REPO]` — `integrations.github.repo` from pipeline.yml. Empty if GitHub disabled.
+- `[FINDING_ISSUE]` — issue number created during the ticket step
+- `[GITHUB_REPO]` — `integrations.github.repo` from pipeline.yml. Empty if issue tracking is disabled.
 - `[SHA]` — commit SHA from the fix commit
 
 ### 1. Postgres Write
@@ -223,9 +223,9 @@ BODY
 )"
 ```
 
-### 2. GitHub Issue Comment (if task issue is available)
+### 2. Issue Comment (if task issue is available)
 
-Post fix status as a comment on the finding's GitHub issue:
+Post fix status as a comment on the finding's issue:
 ```
 cat <<'EOF' | node '[SCRIPTS_DIR]/platform.js' issue comment [FINDING_ISSUE] --stdin
 ## Fix Applied
@@ -244,9 +244,9 @@ If the command fails, notify the user with the error and ask for guidance.
 
 Update `build-state.json` with fix status for crash recovery.
 
-### Fallback (GitHub disabled)
+### Fallback (issue tracking disabled)
 
-If GitHub is not enabled, skip the issue comment.
+If issue tracking is not enabled, skip the issue comment.
 Postgres write, build state update, and commit are always required.
 
 ## Red Flags — Rationalization Prevention
@@ -262,14 +262,14 @@ Postgres write, build state update, and commit are always required.
 | "This LOW finding should be fixed too" | Stick to the threshold. LOW/INFO findings are tracked, not auto-fixed. |
 | "This source doesn't need remediation" | All finding sources feed the same pipeline. If findings exist, they need tracking. |
 | "Security findings need a different issue format" | All sources use the same issue template. The category field carries the type. |
-| "UI findings don't need GitHub issues" | Same threshold logic applies to all sources. The issue template is the same. |
+| "UI findings don't need issues" | Same threshold logic applies to all sources. The issue template is the same. |
 
 ## Key Principles
 
 - **Uniform** — every source produces identical artifacts. Only `source` and `category` differ.
-- **Ticket-driven** — agents read from tickets (GitHub/DB), not pasted context. Low token overhead.
+- **Ticket-driven** — agents read from tickets (issue tracker/DB), not pasted context. Low token overhead.
 - **Stateless** — each agent receives a reference, reads its own context, writes results back.
-- **Tracked** — every finding gets a DB record and optionally a GitHub issue
+- **Tracked** — every finding gets a DB record and optionally an issue
 - **Batched** — fixes grouped by effort to maximize early progress
 - **Reviewed** — medium and architectural fixes get adversarial review
 - **Verified** — source-appropriate re-runs confirm fixes close issues

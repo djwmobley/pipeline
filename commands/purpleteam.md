@@ -209,9 +209,9 @@ Create the output directory if needed:
 mkdir -p docs/findings
 ```
 
-**GitHub Issues (if `integrations.github.enabled`):**
+**Issue tracker (if `integrations.github.enabled`):**
 
-For each VERIFIED finding that has a GitHub issue number:
+For each VERIFIED finding that has an issue number:
 ```bash
 cat <<'EOF' | node '[SCRIPTS_DIR]/platform.js' issue comment [N] --stdin
 ## Purple Team Verification: VERIFIED
@@ -231,7 +231,7 @@ node '[SCRIPTS_DIR]/platform.js' issue close [N] 2>/dev/null
 ```
 If the command fails, notify the user with the error and ask for guidance.
 
-For each REGRESSION finding that has a GitHub issue number:
+For each REGRESSION finding that has an issue number:
 ```bash
 node '[SCRIPTS_DIR]/platform.js' issue reopen [N] 2>/dev/null
 cat <<'EOF' | node '[SCRIPTS_DIR]/platform.js' issue comment [N] --stdin
@@ -248,7 +248,7 @@ EOF
 ```
 If the command fails, notify the user with the error and ask for guidance.
 
-For each INCOMPLETE finding that has a GitHub issue number:
+For each INCOMPLETE finding that has an issue number:
 ```bash
 node '[SCRIPTS_DIR]/platform.js' issue reopen [N] 2>/dev/null
 cat <<'EOF' | node '[SCRIPTS_DIR]/platform.js' issue comment [N] --stdin

@@ -13,8 +13,8 @@ Use this template when dispatching a recon agent to enumerate the attack surface
 8. `[PROJECT_NAME]` → value of `project.name` from pipeline.yml
 9. `[PKG_MANAGER]` → value of `project.pkg_manager` from pipeline.yml
 10. `[DIFF_FILES]` → output of `git diff --name-only main...HEAD -- [SOURCE_DIRS]`. List of files changed on the feature branch. If empty (no branch or no changes), replace with "FULL_SCAN" to scan all source dirs.
-11. `[GITHUB_REPO]` → `integrations.github.repo` from pipeline.yml. If GitHub disabled, replace with empty string.
-12. `[GITHUB_ISSUE]` → task issue number for this red team phase. If GitHub disabled, replace with empty string.
+11. `[GITHUB_REPO]` → `integrations.github.repo` from pipeline.yml. If issue tracking is disabled, replace with empty string.
+12. `[GITHUB_ISSUE]` → task issue number for this red team phase. If issue tracking is disabled, replace with empty string.
 13. `[SCRIPTS_DIR]` → path to pipeline's scripts/ directory (absolute)
 
 ```
@@ -207,7 +207,7 @@ Task tool (general-purpose, model: {{MODEL}}):
     - "This framework handles auth automatically" → Verify. Run the grep patterns against the actual code.
     - "The lockfile is too large" → Read it in chunks. SBOM completeness matters. Use truncation marker if needed.
     - "This file is not security-relevant" → You are an enumerator, not an analyst. Report what exists. The specialists decide relevance.
-    - "Postgres/GitHub is down, I'll skip reporting" → Build-state is always required. If Postgres is unreachable, log it for the orchestrator to retry.
+    - "Postgres/issue tracker is down, I'll skip reporting" → Build-state is always required. If Postgres is unreachable, log it for the orchestrator to retry.
     </ANTI-RATIONALIZATION>
 
     ## Output Format
@@ -291,7 +291,7 @@ Task tool (general-purpose, model: {{MODEL}}):
     )"
     ```
 
-    ### 2. GitHub Issue Comment (if [GITHUB_ISSUE] is set)
+    ### 2. Issue Comment (if [GITHUB_ISSUE] is set)
 
     Post your results as a comment on the task issue. This is the handoff —
     the red team lead reads this to assign specialist domains.
@@ -318,7 +318,7 @@ Task tool (general-purpose, model: {{MODEL}}):
 
     ### Fallback
 
-    - **GitHub disabled** (`[GITHUB_REPO]` is empty): skip the issue comment.
+    - **Issue tracking disabled** (`[GITHUB_REPO]` is empty): skip the issue comment.
     - **Postgres unreachable**: log the failure in your report. The orchestrator
       will retry the write.
     - **Build-state write**: always required — crash-recovery mechanism.

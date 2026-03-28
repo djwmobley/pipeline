@@ -75,6 +75,6 @@ Task tool (general-purpose, model: {{MODEL}}):
     ## Reporting Model
 
     Your output (the review verdict) is consumed by the plan command, which
-    handles persistence to Postgres and GitHub. You produce the structured
+    handles persistence to Postgres and the issue tracker. You produce the structured
     review result only.
 ```

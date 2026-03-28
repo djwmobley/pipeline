@@ -5,7 +5,7 @@ description: Multi-source remediation — parse findings, create tickets, batch 
 
 ## Pipeline Remediate
 
-Fix findings from any pipeline workflow. Parses reports from red team, audit, review, UI review, or external sources, creates tickets (GitHub Issues / Postgres / files), dispatches stateless implementer/reviewer agents, and verifies fixes.
+Fix findings from any pipeline workflow. Parses reports from red team, audit, review, UI review, or external sources, creates tickets (issues / Postgres / files), dispatches stateless implementer/reviewer agents, and verifies fixes.
 
 **Modifies source code.** Commits per finding. Run on a feature branch.
 
@@ -88,13 +88,13 @@ Store the parsed triage results as `TRIAGE_RESULTS`.
 This is the pivotal step. Finding data enters the ticket store. After this, triage output and raw report are never read again.
 
 **Determine ticket backend (check in priority order):**
-1. If `integrations.github.enabled`: GitHub Issues is primary
+1. If `integrations.github.enabled`: issue tracker is primary
 2. If `knowledge.tier == "postgres"` and `integrations.postgres.enabled`: Postgres findings table
 3. Otherwise: files fallback
 
 **Shell safety:** All values derived from report content (finding IDs, descriptions, remediation text) must use heredocs or single-quoted strings to prevent command injection via `$()`, backticks, or double-quote breakout.
 
-#### If GitHub enabled
+#### If issue tracker enabled
 
 For each finding where `CREATE_ISSUE` is true:
 
@@ -134,7 +134,7 @@ If the command fails, notify the user with the error and ask for guidance.
 
 Store: `finding_id → issue_number`.
 
-#### If Postgres enabled (regardless of GitHub)
+#### If Postgres enabled (regardless of issue tracker)
 
 For each finding:
 
@@ -142,12 +142,12 @@ For each finding:
 node scripts/pipeline-db.js update finding new '{"id":"[ID]","source":"[SOURCE_TYPE]","severity":"[SEVERITY]","confidence":"[CONFIDENCE]","location":"[LOCATION]","category":"[CATEGORY]","description":"[description]","impact":"[impact]","remediation":"[remediation]","effort":"[EFFORT]","verification_domain":"[VERIFICATION_DOMAIN]","report_path":"[report_path]"}'
 ```
 
-If a GitHub issue was also created, link it:
+If an issue was also created, link it:
 ```bash
 node scripts/pipeline-db.js update finding [ID] issue_ref [N]
 ```
 
-#### If files only (no GitHub, no Postgres)
+#### If files only (no issue tracker, no Postgres)
 
 Write to `docs/findings/triage-YYYY-MM-DD.md`:
 
@@ -184,7 +184,7 @@ Write to `docs/findings/triage-YYYY-MM-DD.md`:
 | Medium | [ID] | [SOURCE_TYPE] | [SEV] | [CAT] | medium | [#N / ID / —] |
 | Arch | [ID] | [SOURCE_TYPE] | [SEV] | [CAT] | architectural | [#N / ID / —] |
 
-**Ticket** column shows: `#N` (GitHub issue), finding ID (Postgres), or `—` (files).
+**Ticket** column shows: `#N` (issue), finding ID (Postgres), or `—` (files).
 
 **Not remediated:** [N] LOW/INFO findings tracked but not auto-fixed.
 
@@ -225,11 +225,11 @@ Read the implementer and reviewer prompt templates:
 
 Prepare the `{{TICKET_CONTEXT}}` substitution based on backend:
 
-- **GitHub:** Replace `{{TICKET_CONTEXT}}` with:
+- **Issue tracker:** Replace `{{TICKET_CONTEXT}}` with:
   ```
   ## Finding Context
 
-  Read the GitHub issue for full requirements:
+  Read the issue for full requirements:
   node '[SCRIPTS_DIR]/platform.js' issue view [N]
 
   Affected files from LOCATION: [paths]
@@ -283,7 +283,7 @@ EOF
 
 **4. Write result back to ticket:**
 
-- **GitHub:** Post comment and close:
+- **Issue tracker:** Post comment and close:
   ```bash
   cat <<'EOF' | node '[SCRIPTS_DIR]/platform.js' issue comment [N] --stdin
   Fixed in [SHA].
@@ -306,7 +306,7 @@ EOF
 
 Prepare `{{TICKET_CONTEXT}}` for reviewer based on backend:
 
-- **GitHub:** `"Read the GitHub issue for requirements: node '[SCRIPTS_DIR]/platform.js' issue view [N]. Read the fix diff: git show [SHA]"`
+- **Issue tracker:** `"Read the issue for requirements: node '[SCRIPTS_DIR]/platform.js' issue view [N]. Read the fix diff: git show [SHA]"`
 - **Postgres:** `"Read the finding: node scripts/pipeline-db.js get finding [ID]. Read the fix diff: git show [SHA]"`
 - **Files (fallback):** Inline requirements from triage + include the diff
 
@@ -318,7 +318,7 @@ Other reviewer substitutions:
 - `[from pipeline.yml — never flag these]` → `review.non_negotiable` from config
 
 **Review loop:** Max 1 round. If reviewer finds issues:
-- Point implementer at the review: "See review feedback on issue #[N]" (GitHub) or "Read review from DB" (Postgres)
+- Point implementer at the review: "See review feedback on issue #[N]" (issue tracker) or "Read review from DB" (Postgres)
 - Implementer fixes. Reviewer re-reviews.
 - If still failing after 1 retry, report and move on.
 
@@ -351,7 +351,7 @@ All strategies output the same table:
 ```
 
 Write verification results back to tickets:
-- **GitHub:** Comment on each affected issue
+- **Issue tracker:** Comment on each affected issue
 - **Postgres:** `PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update finding [ID] status verified`
 
 If new findings are introduced: flag prominently. These may need another remediation pass.

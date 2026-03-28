@@ -135,7 +135,7 @@ review results to understand what was validated and what needs testing focus.
 
 **Runtime placeholders** (resolved by the review command before executing):
 - `[SCRIPTS_DIR]` — path to pipeline's scripts/ directory (absolute).
-- `[GITHUB_ISSUE]` — task issue number for this review phase. Empty if GitHub disabled.
+- `[GITHUB_ISSUE]` — task issue number for this review phase. Empty if issue tracking is disabled.
 
 ### 1. Postgres Write
 
@@ -150,7 +150,7 @@ BODY
 )"
 ```
 
-### 2. GitHub Issue Comment (if task issue is available)
+### 2. Issue Comment (if task issue is available)
 
 Post the review verdict as a comment on the task issue:
 ```
@@ -173,7 +173,7 @@ Update `build-state.json` with review status for crash recovery.
 
 ### Fallback
 
-- **GitHub/issue tracker disabled** (`[GITHUB_ISSUE]` is empty): skip the issue comment.
+- **Issue tracking disabled** (`[GITHUB_ISSUE]` is empty): skip the issue comment.
 - **Postgres unreachable:** log the failure in the review report. The findings file in `docs/findings/` is the fallback record. The orchestrator retries the Postgres write on next dispatch.
 - Build state update and the findings report are always required.
 
@@ -228,7 +228,7 @@ Do not review files in isolation. Trace contracts across file boundaries:
 
 2. **Pattern consistency** — if the change uses a pattern (e.g., `node '[SCRIPTS_DIR]/pipeline-db.js'`), check how the same operation is done in related files (other prompt templates, the parent SKILL.md, already-shipped agents). Divergence without documented rationale is 🟡 MEDIUM.
 
-3. **Reporting contract alignment** — if the file has a Reporting Contract section, verify the Postgres write JSON fields, GitHub comment format, and build-state update are consistent with what the parent SKILL.md documents. The SKILL.md is the contract; the prompt must match it.
+3. **Reporting contract alignment** — if the file has a Reporting Contract section, verify the Postgres write JSON fields, issue comment format, and build-state update are consistent with what the parent SKILL.md documents. The SKILL.md is the contract; the prompt must match it.
 
 **How to trace:** Read the substitution checklist first. Then search the prompt body for every `[BRACKET]` and `{{BRACE}}` placeholder. Confirm each one is (a) in the checklist and (b) used correctly per the checklist's definition. Then read the parent SKILL.md and confirm the runtime placeholders section matches.
 
@@ -243,7 +243,7 @@ After reviewing code quality, verify the document's internal structure is self-c
    - DATA tags on all externally-sourced content
    - Context read instructions (if agent reads from stores)
    - ANTI-RATIONALIZATION block
-   - Reporting Contract (Postgres + GitHub + build-state + fallback)
+   - Reporting Contract (Postgres + issue comment + build-state + fallback)
    - Output format (structured for orchestrator parsing)
    Missing sections are 🔴 HIGH.
 
@@ -253,11 +253,11 @@ After reviewing code quality, verify the document's internal structure is self-c
 
 For every operation that can fail, verify the failure path is documented:
 
-1. **Read/write pairs** — if a Postgres READ has a fallback ("continue without"), the corresponding Postgres WRITE must also have a fallback. Check both directions for every store (Postgres, GitHub, build-state, file system).
+1. **Read/write pairs** — if a Postgres READ has a fallback ("continue without"), the corresponding Postgres WRITE must also have a fallback. Check both directions for every store (Postgres, issue tracker, build-state, file system).
 
 2. **Shell command validation** — every shell command that uses externally-sourced values (commit SHAs from issue comments, project names from directories, finding IDs from triage) must have a validation instruction. Check: is the value validated before it reaches a shell command? If not, 🔴 HIGH.
 
-3. **Disabled-service paths** — if GitHub can be disabled, trace every `gh` command to confirm it has a guard. If Postgres can be unavailable, trace every `pipeline-db.js` / `pipeline-context.js` call to confirm it has a fallback. Unguarded commands are 🔴 HIGH.
+3. **Disabled-service paths** — if issue tracking can be disabled, trace every platform CLI command to confirm it has a guard. If Postgres can be unavailable, trace every `pipeline-db.js` / `pipeline-context.js` call to confirm it has a fallback. Unguarded commands are 🔴 HIGH.
 
 ## Branch and Boundary Condition Analysis
 

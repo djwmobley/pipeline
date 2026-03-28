@@ -194,6 +194,6 @@ Task tool (general-purpose, model: {{MODEL}}):
 
     Your output (the architecture document) is consumed by the architect
     command, which saves it to `docs/architecture.md` and handles persistence
-    to Postgres and GitHub. You produce the structured architecture document;
+    to Postgres and the issue tracker. You produce the structured architecture document;
     the command writes to all three stores.
 ```

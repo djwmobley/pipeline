@@ -16,8 +16,8 @@ For MEDIUM, the QA section is generated inline by the plan command — this temp
 9. `[BROWSER_TESTING]` -> `qa.browser_testing` from pipeline.yml (true/false)
 10. `[DB_VERIFICATION]` -> `qa.db_verification` from pipeline.yml (true/false)
 11. `[ARCH_PLAN]` -> contents of `docs/architecture.md` if it exists. If absent, replace with "No architecture document available — use source code as ground truth for contracts."
-12. `[GITHUB_REPO]` -> `integrations.github.repo` from pipeline.yml. If GitHub disabled, replace with empty string.
-13. `[GITHUB_ISSUE]` -> task issue number for this QA phase. If GitHub disabled, replace with empty string.
+12. `[GITHUB_REPO]` -> `integrations.github.repo` from pipeline.yml. If issue tracking is disabled, replace with empty string.
+13. `[GITHUB_ISSUE]` -> task issue number for this QA phase. If issue tracking is disabled, replace with empty string.
 14. `[SCRIPTS_DIR]` -> path to pipeline's scripts/ directory (absolute)
 
 ```
@@ -173,7 +173,7 @@ Task tool (general-purpose, model: {{MODEL}}):
     - "This work package is too small to split" → If two scenarios touch different files, they belong in separate WPs.
     - "I don't need seam tests for this feature" → Every feature that touches multiple modules needs seam tests. No exceptions.
     - "The builder's interview covers the risks" → The interview captures known unknowns. You find the unknown unknowns.
-    - "Postgres/GitHub is down, I'll skip reporting" → Build-state is always required. If Postgres is unreachable, log it for the orchestrator to retry.
+    - "Postgres/issue tracker is down, I'll skip reporting" → Build-state is always required. If Postgres is unreachable, log it for the orchestrator to retry.
     </ANTI-RATIONALIZATION>
 
     ## Confidence Scoring
@@ -208,7 +208,7 @@ Task tool (general-purpose, model: {{MODEL}}):
     )"
     ```
 
-    ### 2. GitHub Issue Comment (if [GITHUB_ISSUE] is set)
+    ### 2. Issue Comment (if [GITHUB_ISSUE] is set)
 
     Post the test plan summary as a comment on the task issue. This is the
     handoff — QA workers read this to understand their work packages.
@@ -233,7 +233,7 @@ Task tool (general-purpose, model: {{MODEL}}):
 
     ### Fallback
 
-    - **GitHub disabled** (`[GITHUB_REPO]` is empty): skip the issue comment.
+    - **Issue tracking disabled** (`[GITHUB_REPO]` is empty): skip the issue comment.
     - **Postgres unreachable**: log the failure in your report. The orchestrator
       will retry the write.
     - **Build-state write**: always required — crash-recovery mechanism.

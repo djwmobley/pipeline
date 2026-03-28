@@ -20,7 +20,7 @@ digraph dashboard {
   phase [label="Derive\nPhase"];
   state [label="Collect\nState"];
   git [label="Collect\nGit State"];
-  github [label="GitHub Issues\n(if enabled)"];
+  github [label="Issue Tracker\n(if enabled)"];
   haiku [label="Haiku\nRecommendations"];
   substitute [label="Substitute\nTemplate"];
   write [label="Atomic\nWrite"];
@@ -109,7 +109,7 @@ git rev-parse --short HEAD
 git log --oneline origin/[branch]..HEAD 2>/dev/null | wc -l  # unpushed commits
 ```
 
-## Step 5 — GitHub Issues + Feature Epic (if enabled)
+## Step 5 — Issue Tracker + Feature Epic (if enabled)
 
 If `integrations.github.enabled` is false, set `{{GITHUB_EPIC}}` and `{{GITHUB_ISSUES}}` to empty-state HTML and skip to Step 6.
 
@@ -177,9 +177,9 @@ Only include groups that have at least one issue.
 Merge these into the `{{ACTIVITY_FEED}}` alongside git commits.
 
 **Empty states:**
-- GitHub disabled: `<p class="section-empty">GitHub integration not enabled.</p>` for both tokens
-- GitHub enabled, `issue_tracking: false`: `<p class="section-empty">Issue tracking disabled. Enable <code>issue_tracking</code> in pipeline.yml to track feature epics.</p>` for `{{GITHUB_EPIC}}`
-- GitHub enabled, `issue_tracking: true`, no epic: `<p class="section-empty">No active feature epic. Run <code>/pipeline:brainstorm</code> to create one.</p>` for `{{GITHUB_EPIC}}`
+- Issue tracking disabled: `<p class="section-empty">Issue tracking not enabled.</p>` for both tokens
+- Issue tracking enabled, `issue_tracking: false`: `<p class="section-empty">Issue tracking disabled. Enable <code>issue_tracking</code> in pipeline.yml to track feature epics.</p>` for `{{GITHUB_EPIC}}`
+- Issue tracking enabled, `issue_tracking: true`, no epic: `<p class="section-empty">No active feature epic. Run <code>/pipeline:brainstorm</code> to create one.</p>` for `{{GITHUB_EPIC}}`
 - No open issues: `<p class="section-empty">No open issues.</p>` for `{{GITHUB_ISSUES}}`
 
 ## Step 5d — Workflow State (if Postgres tier)
@@ -482,4 +482,4 @@ These thoughts mean STOP and reconsider:
 
 ## Reporting Model
 
-The dashboard is a Category 4 utility — it generates output but does not write to GitHub issues or Postgres. Its output IS the `docs/dashboard.html` file and optionally the README roadmap sync. No A2A reporting contract applies.
+The dashboard is a Category 4 utility — it generates output but does not write to issues or Postgres. Its output IS the `docs/dashboard.html` file and optionally the README roadmap sync. No A2A reporting contract applies.

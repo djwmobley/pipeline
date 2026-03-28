@@ -114,5 +114,5 @@ Task tool (general-purpose, model: {{MODEL}}):
 
     Your output (the position paper) is consumed by the debate command, which
     collects all three agents' outputs and synthesizes a verdict. The command
-    handles persistence to Postgres and GitHub. You produce content only.
+    handles persistence to Postgres and the issue tracker. You produce content only.
 ```

@@ -54,7 +54,7 @@ Post-task review
 Review OK? ──issues──▶ (fix, re-dispatch)
   │ OK
   ▼
-Checkpoint: write to all three stores (Postgres + GitHub issue + build-state.json)
+Checkpoint: write to all three stores (Postgres + issue comment + build-state.json)
   │
   ▼
 More tasks? ──yes──▶ Dispatch implementer subagent
@@ -119,8 +119,8 @@ Full substitution checklist is in the prompt template — these are the key plac
 - `[TASK_NUMBER]` — task number from the plan.
 - `[TASK_NAME]` — task name from the plan.
 - `[TASK_DESCRIPTION]` — full task text from the plan.
-- `[TASK_ISSUE]` — GitHub issue number for this task. Empty if GitHub disabled.
-- `[GITHUB_REPO]` — `integrations.github.repo` from pipeline.yml. Empty if GitHub disabled.
+- `[TASK_ISSUE]` — issue number for this task. Empty if issue tracking is disabled.
+- `[GITHUB_REPO]` — `integrations.github.repo` from pipeline.yml. Empty if issue tracking is disabled.
 - `[SCRIPTS_DIR]` — absolute path to the pipeline plugin's scripts/ directory.
 - `[DIRECTORY]` — working directory path.
 
@@ -137,7 +137,7 @@ BODY
 )"
 ```
 
-### 2. GitHub Issue Comment (if task issue is available)
+### 2. Issue Comment (if task issue is available)
 
 Post implementation report on the task issue:
 ```
@@ -157,7 +157,7 @@ Update `.claude/build-state.json` with task status and commit SHA for crash reco
 
 ### Fallback
 
-- **GitHub disabled**: skip the issue comment.
+- **Issue tracking disabled**: skip the issue comment.
 - **Postgres unreachable**: agent logs the failure in its report. The orchestrator retries the write on next dispatch.
 - **Build-state write**: always required — crash-recovery mechanism.
 

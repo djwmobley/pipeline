@@ -47,9 +47,9 @@ Read `.claude/pipeline.yml` from the project root. Extract:
 - `qa.db_verification` — DB verification enabled (for QA verify)
 - `qa.flake_retries` — flake retry count (for QA verify)
 - `project.profile` — project profile
-- `integrations.github.enabled` — whether GitHub CLI is available
+- `integrations.github.enabled` — whether issue tracker is available
 - `integrations.github.issue_tracking` — whether to create/link issues across lifecycle
-- `project.repo` — GitHub repo (owner/repo)
+- `project.repo` — repo identifier (owner/repo)
 
 If no config file exists, report: "No `.claude/pipeline.yml` found. Run `/pipeline:init` first." and stop.
 
@@ -81,7 +81,7 @@ Store this as `BASELINE_SHA`. After all tasks complete, include it in the comple
 
 If resuming an existing build, do NOT overwrite — use the existing state file.
 
-### GitHub Progress Tracking
+### Progress Tracking
 
 If `integrations.github.enabled` AND `integrations.github.issue_tracking`:
 
@@ -104,7 +104,7 @@ If `integrations.github.enabled` AND `integrations.github.issue_tracking`:
    ```
    If the command fails, notify the user with the error and ask for guidance.
    Update the epic status checklist (edit the issue body to check `Build`).
-4. If no epic found: skip — build works without GitHub tracking.
+4. If no epic found: skip — build works without issue tracking.
 
 ### Auto-Verify (MEDIUM+ changes)
 

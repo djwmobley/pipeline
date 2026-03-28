@@ -242,7 +242,7 @@ Wait for approval. Then invoke /pipeline:plan.
 
 The brainstorm command handles persistence to all three stores:
 - **Postgres:** spec summary written by the brainstorm command after spec approval
-- **GitHub:** feature epic created by the brainstorm command with lifecycle checklist
+- **Issue tracker:** feature epic created by the brainstorm command with lifecycle checklist
 - **Build-state:** not applicable (no build in progress during brainstorm)
 
 Subagents (researcher, spec-reviewer) produce output consumed inline by the brainstorm. They do not self-report to stores.

@@ -6,7 +6,7 @@ Use this template when dispatching the opus planner for architectural fixes.
 1. `{{MODEL}}` → value of `models.architecture` from pipeline.yml (e.g., `opus`)
 2. `[FINDING_ID]` → the finding ID (e.g., RT-AUTH-002)
 3. `{{TICKET_CONTEXT}}` → (same pattern as implementer/reviewer) Replace with ticket-reading instructions:
-   - **GitHub:** `Read the GitHub issue for full finding details: node '[SCRIPTS_DIR]/platform.js' issue view [N]`
+   - **Issue tracker:** `Read the issue for full finding details: node '[SCRIPTS_DIR]/platform.js' issue view [N]`
    - **Postgres:** `Read the finding record: node scripts/pipeline-db.js get finding [ID]`
    - **Files (fallback):** Inline the finding record from triage output
    - If the command fails, notify the user with the error and ask for guidance.
@@ -127,7 +127,7 @@ Task tool (general-purpose, model: {{MODEL}}):
 
     Your output (the fix plan above) is consumed by the remediation command,
     which handles persistence to all three stores. You produce the structured
-    plan; the command writes to Postgres, posts to the GitHub issue, and
+    plan; the command writes to Postgres, posts to the issue, and
     updates build-state. Include step IDs and file lists so the command can
     dispatch implementer agents per step.
 

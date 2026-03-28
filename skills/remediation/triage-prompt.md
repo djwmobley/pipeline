@@ -143,5 +143,5 @@ Task tool (general-purpose, model: {{MODEL}}):
 
     Your output (the TRIAGE blocks and summary) is consumed by the remediation
     command, which creates tickets and dispatches fix agents. The command handles
-    persistence to Postgres and GitHub. You produce structured parse output only.
+    persistence to Postgres and the issue tracker. You produce structured parse output only.
 ```

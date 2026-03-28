@@ -17,8 +17,8 @@ Use this template when dispatching a domain specialist agent.
 12. `[SOURCE_DIRS]` → routing.source_dirs from pipeline.yml config
 13. `[SECURITY_AUDIT_CMD]` → `commands.security_audit` from pipeline.yml (or "null" if not configured)
 14. `[DIFF_FILES]` → output of `git diff --name-only main...HEAD -- [SOURCE_DIRS]`. If empty, replace with "FULL_SCAN".
-15. `[GITHUB_REPO]` → `integrations.github.repo` from pipeline.yml. If GitHub disabled, replace with empty string.
-16. `[GITHUB_ISSUE]` → task issue number for this red team phase. If GitHub disabled, replace with empty string.
+15. `[GITHUB_REPO]` → `integrations.github.repo` from pipeline.yml. If issue tracking is disabled, replace with empty string.
+16. `[GITHUB_ISSUE]` → task issue number for this red team phase. If issue tracking is disabled, replace with empty string.
 17. `[SCRIPTS_DIR]` → path to pipeline's scripts/ directory (absolute)
 18. `[PROFILE]` → `project.profile` from pipeline.yml
 
@@ -166,7 +166,7 @@ Task tool (general-purpose, model: {{MODEL}}):
     - "This is a low-severity issue" → Rate severity based on actual exploitability, not intuition. Can you chain it?
     - "I already found enough findings" → You stop when you have checked every item on your domain checklist, not when you have enough findings.
     - "The non-negotiable list explains this" → Only if the EXACT pattern matches. Similar is not identical.
-    - "Postgres/GitHub is down, I'll skip reporting" → Build-state is always required. If Postgres is unreachable, log it for the orchestrator to retry.
+    - "Postgres/issue tracker is down, I'll skip reporting" → Build-state is always required. If Postgres is unreachable, log it for the orchestrator to retry.
     </ANTI-RATIONALIZATION>
 
     ## Two-Pass Read Protocol (Security Variant)
@@ -262,7 +262,7 @@ Task tool (general-purpose, model: {{MODEL}}):
     )"
     ```
 
-    ### 2. GitHub Issue Comment (if [GITHUB_ISSUE] is set)
+    ### 2. Issue Comment (if [GITHUB_ISSUE] is set)
 
     Post your domain results as a comment on the task issue:
     ```
@@ -284,7 +284,7 @@ Task tool (general-purpose, model: {{MODEL}}):
 
     ### Fallback
 
-    - **GitHub disabled** (`[GITHUB_REPO]` is empty): skip the issue comment.
+    - **Issue tracking disabled** (`[GITHUB_REPO]` is empty): skip the issue comment.
     - **Postgres unreachable**: log the failure in your report. The orchestrator
       will retry the write.
     - **Build-state write**: always required — crash-recovery mechanism.
