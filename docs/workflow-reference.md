@@ -33,7 +33,7 @@ Every command calls the orchestrator when it finishes. The orchestrator does not
 |---|---|
 | Command → Orchestrator | `complete <step> PASS\|FAIL [artifact]` |
 | Orchestrator → Caller | Step name + ready/blocked/failure (JSON on last line) |
-| Command → Stores | Reads context from Postgres/GitHub/files; writes results back |
+| Command → Stores | Reads context from Postgres/issue tracker/files; writes results back |
 | Chain → Orchestrator | "what's next?" query + skip recording for excluded steps |
 
 **Workflow startup:** The `init` command calls `orchestrator.js start <workflow-id>` to create the workflow before calling `complete init PASS`. No other command starts workflows.
@@ -83,7 +83,7 @@ Creates the project configuration. Asks engagement style (expert/guided/full-gui
 
 Engagement-scaled question flow. Explores context, asks clarifying questions (depth controlled by engagement style), derives implied features, proposes approaches, evaluates Big 4 + Compliance, tracks TBDs, writes spec document, runs spec review loop (max 3 iterations).
 
-**Reporting:** Command handles persistence — Postgres (spec summary), GitHub (epic creation with lifecycle checklist).
+**Reporting:** Command handles persistence — Postgres (spec summary), issue tracker (epic creation with lifecycle checklist).
 
 ### 3. Plan
 
@@ -157,7 +157,7 @@ Recon scans the codebase for existing patterns. Domain specialists propose decis
 
 Dispatches one implementer per plan task (sequential, not parallel). Each implementer reads its own context from stores (arch plan, decisions, gotchas, task issue, build-state). Post-task reviewer runs after each implementer; issues loop back to implementer until approved.
 
-**Reporting:** Each implementer and reviewer writes to all three stores (Postgres, GitHub issue comment, build-state.json).
+**Reporting:** Each implementer and reviewer writes to all three stores (Postgres, issue tracker comment, build-state.json).
 
 **Failure routing target:** review FAIL and qa FAIL both route back here.
 
@@ -177,7 +177,7 @@ Dispatches one implementer per plan task (sequential, not parallel). Each implem
 
 PR-scoped diff review. Runs static analysis (semgrep or grep fallback), checks arch plan compliance (module boundaries, typed contracts, banned patterns), applies review criteria from config. Cross-file contract verification, structural completeness audit, fallback symmetry checks.
 
-**Reporting:** Postgres (review verdict), GitHub issue comment, build-state.
+**Reporting:** Postgres (review verdict), issue tracker comment, build-state.
 
 ### 8. QA
 
@@ -251,7 +251,7 @@ Verifies each red team finding's fix by replaying the exploitation scenario agai
 | **On fail** | N/A (preflight gate blocks, user resolves) |
 | **Orchestrator** | `complete commit PASS` (always PASS — reaching this point means success) |
 
-Preflight gate chain: review gate (hard stop on source file count) → typecheck → lint → test → agent template lint. If all pass, creates the commit. Category 4 utility — skips GitHub issue comments.
+Preflight gate chain: review gate (hard stop on source file count) → typecheck → lint → test → agent template lint. If all pass, creates the commit. Category 4 utility — skips issue tracker comments.
 
 ### 12. Finish
 
@@ -361,7 +361,7 @@ The `security.policy` config controls when red team and purple team steps run:
 
 Every agent that produces output writes to all applicable stores. The orchestrator does not handle persistence — each agent is responsible for its own reporting.
 
-| Step | Postgres | GitHub Issue | Build-State | Notes |
+| Step | Postgres | Issue Tracker | Build-State | Notes |
 |------|----------|-------------|-------------|-------|
 | Init | Session record | Epic creation | N/A | Creates project structure |
 | Brainstorm | Spec summary | Epic checklist update | N/A | Command handles persistence |
@@ -373,13 +373,13 @@ Every agent that produces output writes to all applicable stores. The orchestrat
 | QA | Per-WP results + verdict | Task issue comments | QA status | Planner + workers self-report; verifier produces report, command handles persistence |
 | Red Team | Per-domain findings | Task issue comments | Redteam status | Recon, specialists self-report; lead delegates to command |
 | Purple | Per-finding verdict | Task issue comments | Purple status | Verifier delegates to command |
-| Commit | N/A | N/A | Commit SHA | Category 4 utility — skips GitHub |
+| Commit | N/A | N/A | Commit SHA | Category 4 utility — skips issue tracker |
 | Finish | Closes session, marks task done | Epic summary (compiled, 5K limit) | Cleanup | Compiles all phase results |
 | Deploy | N/A | N/A | Deploy status | Project-specific |
 
 ### Platform Abstraction
 
-The "GitHub Issue" column above is platform-agnostic — it uses `scripts/platform.js` which routes to the configured backend (GitHub or Azure DevOps). The contract:
+The "Issue Tracker" column above is platform-agnostic — it uses `scripts/platform.js` which routes to the configured backend (GitHub or Azure DevOps). The contract:
 
 | Interface | Operations | GitHub Backend | Azure DevOps Backend |
 |-----------|-----------|---------------|---------------------|
