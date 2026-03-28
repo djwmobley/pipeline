@@ -396,7 +396,7 @@ FTS keyword search still works without Ollama — only vector similarity search 
 
 **Why:** The next step's preconditions are not met (e.g., review hasn't passed, plan file doesn't exist).
 
-**Fix:** Complete the prerequisite step. The orchestrator shows which inputs are missing. See [workflow reference](workflow-reference.md) for the full step graph.
+**Fix:** Complete the prerequisite step. The orchestrator shows which inputs are missing. See the [system reference](workflow-reference.md) for the full step graph.
 
 ---
 

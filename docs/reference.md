@@ -4,7 +4,7 @@
 
 Hit an error? See the [error reference](errors.md) for recovery paths.
 
-Pipeline is a web-first agent workflow engine. Commands are the user-facing entry points — each one corresponds to a step in the [13-step orchestrator](workflow-reference.md). The orchestrator routes between steps based on artifact existence and status codes. Agents are stateless — they read context from shared stores and write results back via the three-store A2A protocol.
+Pipeline is a web-first agent workflow engine with 29 commands. The [13-step orchestrator](workflow-reference.md) manages the core pipeline from brainstorm to deploy; the remaining 16 commands — quality tools, meta-commands, and utilities — work independently or alongside it. See the [system reference](workflow-reference.md) for the full architecture.
 
 All commands, their arguments, and what they do. Commands are grouped by layer — most users only need Layer 1.
 
