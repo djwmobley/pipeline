@@ -252,4 +252,8 @@ Record step completion with the plan file as the output artifact:
 node '[SCRIPTS_DIR]/orchestrator.js' complete plan PASS '[plan file path]'
 ```
 
-If the plan was not saved (user abandoned or TBD density too high), do NOT call the orchestrator.
+If the plan was not saved (user abandoned or TBD density too high), record the failure:
+
+```bash
+node '[SCRIPTS_DIR]/orchestrator.js' complete plan FAIL
+```

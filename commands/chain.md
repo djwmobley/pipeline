@@ -54,10 +54,10 @@ repeat:
 **3.1 — Ask the orchestrator:**
 
 ```bash
-node '[SCRIPTS_DIR]/orchestrator.js' next 2>&1 | tail -1
+node '[SCRIPTS_DIR]/orchestrator.js' next 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | tail -1
 ```
 
-Parse the last line as JSON. The orchestrator returns one of:
+This strips ANSI color codes and takes the last line. Parse it as JSON. The orchestrator returns one of:
 - `{"next":"<step>","inputs":"met"}` — a step is ready
 - `{"next":"<step>","inputs":"blocked",...}` — a step is blocked
 - `{"next":"<step>","reason":"failure"}` — routing to a recovery step after failure
@@ -71,7 +71,8 @@ Parse the last line as JSON. The orchestrator returns one of:
 | `next` is in scope, `inputs: "met"` | Invoke it (go to 3.3) |
 | `next` is in scope, `inputs: "blocked"` | Report blocked inputs. Stop. |
 | `next` is in scope, `reason: "failure"` or `"loopback"` | Report: "Orchestrator routed to [step] after failure. Resume: `/pipeline:chain [remaining...]`". Stop. |
-| `next` is past scope (orchestrator skipped optional steps) | Report skipped steps. Exit loop — scope exhausted. |
+| `next` is NOT in scope but between steps in scope | Record a skip for it (go to 3.4), then re-query |
+| `next` is past scope (beyond the last step in scope) | Exit loop — scope exhausted. |
 | `next` is before scope (failure loopback to earlier step) | Report: routing went backward. Stop. |
 | No JSON / workflow complete | Exit loop. |
 
@@ -98,6 +99,16 @@ Map the step name to its command:
 
 Invoke via the Skill tool. The sub-command handles everything: user interaction, orchestrator completion, store writes. The chain passes nothing in and reads nothing back. When the Skill returns, go to 3.1.
 
+**3.4 — Record a skip:**
+
+When the orchestrator reports a `next` step that is NOT in the chain's scope but sits between steps that are (e.g., user asked for `build review commit` but orchestrator says `next: "qa"`), the chain must record a skip so the orchestrator can advance past it:
+
+```bash
+node '[SCRIPTS_DIR]/orchestrator.js' complete [step] PASS 'skipped-by-chain'
+```
+
+This is the ONE exception to the "chain never calls orchestrator complete" rule. It only applies to steps the user explicitly excluded from scope that the orchestrator is waiting on. After recording the skip, go back to 3.1.
+
 ### Step 4 — Report
 
 ```
@@ -116,9 +127,10 @@ Executed: [list of steps that ran]
 |---|---|
 | Chain → Orchestrator | "what's next?" (one query) |
 | Orchestrator → Chain | Step name + ready/blocked/failure (one JSON line) |
+| Chain → Orchestrator (skip only) | `complete <step> PASS 'skipped-by-chain'` for steps excluded from scope |
 | Chain → Sub-command | Skill invocation (no arguments, no context) |
 | Sub-command → Orchestrator | `complete <step> PASS\|FAIL [artifact]` |
 | Sub-command → Stores | Reads context from Postgres/GitHub/files; writes results back |
 | Chain → Sub-command return | Nothing. Chain doesn't inspect what the sub-command did. |
 
-The chain never reads result codes, fail counts, artifacts, or store contents. It asks one question ("what's next?") and follows the answer.
+The chain never reads result codes, fail counts, artifacts, or store contents. It asks one question ("what's next?") and follows the answer. The only write it makes to the orchestrator is recording skips for steps the user excluded from scope.

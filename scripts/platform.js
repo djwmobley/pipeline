@@ -82,7 +82,11 @@ function loadPlatformConfig() {
   // Simple YAML extraction — no dependency needed for flat config
   const lines = content.split('\n');
   const startIdx = lines.indexOf('platform:');
-  if (startIdx === -1) return { code_host: 'github', issue_tracker: 'github' };
+  if (startIdx === -1) {
+    const defaults = { code_host: 'github', issue_tracker: 'github' };
+    if (repoMatch) defaults.repo = repoMatch[1];
+    return defaults;
+  }
 
   const config = { code_host: 'github', issue_tracker: 'github', azure_devops: {} };
 

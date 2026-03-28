@@ -195,11 +195,11 @@ Detect the code hosting and issue tracking platform from the git remote URL. Thi
 
 **If github detected:**
 
-Verify `gh` CLI is available and authenticated:
+Verify `gh` CLI is available and authenticated (use `gh` directly here — `SCRIPTS_DIR` is not yet resolved at this point in init):
 ```bash
-node '[SCRIPTS_DIR]/platform.js' auth check 2>&1 | head -3
+gh auth status 2>&1 | head -1
 ```
-If not authenticated: "Platform CLI not authenticated. For GitHub: run `gh auth login`. For Azure DevOps: run `az login`."
+If not authenticated: "GitHub CLI not authenticated. Run: `gh auth login`"
 
 Set in pipeline.yml:
 ```yaml
@@ -898,4 +898,8 @@ Record step completion so the workflow state machine knows init is done:
 node '[SCRIPTS_DIR]/orchestrator.js' complete init PASS '.claude/pipeline.yml'
 ```
 
-If init failed (e.g., pipeline.yml was not written), do NOT call the orchestrator — the step is incomplete.
+If init failed (e.g., pipeline.yml was not written), record the failure:
+
+```bash
+node '[SCRIPTS_DIR]/orchestrator.js' complete init FAIL
+```

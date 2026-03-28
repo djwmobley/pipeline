@@ -221,4 +221,8 @@ Record step completion with the spec file as the output artifact:
 node '[SCRIPTS_DIR]/orchestrator.js' complete brainstorm PASS '[spec file path]'
 ```
 
-If brainstorm failed (no spec was saved), do NOT call the orchestrator.
+If brainstorm failed (no spec was saved), record the failure so the orchestrator has history of the attempt:
+
+```bash
+node '[SCRIPTS_DIR]/orchestrator.js' complete brainstorm FAIL
+```
