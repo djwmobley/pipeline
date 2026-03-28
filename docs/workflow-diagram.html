@@ -196,8 +196,12 @@ body {
   position: relative;
   transition: flex var(--transition);
 }
-.diagram-area.panel-open { flex: 0.55; }
+.diagram-area.panel-open { flex: 1; }
 .detail-panel {
+  position: fixed;
+  top: 65px;
+  right: 0;
+  bottom: 0;
   width: 0;
   overflow: hidden;
   border-left: 1px solid var(--border);
@@ -205,10 +209,11 @@ body {
   transition: width var(--transition);
   display: flex;
   flex-direction: column;
+  z-index: 20;
+  box-shadow: -4px 0 24px rgba(0,0,0,0.25);
 }
 .detail-panel.open {
-  width: 55%;
-  min-width: 480px;
+  width: 480px;
   overflow-y: auto;
 }
 .panel-header {
