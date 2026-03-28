@@ -15,6 +15,13 @@ Check if the user's arguments contain `--quick` or `quick`. If so, set **quick m
 
 Throughout this command, each decision point has a **"If quick mode:"** block. When quick mode is active, follow those blocks and skip all user prompts.
 
+**Resolve `$SCRIPTS_DIR`** before anything else — locate the pipeline plugin's `scripts/` directory:
+1. If `$PIPELINE_DIR` is set: `$PIPELINE_DIR/scripts/`
+2. Check `${HOME:-$USERPROFILE}/dev/pipeline/scripts/`
+3. Search: find `pipeline-db.js` under `${HOME:-$USERPROFILE}/.claude/`
+
+This is independent of the project config — it finds the plugin install location. All subsequent steps use `[SCRIPTS_DIR]` for platform.js, orchestrator.js, and other script references.
+
 ---
 
 ### Step 0 — Check for existing config (resume detection)
@@ -195,11 +202,13 @@ Detect the code hosting and issue tracking platform from the git remote URL. Thi
 
 **If github detected:**
 
-Verify `gh` CLI is available and authenticated (use `gh` directly here — `SCRIPTS_DIR` is not yet resolved at this point in init):
+Verify the platform CLI is available and authenticated. Pass the detected platform via `--platform` since pipeline.yml does not exist yet:
 ```bash
-gh auth status 2>&1 | head -1
+node '[SCRIPTS_DIR]/platform.js' auth check --platform [detected_platform] 2>&1 | head -3
 ```
-If not authenticated: "GitHub CLI not authenticated. Run: `gh auth login`"
+Where `[detected_platform]` is `github` or `azure-devops` based on the git remote URL detection above.
+
+If not authenticated: "Platform CLI not authenticated. For GitHub: run `gh auth login`. For Azure DevOps: run `az login`."
 
 Set in pipeline.yml:
 ```yaml

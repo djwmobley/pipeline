@@ -63,7 +63,7 @@ Creates the project configuration. Asks engagement style (expert/guided/full-gui
 
 **Workflow startup:** Init is the only command that calls `orchestrator.js start`. It creates the workflow before recording completion. If the workflow already exists (prior init), it skips the start call.
 
-**Auth check:** Uses `gh auth status` directly (not `platform.js`) because `SCRIPTS_DIR` is not yet resolved at this point in the init flow.
+**Auth check:** Uses `platform.js auth check --platform <detected>` with a `--platform` flag override since pipeline.yml does not exist yet during init. The flag tells platform.js which backend to check without needing the config file.
 
 **Skill:** `skills/brainstorming/SKILL.md` is not involved — init is self-contained in the command file.
 

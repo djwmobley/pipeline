@@ -271,6 +271,8 @@ For every conditional in changed code, systematically check for unhandled states
 
 4. **Initialization assumptions** — if code reads a key from a config object, file, or environment variable, ask: does this key always exist by the time this code runs? Check the creation path. Missing keys that cause silent skips on first-run or fresh-install paths are 🔴 HIGH.
 
+5. **Platform and environment assumptions** — if code calls a CLI tool directly (e.g., `gh`, `az`, `npm`) instead of going through the platform abstraction (`platform.js`), ask: does this assume a specific platform? Could the user be on a different platform (Azure DevOps instead of GitHub, pnpm instead of npm)? Direct CLI calls that bypass the abstraction layer are 🔴 HIGH when an abstraction exists for that operation. Commands that run before config exists must pass explicit context (e.g., `--platform` flags) rather than relying on defaults.
+
 **How to apply:** For each function or code block in the diff that contains conditionals, list the branches and their triggering conditions. Then list the values the input can actually take (from callers, config files, or external state). Any value in the second list not covered by the first is a candidate finding.
 
 ## Intra-File Contract Verification

@@ -605,6 +605,11 @@ async function main() {
     let result;
 
     if (resource === 'auth' && action === 'check') {
+      // Allow --platform override for bootstrap (init runs before pipeline.yml exists)
+      if (flags.platform) {
+        config.code_host = flags.platform;
+        config.issue_tracker = flags.platform;
+      }
       // Auth check — verify both configured platforms
       const results = [];
       const issueBackend = getBackend('issue', config);

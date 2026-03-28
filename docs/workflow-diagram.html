@@ -666,7 +666,7 @@ code {
     </div>
     <div class="subsection">
       <div class="subsection-title">Auth check</div>
-      <p>Uses <code>gh auth status</code> directly (not <code>platform.js</code>) because <code>SCRIPTS_DIR</code> is not yet resolved at this point in the init flow.</p>
+      <p>Uses <code>platform.js auth check --platform &lt;detected&gt;</code> with a <code>--platform</code> flag override since pipeline.yml does not exist yet during init. The flag tells platform.js which backend to verify without needing the config file.</p>
     </div>
     <div class="subsection">
       <div class="subsection-title">Store interactions</div>
