@@ -532,7 +532,92 @@ code {
   display: inline-block;
 }
 
-/* ── 11. Reduced motion ──────────────────────────────────────────────── */
+/* ── 11. Verbose step sections ────────────────────────────────────────── */
+.step-details {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 24px 80px;
+}
+.step-details h2 {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 48px 0 16px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+.step-details h2:first-child { border-top: none; margin-top: 24px; }
+.step-section {
+  margin-bottom: 40px;
+}
+.step-section h3 {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.step-section .back-link {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--accent);
+  text-decoration: none;
+  margin-left: auto;
+}
+.step-section .back-link:hover { text-decoration: underline; }
+.step-section p { margin: 8px 0; font-size: 14px; line-height: 1.8; }
+.step-section strong { font-weight: 600; }
+.step-section .prop-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin: 12px 0;
+}
+.step-section .prop-table th {
+  text-align: left;
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.step-section .prop-table td {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  vertical-align: top;
+}
+.step-section .subsection {
+  margin: 12px 0;
+  padding: 12px 16px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  border-left: 3px solid var(--accent);
+}
+.step-section .subsection-title {
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+.step-section .fail-callout {
+  border-left-color: var(--fail-path);
+  background: color-mix(in srgb, var(--fail-path) 5%, var(--surface));
+}
+.step-section .store-row {
+  display: flex;
+  gap: 8px;
+  margin: 4px 0;
+  align-items: center;
+}
+.step-section ul {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+.step-section li {
+  font-size: 14px;
+  margin: 4px 0;
+}
+
+/* ── 12. Reduced motion ──────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -589,6 +674,428 @@ code {
 </div>
 
 <div class="tooltip" id="tooltip" role="tooltip"></div>
+
+<!-- Verbose step detail sections (below diagram) -->
+<div class="step-details" id="step-details">
+  <h2>Step Reference</h2>
+
+  <div class="step-section" id="step-init">
+    <h3><span class="badge badge-required">1</span> Init <a href="#diagram" class="back-link">Back to diagram</a></h3>
+    <table class="prop-table">
+      <tr><th>Command</th><td><code>/pipeline:init</code></td></tr>
+      <tr><th>Agent</th><td><code>commands/init.md</code> (interactive command, not a subagent)</td></tr>
+      <tr><th>Required</th><td>Yes</td></tr>
+      <tr><th>Inputs</th><td>None (entry point)</td></tr>
+      <tr><th>Outputs</th><td><code>.claude/pipeline.yml</code></td></tr>
+      <tr><th>Next</th><td>brainstorm</td></tr>
+      <tr><th>On fail</th><td>Records <code>FAIL</code> in orchestrator (user retries)</td></tr>
+      <tr><th>Orchestrator</th><td><code>start &lt;project&gt;-&lt;date&gt;</code> then <code>complete init PASS '.claude/pipeline.yml'</code></td></tr>
+    </table>
+    <p>Creates the project configuration. Asks engagement style (expert/guided/full-guidance), security policy (every-feature/milestone/on-demand), detects project profile, sets up GitHub repo and issue tracking. The engagement style and security policy propagate to all subsequent steps.</p>
+    <div class="subsection">
+      <div class="subsection-title">Workflow startup</div>
+      <p>Init is the only command that calls <code>orchestrator.js start</code>. It creates the workflow before recording completion. If the workflow already exists (prior init), it skips the start call.</p>
+    </div>
+    <div class="subsection">
+      <div class="subsection-title">Auth check</div>
+      <p>Uses <code>gh auth status</code> directly (not <code>platform.js</code>) because <code>SCRIPTS_DIR</code> is not yet resolved at this point in the init flow.</p>
+    </div>
+    <div class="subsection">
+      <div class="subsection-title">Store interactions</div>
+      <div class="store-row"><span class="store-tag store-pg write">Postgres: write</span> Session record</div>
+      <div class="store-row"><span class="store-tag store-gh write">GitHub: write</span> Epic creation</div>
+      <div class="store-row"><span class="store-tag store-files write">Files: write</span> pipeline.yml</div>
+    </div>
+    <p><strong>Skill:</strong> <code>skills/brainstorming/SKILL.md</code> is not involved — init is self-contained in the command file.</p>
+  </div>
+
+  <div class="step-section" id="step-brainstorm">
+    <h3><span class="badge badge-required">2</span> Brainstorm <a href="#diagram" class="back-link">Back to diagram</a></h3>
+    <table class="prop-table">
+      <tr><th>Command</th><td><code>/pipeline:brainstorm</code></td></tr>
+      <tr><th>Skill</th><td><code>skills/brainstorming/SKILL.md</code></td></tr>
+      <tr><th>Subagents</th><td><code>researcher-prompt.md</code> (haiku, parallel), <code>spec-reviewer-prompt.md</code> (haiku)</td></tr>
+      <tr><th>Required</th><td>Yes</td></tr>
+      <tr><th>Inputs</th><td><code>.claude/pipeline.yml</code></td></tr>
+      <tr><th>Outputs</th><td><code>docs/specs/*.md</code></td></tr>
+      <tr><th>Next</th><td>plan</td></tr>
+      <tr><th>On fail</th><td>Records <code>FAIL</code> in orchestrator (user retries)</td></tr>
+      <tr><th>Orchestrator</th><td><code>complete brainstorm PASS '[spec file path]'</code> or <code>complete brainstorm FAIL</code></td></tr>
+    </table>
+    <p>Engagement-scaled question flow. Explores context, asks clarifying questions (depth controlled by engagement style), derives implied features, proposes approaches, evaluates Big 4 + Compliance, tracks TBDs, writes spec document, runs spec review loop (max 3 iterations).</p>
+    <div class="subsection">
+      <div class="subsection-title">Reporting</div>
+      <p>Command handles persistence — Postgres (spec summary), GitHub (epic creation with lifecycle checklist).</p>
+    </div>
+    <div class="subsection">
+      <div class="subsection-title">Agents dispatched</div>
+      <ul>
+        <li><strong>researcher</strong> — haiku, parallel dispatch for context exploration</li>
+        <li><strong>spec-reviewer</strong> — haiku, validates completeness and feasibility</li>
+      </ul>
+    </div>
+    <div class="subsection">
+      <div class="subsection-title">Store interactions</div>
+      <div class="store-row"><span class="store-tag store-pg write">Postgres: write</span> Spec summary</div>
+      <div class="store-row"><span class="store-tag store-gh write">GitHub: write</span> Epic checklist update</div>
+      <div class="store-row"><span class="store-tag store-files write">Files: write</span> Spec document</div>
+    </div>
+  </div>
+
+  <div class="step-section" id="step-plan">
+    <h3><span class="badge badge-required">3</span> Plan <a href="#diagram" class="back-link">Back to diagram</a></h3>
+    <table class="prop-table">
+      <tr><th>Command</th><td><code>/pipeline:plan</code></td></tr>
+      <tr><th>Skill</th><td><code>skills/planning/SKILL.md</code></td></tr>
+      <tr><th>Subagents</th><td><code>plan-reviewer-prompt.md</code> (haiku)</td></tr>
+      <tr><th>Required</th><td>Yes</td></tr>
+      <tr><th>Inputs</th><td><code>docs/specs/*.md</code></td></tr>
+      <tr><th>Outputs</th><td><code>docs/plans/*.md</code></td></tr>
+      <tr><th>Next</th><td>debate</td></tr>
+      <tr><th>On fail</th><td>Records <code>FAIL</code> in orchestrator (user retries or re-brainstorms)</td></tr>
+      <tr><th>Orchestrator</th><td><code>complete plan PASS '[plan file path]'</code> or <code>complete plan FAIL</code></td></tr>
+    </table>
+    <p>Reads spec, generates implementation plan with ordered tasks. Resolves TBDs from brainstorm. Plan reviewer validates completeness, spec alignment, and buildability. For LARGE+ changes, the plan includes QA strategy inline (from <code>skills/qa/SKILL.md</code> plan mode).</p>
+    <div class="subsection">
+      <div class="subsection-title">Store interactions</div>
+      <div class="store-row"><span class="store-tag store-pg write">Postgres: write</span> Plan summary</div>
+      <div class="store-row"><span class="store-tag store-gh write">GitHub: write</span> Epic checklist update</div>
+      <div class="store-row"><span class="store-tag store-files write">Files: write</span> Plan document</div>
+    </div>
+  </div>
+
+  <div class="step-section" id="step-debate">
+    <h3><span class="badge badge-optional">4</span> Debate (optional) <a href="#diagram" class="back-link">Back to diagram</a></h3>
+    <table class="prop-table">
+      <tr><th>Command</th><td><code>/pipeline:debate</code></td></tr>
+      <tr><th>Skill</th><td><code>skills/debate/SKILL.md</code></td></tr>
+      <tr><th>Subagents</th><td><code>advocate-prompt.md</code>, <code>skeptic-prompt.md</code>, <code>practitioner-prompt.md</code> (all sonnet, parallel)</td></tr>
+      <tr><th>Required</th><td>No — auto-offered for LARGE+, skippable</td></tr>
+      <tr><th>Inputs</th><td><code>docs/plans/*.md</code></td></tr>
+      <tr><th>Outputs</th><td><code>docs/findings/debate-*.md</code></td></tr>
+      <tr><th>Next</th><td>architect</td></tr>
+      <tr><th>On fail</th><td><strong>brainstorm</strong> — <code>onFail: 'brainstorm'</code> (rethink disposition routes back)</td></tr>
+      <tr><th>Orchestrator</th><td><code>complete debate PASS '[verdict path]'</code> or <code>complete debate FAIL</code> or <code>complete debate PASS 'skipped'</code></td></tr>
+    </table>
+    <p>Three-agent antagonistic design debate. Advocate steelmans, Skeptic attacks feasibility, Practitioner grounds in reality. Each produces a position paper; the command synthesizes a verdict. Compliance awareness in all three agents.</p>
+    <div class="subsection">
+      <div class="subsection-title">Disposition mapping</div>
+      <p><code>proceed</code> or <code>proceed-with-constraints</code> maps to PASS. <code>rethink</code> maps to FAIL (orchestrator routes back to brainstorm).</p>
+    </div>
+    <div class="subsection fail-callout">
+      <div class="subsection-title">Skip behavior</div>
+      <p>When skipped (TINY/MEDIUM change or user declines), the command must explicitly call <code>complete debate PASS 'skipped'</code>. The orchestrator does NOT auto-skip debate because its inputs (plan files) are met after the plan step runs. Without the explicit skip call, the workflow stalls.</p>
+    </div>
+    <div class="subsection">
+      <div class="subsection-title">Agents dispatched</div>
+      <ul>
+        <li><strong>advocate</strong> — sonnet, parallel. Steelmans the proposal, finds strengths</li>
+        <li><strong>skeptic</strong> — sonnet, parallel. Attacks feasibility, finds weaknesses</li>
+        <li><strong>practitioner</strong> — sonnet, parallel. Grounds in reality, finds practical concerns</li>
+      </ul>
+    </div>
+    <div class="subsection">
+      <div class="subsection-title">Store interactions</div>
+      <div class="store-row"><span class="store-tag store-pg write">Postgres: write</span> Verdict summary</div>
+      <div class="store-row"><span class="store-tag store-gh write">GitHub: write</span> Epic comment</div>
+      <div class="store-row"><span class="store-tag store-files write">Files: write</span> Verdict document</div>
+    </div>
+  </div>
+
+  <div class="step-section" id="step-architect">
+    <h3><span class="badge badge-optional">5</span> Architect (optional) <a href="#diagram" class="back-link">Back to diagram</a></h3>
+    <table class="prop-table">
+      <tr><th>Command</th><td><code>/pipeline:architect</code></td></tr>
+      <tr><th>Skill</th><td><code>skills/architecture/SKILL.md</code></td></tr>
+      <tr><th>Subagents</th><td><code>recon-agent-prompt.md</code> (haiku), <code>specialist-agent-prompt.md</code> (sonnet, parallel per domain), <code>lead-architect-prompt.md</code> (opus)</td></tr>
+      <tr><th>Required</th><td>No — auto-invoked for LARGE+, optional otherwise</td></tr>
+      <tr><th>Inputs</th><td><code>docs/plans/*.md</code></td></tr>
+      <tr><th>Outputs</th><td><code>docs/architecture.md</code></td></tr>
+      <tr><th>Next</th><td>build</td></tr>
+      <tr><th>On fail</th><td>N/A (interactive)</td></tr>
+      <tr><th>Orchestrator</th><td><code>complete architect PASS 'docs/architecture.md'</code> or <code>complete architect PASS 'skipped'</code></td></tr>
+    </table>
+    <p>Recon scans the codebase for existing patterns. Domain specialists propose decisions per area (DATA, STATE, UI, API, INFRA, TEST). Lead architect resolves conflicts and produces the architecture document with typed contracts, security standards, testing standards, and banned patterns.</p>
+    <div class="subsection fail-callout">
+      <div class="subsection-title">Loopback target</div>
+      <p>If purple fails 2x on the same finding, the orchestrator routes back here to re-examine the architectural standard that may be broken.</p>
+    </div>
+    <div class="subsection fail-callout">
+      <div class="subsection-title">Skip behavior</div>
+      <p>Same as debate — inputs (plan files) are met, so the command must explicitly record <code>PASS 'skipped'</code> when skipped for non-LARGE changes.</p>
+    </div>
+    <div class="subsection">
+      <div class="subsection-title">Agents dispatched</div>
+      <ul>
+        <li><strong>recon</strong> — haiku, sequential. Scans codebase for existing patterns and constraints</li>
+        <li><strong>domain specialists</strong> — sonnet, parallel per domain (DATA, STATE, UI, API, INFRA, TEST)</li>
+        <li><strong>lead architect</strong> — opus, sequential. Resolves conflicts, produces final document</li>
+      </ul>
+    </div>
+    <div class="subsection">
+      <div class="subsection-title">Store interactions</div>
+      <div class="store-row"><span class="store-tag store-pg write">Postgres: write</span> Decision records</div>
+      <div class="store-row"><span class="store-tag store-gh write">GitHub: write</span> Epic comment</div>
+      <div class="store-row"><span class="store-tag store-files write">Files: write</span> Architecture document</div>
+    </div>
+  </div>
+
+  <div class="step-section" id="step-build">
+    <h3><span class="badge badge-required">6</span> Build <a href="#diagram" class="back-link">Back to diagram</a></h3>
+    <table class="prop-table">
+      <tr><th>Command</th><td><code>/pipeline:build</code></td></tr>
+      <tr><th>Skill</th><td><code>skills/building/SKILL.md</code></td></tr>
+      <tr><th>Subagents</th><td><code>implementer-prompt.md</code> (haiku/sonnet per task complexity), <code>reviewer-prompt.md</code> (haiku/sonnet)</td></tr>
+      <tr><th>Required</th><td>Yes</td></tr>
+      <tr><th>Inputs</th><td><code>docs/plans/*.md</code></td></tr>
+      <tr><th>Outputs</th><td>Feature branch with commits</td></tr>
+      <tr><th>Next</th><td>review</td></tr>
+      <tr><th>On fail</th><td>Records <code>FAIL</code> in orchestrator (user resolves)</td></tr>
+      <tr><th>Orchestrator</th><td><code>complete build PASS</code> or <code>complete build FAIL</code></td></tr>
+    </table>
+    <p>Dispatches one implementer per plan task (sequential, not parallel). Each implementer reads its own context from stores (arch plan, decisions, gotchas, task issue, build-state). Post-task reviewer runs after each implementer; issues loop back to implementer until approved.</p>
+    <div class="subsection">
+      <div class="subsection-title">Reporting</div>
+      <p>Each implementer and reviewer writes to all three stores (Postgres, GitHub issue comment, build-state.json).</p>
+    </div>
+    <div class="subsection fail-callout">
+      <div class="subsection-title">Failure routing target</div>
+      <p>Review FAIL and QA FAIL both route back here. This is the most common loopback in the pipeline — review finds issues, build fixes them, review re-checks.</p>
+    </div>
+    <div class="subsection">
+      <div class="subsection-title">Agents dispatched</div>
+      <ul>
+        <li><strong>implementer</strong> — haiku/sonnet (routed by task complexity), sequential per task. Each reads fresh context from stores — no accumulated state</li>
+        <li><strong>post-task reviewer</strong> — haiku/sonnet, runs after each implementer. Issues loop back until approved</li>
+      </ul>
+    </div>
+    <div class="subsection">
+      <div class="subsection-title">Store interactions</div>
+      <div class="store-row"><span class="store-tag store-pg write">Postgres: write</span> Per-task implementation result</div>
+      <div class="store-row"><span class="store-tag store-gh write">GitHub: write</span> Task issue comments</div>
+      <div class="store-row"><span class="store-tag store-files write">Files: write</span> build-state.json (task status + commit SHA)</div>
+    </div>
+  </div>
+
+  <div class="step-section" id="step-review">
+    <h3><span class="badge badge-required">7</span> Review <a href="#diagram" class="back-link">Back to diagram</a></h3>
+    <table class="prop-table">
+      <tr><th>Command</th><td><code>/pipeline:review</code></td></tr>
+      <tr><th>Skill</th><td><code>skills/reviewing/SKILL.md</code></td></tr>
+      <tr><th>Agent</th><td>Review runs as the command itself (not a subagent dispatch)</td></tr>
+      <tr><th>Required</th><td>Yes</td></tr>
+      <tr><th>Inputs</th><td>Feature branch exists</td></tr>
+      <tr><th>Outputs</th><td>Status: <code>PASS</code> or <code>FAIL</code></td></tr>
+      <tr><th>Next</th><td>qa (on PASS)</td></tr>
+      <tr><th>On fail</th><td><strong>build</strong> — <code>onFail: 'build'</code> (fix issues and re-review)</td></tr>
+      <tr><th>Orchestrator</th><td><code>complete review PASS</code> or <code>complete review FAIL</code></td></tr>
+    </table>
+    <p>PR-scoped diff review. Runs static analysis (semgrep or grep fallback), checks arch plan compliance (module boundaries, typed contracts, banned patterns), applies review criteria from config. Cross-file contract verification, structural completeness audit, fallback symmetry checks.</p>
+    <div class="subsection fail-callout">
+      <div class="subsection-title">Failure routing</div>
+      <p>FAIL routes back to build via <code>onFail: 'build'</code>. HIGH+ findings remaining unfixed trigger the failure. All findings fixed or no HIGH+ findings triggers PASS.</p>
+    </div>
+    <div class="subsection">
+      <div class="subsection-title">Store interactions</div>
+      <div class="store-row"><span class="store-tag store-pg write">Postgres: write</span> Review verdict</div>
+      <div class="store-row"><span class="store-tag store-gh write">GitHub: write</span> Task issue comment</div>
+      <div class="store-row"><span class="store-tag store-files write">Files: write</span> Review status</div>
+    </div>
+  </div>
+
+  <div class="step-section" id="step-qa">
+    <h3><span class="badge badge-required">8</span> QA <a href="#diagram" class="back-link">Back to diagram</a></h3>
+    <table class="prop-table">
+      <tr><th>Command</th><td><code>/pipeline:qa</code></td></tr>
+      <tr><th>Skill</th><td><code>skills/qa/SKILL.md</code></td></tr>
+      <tr><th>Subagents</th><td><code>planner-prompt.md</code> (opus), <code>worker-prompt.md</code> (sonnet, parallel per work package), <code>verifier-prompt.md</code> (opus)</td></tr>
+      <tr><th>Required</th><td>Yes</td></tr>
+      <tr><th>Inputs</th><td><code>review = PASS</code></td></tr>
+      <tr><th>Outputs</th><td>Status: <code>PASS</code> or <code>FAIL</code></td></tr>
+      <tr><th>Next</th><td>redteam (on PASS)</td></tr>
+      <tr><th>On fail</th><td><strong>build</strong> — <code>onFail: 'build'</code> (fix issues and re-test)</td></tr>
+      <tr><th>Orchestrator</th><td><code>complete qa PASS</code> or <code>complete qa FAIL</code></td></tr>
+    </table>
+    <p>For LARGE+: full test plan with parallel workers per work package + seam pass. For MEDIUM: targeted 3-5 checks. Risk-driven testing — identifies component interaction risks, not just AC tracing. Verifier synthesizes worker results, runs seam tests, triages failures.</p>
+    <div class="subsection fail-callout">
+      <div class="subsection-title">Failure routing</div>
+      <p>FAIL routes back to build via <code>onFail: 'build'</code>. Any code-is-wrong failure remaining triggers FAIL. All passes or all failures triaged as test-is-wrong triggers PASS.</p>
+    </div>
+    <div class="subsection">
+      <div class="subsection-title">Agents dispatched</div>
+      <ul>
+        <li><strong>qa-planner</strong> — opus, sequential. Creates test plan with work packages, risk analysis, and seam identification</li>
+        <li><strong>qa-worker</strong> — sonnet, parallel per work package. Executes tests, reports pass/fail with evidence</li>
+        <li><strong>qa-verifier</strong> — opus, sequential. Synthesizes results, runs seam tests, produces final verdict</li>
+      </ul>
+    </div>
+    <div class="subsection">
+      <div class="subsection-title">Store interactions</div>
+      <div class="store-row"><span class="store-tag store-pg write">Postgres: write</span> Per-work-package results + verdict</div>
+      <div class="store-row"><span class="store-tag store-gh write">GitHub: write</span> Task issue comments</div>
+      <div class="store-row"><span class="store-tag store-files write">Files: write</span> QA status</div>
+    </div>
+  </div>
+
+  <div class="step-section" id="step-redteam">
+    <h3><span class="badge badge-optional">9</span> Red Team (optional) <a href="#diagram" class="back-link">Back to diagram</a></h3>
+    <table class="prop-table">
+      <tr><th>Command</th><td><code>/pipeline:redteam</code></td></tr>
+      <tr><th>Skill</th><td><code>skills/redteam/SKILL.md</code></td></tr>
+      <tr><th>Subagents</th><td><code>recon-agent-prompt.md</code> (haiku), <code>specialist-agent-prompt.md</code> (sonnet, parallel per domain), <code>lead-analyst-prompt.md</code> (opus)</td></tr>
+      <tr><th>Required</th><td>No — controlled by <code>security.policy</code> config</td></tr>
+      <tr><th>Inputs</th><td><code>qa = PASS</code></td></tr>
+      <tr><th>Outputs</th><td><code>docs/findings/redteam-*.md</code></td></tr>
+      <tr><th>Next</th><td>purple</td></tr>
+      <tr><th>On fail</th><td>N/A (findings are output, always records PASS)</td></tr>
+      <tr><th>Orchestrator</th><td><code>complete redteam PASS '[report path]'</code> or <code>complete redteam PASS 'skipped'</code></td></tr>
+    </table>
+    <p>Diff-scoped security assessment. Recon enumerates attack surface (entry points, auth boundaries, data sinks, SBOM). Domain specialists test specific areas (INJ, AUTH, XSS, DEPS, COMPLIANCE, etc.). Lead analyst chains findings, deduplicates, builds risk matrix and remediation roadmap.</p>
+    <div class="subsection">
+      <div class="subsection-title">Security policy routing</div>
+      <p><code>every-feature</code> = always runs. <code>milestone</code> = runs on MILESTONE-sized changes only. <code>on-demand</code> = user must invoke manually. The orchestrator does NOT read this policy — it is content-blind. The command reads the policy and decides whether to proceed or skip.</p>
+    </div>
+    <div class="subsection fail-callout">
+      <div class="subsection-title">Skip behavior</div>
+      <p>Redteam's input is <code>qa = PASS</code> (status check), which IS met after QA passes. The orchestrator will NOT auto-skip it. The command must explicitly record <code>PASS 'skipped'</code> when the security policy says to skip.</p>
+    </div>
+    <div class="subsection">
+      <div class="subsection-title">Agents dispatched</div>
+      <ul>
+        <li><strong>recon</strong> — haiku, sequential. Enumerates attack surface and entry points</li>
+        <li><strong>domain specialists</strong> — sonnet, parallel per domain (INJ, AUTH, XSS, DEPS, COMPLIANCE, etc.)</li>
+        <li><strong>lead analyst</strong> — opus, sequential. Chains findings, deduplicates, builds risk matrix</li>
+      </ul>
+    </div>
+    <div class="subsection">
+      <div class="subsection-title">Store interactions</div>
+      <div class="store-row"><span class="store-tag store-pg write">Postgres: write</span> Per-domain findings</div>
+      <div class="store-row"><span class="store-tag store-gh write">GitHub: write</span> Task issue comments</div>
+      <div class="store-row"><span class="store-tag store-files write">Files: write</span> Red team report</div>
+    </div>
+  </div>
+
+  <div class="step-section" id="step-purple">
+    <h3><span class="badge badge-optional">10</span> Purple Team (optional) <a href="#diagram" class="back-link">Back to diagram</a></h3>
+    <table class="prop-table">
+      <tr><th>Command</th><td><code>/pipeline:purpleteam</code></td></tr>
+      <tr><th>Skill</th><td><code>skills/purpleteam/SKILL.md</code></td></tr>
+      <tr><th>Subagents</th><td><code>verifier-prompt.md</code> (sonnet, parallel per finding), <code>chain-analyst-prompt.md</code> (opus), <code>posture-analyst-prompt.md</code> (opus)</td></tr>
+      <tr><th>Required</th><td>No — only runs if redteam produced findings</td></tr>
+      <tr><th>Inputs</th><td><code>docs/findings/redteam-*.md</code></td></tr>
+      <tr><th>Outputs</th><td>Status: <code>PASS</code> or <code>FAIL</code></td></tr>
+      <tr><th>Next</th><td>commit (on PASS)</td></tr>
+      <tr><th>On fail</th><td>Remediation cycle, then re-verify</td></tr>
+      <tr><th>Loopback</th><td><strong>2x FAIL on same finding routes to architect</strong> — the standard may be broken, not the fix</td></tr>
+      <tr><th>Orchestrator</th><td><code>complete purple PASS</code> or <code>complete purple FAIL</code> or <code>complete purple PASS 'skipped'</code></td></tr>
+    </table>
+    <p>Verifies each red team finding's fix by replaying the exploitation scenario against the current code. Strict role boundary — verifiers report VERIFIED/REGRESSION/INCOMPLETE, never suggest fixes.</p>
+    <div class="subsection fail-callout">
+      <div class="subsection-title">Loopback rule</div>
+      <p>If a finding fails verification twice (<code>fail_count >= 2</code>), the orchestrator routes to the architect step to re-examine whether the architectural standard itself is flawed. This is the only loopback that crosses more than one step backward.</p>
+    </div>
+    <div class="subsection">
+      <div class="subsection-title">Auto-skip</div>
+      <p>Unlike debate/architect/redteam, purple CAN be auto-skipped by the orchestrator. If redteam was skipped (no findings file produced), purple's glob input (<code>docs/findings/redteam-*.md</code>) is not met, so the orchestrator auto-skips it.</p>
+    </div>
+    <div class="subsection">
+      <div class="subsection-title">Agents dispatched</div>
+      <ul>
+        <li><strong>verifier</strong> — sonnet, parallel per finding. Replays exploitation scenarios</li>
+        <li><strong>chain analyst</strong> — opus, sequential. Tests multi-step attack paths</li>
+        <li><strong>posture analyst</strong> — opus, sequential. Produces overall security posture rating</li>
+      </ul>
+    </div>
+    <div class="subsection">
+      <div class="subsection-title">Store interactions</div>
+      <div class="store-row"><span class="store-tag store-pg write">Postgres: write</span> Per-finding verdict</div>
+      <div class="store-row"><span class="store-tag store-gh write">GitHub: write</span> Task issue comments</div>
+      <div class="store-row"><span class="store-tag store-files write">Files: write</span> Purple status</div>
+    </div>
+  </div>
+
+  <div class="step-section" id="step-commit">
+    <h3><span class="badge badge-required">11</span> Commit <a href="#diagram" class="back-link">Back to diagram</a></h3>
+    <table class="prop-table">
+      <tr><th>Command</th><td><code>/pipeline:commit</code></td></tr>
+      <tr><th>Agent</th><td><code>commands/commit.md</code> (Category 4 utility)</td></tr>
+      <tr><th>Required</th><td>Yes</td></tr>
+      <tr><th>Inputs</th><td><code>review = PASS</code>, <code>qa = PASS</code></td></tr>
+      <tr><th>Outputs</th><td>Status: <code>PASS</code> (commit created)</td></tr>
+      <tr><th>Next</th><td>finish</td></tr>
+      <tr><th>On fail</th><td>N/A (preflight gate blocks, user resolves)</td></tr>
+      <tr><th>Orchestrator</th><td><code>complete commit PASS</code> (always PASS — reaching this point means success)</td></tr>
+    </table>
+    <p>Preflight gate chain: review gate (hard stop on source file count), then typecheck, lint, test, agent template lint. If all pass, creates the commit. Category 4 utility — skips GitHub issue comments. Epic reference in the commit message body (<code>Part of #[N]</code>) is sufficient for traceability.</p>
+    <div class="subsection">
+      <div class="subsection-title">Store interactions</div>
+      <div class="store-row"><span class="store-tag store-files write">Files: write</span> Commit SHA</div>
+      <p>Postgres and GitHub writes are skipped — Category 4 utility. The phase commands (review, QA, redteam) handle their own A2A handoff comments.</p>
+    </div>
+  </div>
+
+  <div class="step-section" id="step-finish">
+    <h3><span class="badge badge-required">12</span> Finish <a href="#diagram" class="back-link">Back to diagram</a></h3>
+    <table class="prop-table">
+      <tr><th>Command</th><td><code>/pipeline:finish</code></td></tr>
+      <tr><th>Agent</th><td><code>commands/finish.md</code></td></tr>
+      <tr><th>Required</th><td>Yes</td></tr>
+      <tr><th>Inputs</th><td><code>commit = PASS</code></td></tr>
+      <tr><th>Outputs</th><td>Status: <code>merged</code></td></tr>
+      <tr><th>Next</th><td>deploy</td></tr>
+      <tr><th>On fail</th><td>Records <code>FAIL</code> in orchestrator (user resolves merge conflicts)</td></tr>
+      <tr><th>Orchestrator</th><td><code>complete finish PASS</code> or <code>complete finish FAIL</code></td></tr>
+    </table>
+    <p>Merges PR via <code>platform.js pr merge</code>. Compiles single epic summary from Postgres (all phase results, 5K limit). Closes feature epic. Regenerates dashboard. Syncs README roadmap from Postgres.</p>
+    <div class="subsection">
+      <div class="subsection-title">Store interactions</div>
+      <div class="store-row"><span class="store-tag store-pg write">Postgres: write</span> Closes session, marks task done</div>
+      <div class="store-row"><span class="store-tag store-gh write">GitHub: write</span> Epic summary (compiled, 5K limit)</div>
+      <div class="store-row"><span class="store-tag store-files write">Files: write</span> Cleanup</div>
+    </div>
+  </div>
+
+  <div class="step-section" id="step-deploy">
+    <h3><span class="badge badge-optional">13</span> Deploy (optional) <a href="#diagram" class="back-link">Back to diagram</a></h3>
+    <table class="prop-table">
+      <tr><th>Command</th><td>N/A — project-specific deployment</td></tr>
+      <tr><th>Required</th><td>No — not all projects deploy via pipeline</td></tr>
+      <tr><th>Inputs</th><td><code>finish = PASS</code></td></tr>
+      <tr><th>Outputs</th><td>Status: <code>deployed</code></td></tr>
+      <tr><th>Next</th><td>None (terminal)</td></tr>
+      <tr><th>On fail</th><td>Project-specific rollback</td></tr>
+    </table>
+    <p>Terminal step. The pipeline does not prescribe deployment — this is a placeholder for project-specific deployment workflows (Vercel, AWS, Docker, etc.).</p>
+  </div>
+
+  <h2 id="routing-rules">Routing Rules</h2>
+  <table class="prop-table">
+    <tr><th>Condition</th><th>Source Step</th><th>Target</th><th>Rule</th></tr>
+    <tr><td>Success</td><td>Any step</td><td>Next in sequence</td><td>Default forward routing</td></tr>
+    <tr><td>FAIL</td><td>debate</td><td>brainstorm</td><td><code>onFail: 'brainstorm'</code> — rethink disposition</td></tr>
+    <tr><td>FAIL</td><td>review</td><td>build</td><td><code>onFail: 'build'</code> — fix issues and re-review</td></tr>
+    <tr><td>FAIL</td><td>qa</td><td>build</td><td><code>onFail: 'build'</code> — fix issues and re-test</td></tr>
+    <tr><td>FAIL (1st)</td><td>purple</td><td>commit</td><td>Optional step — workflow advances past failure</td></tr>
+    <tr><td>FAIL (2nd+)</td><td>purple</td><td>architect</td><td><code>loopback.maxFails: 2</code> — re-examine the standard</td></tr>
+    <tr><td>Optional + inputs NOT met</td><td>debate, architect, purple, deploy</td><td>Auto-skip</td><td>Orchestrator records <code>skipped</code>, re-checks in loop</td></tr>
+    <tr><td>Optional + inputs met, skipped</td><td>debate, architect, redteam</td><td>Stalls</td><td>Command must call <code>complete &lt;step&gt; PASS 'skipped'</code></td></tr>
+  </table>
+  <div class="subsection fail-callout" style="margin-top:16px;">
+    <div class="subsection-title">Critical distinction — two kinds of skips</div>
+    <p><strong>Auto-skip (orchestrator handles):</strong> Optional step whose inputs are NOT met. Example: purple after redteam was skipped (no findings files exist). The orchestrator detects unmet inputs, records <code>skipped</code>, and advances. Multiple consecutive auto-skips are handled in a loop with input re-checking.</p>
+    <p><strong>Manual skip (command handles):</strong> Optional step whose inputs ARE met but the command decides not to run. Example: debate after plan (plan files exist, but change is MEDIUM so debate is unnecessary). The command must call <code>complete &lt;step&gt; PASS 'skipped'</code>. Without this, the workflow stalls because the orchestrator sees met inputs and waits.</p>
+  </div>
+
+  <h2 id="chain-command">Workflow Chaining</h2>
+  <p>The <code>/pipeline:chain</code> command runs multiple steps sequentially by repeating a loop: ask the orchestrator "what's next?", then invoke that step via the Skill tool.</p>
+  <p><strong>Two modes:</strong></p>
+  <ul>
+    <li><strong>Explicit:</strong> <code>/pipeline:chain brainstorm plan build</code> — runs only the named steps</li>
+    <li><strong>Auto:</strong> <code>/pipeline:chain</code> — runs from current orchestrator position to end of graph</li>
+  </ul>
+  <p><strong>Contract:</strong> The chain passes nothing to sub-commands and reads nothing back. Each sub-command handles its own user interaction, orchestrator completion, and store writes. The chain's only orchestrator interaction is querying <code>next</code> and recording skips for steps the user excluded from scope.</p>
+
+</div>
 
 <script>
 /* ── Step data (single source of truth) ──────────────────────────────── */
@@ -863,6 +1370,12 @@ function openPanel(stepId){
 
   document.getElementById("detailPanel").classList.add("open");
   document.getElementById("diagramArea").classList.add("panel-open");
+
+  /* Also scroll the verbose section into view on mobile */
+  if(window.innerWidth<768){
+    var anchor=document.getElementById("step-"+stepId);
+    if(anchor)setTimeout(function(){anchor.scrollIntoView({behavior:"smooth"});},300);
+  }
 }
 
 function closePanel(){
