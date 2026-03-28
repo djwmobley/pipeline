@@ -172,7 +172,8 @@ body {
   flex-direction: column;
 }
 .detail-panel.open {
-  width: 45%;
+  width: 55%;
+  min-width: 480px;
   overflow-y: auto;
 }
 .panel-header {
@@ -532,48 +533,16 @@ code {
   display: inline-block;
 }
 
-/* ── 11. Verbose step sections ────────────────────────────────────────── */
-.step-details {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 0 24px 80px;
-}
-.step-details h2 {
-  font-size: 24px;
-  font-weight: 700;
-  margin: 48px 0 16px;
-  padding-top: 24px;
-  border-top: 1px solid var(--border);
-}
-.step-details h2:first-child { border-top: none; margin-top: 24px; }
-.step-section {
-  margin-bottom: 40px;
-}
-.step-section h3 {
-  font-size: 18px;
-  font-weight: 700;
-  margin: 0 0 12px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.step-section .back-link {
-  font-size: 12px;
-  font-weight: 400;
-  color: var(--accent);
-  text-decoration: none;
-  margin-left: auto;
-}
-.step-section .back-link:hover { text-decoration: underline; }
-.step-section p { margin: 8px 0; font-size: 14px; line-height: 1.8; }
-.step-section strong { font-weight: 600; }
-.step-section .prop-table {
+/* ── 11. Verbose content (rendered in panel + hidden source) ─────────── */
+.panel-body p { margin: 10px 0; font-size: 14px; line-height: 1.8; }
+.panel-body strong { font-weight: 600; }
+.panel-body .prop-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
-  margin: 12px 0;
+  margin: 16px 0;
 }
-.step-section .prop-table th {
+.panel-body .prop-table th {
   text-align: left;
   padding: 8px 12px;
   background: var(--surface);
@@ -581,40 +550,41 @@ code {
   font-weight: 600;
   color: var(--text-muted);
 }
-.step-section .prop-table td {
+.panel-body .prop-table td {
   padding: 8px 12px;
   border: 1px solid var(--border);
   vertical-align: top;
 }
-.step-section .subsection {
-  margin: 12px 0;
-  padding: 12px 16px;
+.panel-body .subsection {
+  margin: 16px 0;
+  padding: 14px 18px;
   background: var(--surface);
   border-radius: var(--radius);
   border-left: 3px solid var(--accent);
 }
-.step-section .subsection-title {
+.panel-body .subsection-title {
   font-weight: 600;
-  font-size: 13px;
-  margin-bottom: 4px;
+  font-size: 14px;
+  margin-bottom: 6px;
 }
-.step-section .fail-callout {
+.panel-body .fail-callout {
   border-left-color: var(--fail-path);
   background: color-mix(in srgb, var(--fail-path) 5%, var(--surface));
 }
-.step-section .store-row {
+.panel-body .store-row {
   display: flex;
   gap: 8px;
-  margin: 4px 0;
+  margin: 6px 0;
   align-items: center;
 }
-.step-section ul {
+.panel-body ul {
   margin: 8px 0;
   padding-left: 20px;
 }
-.step-section li {
+.panel-body li {
   font-size: 14px;
-  margin: 4px 0;
+  margin: 6px 0;
+  line-height: 1.6;
 }
 
 /* ── 12. Reduced motion ──────────────────────────────────────────────── */
@@ -675,11 +645,9 @@ code {
 
 <div class="tooltip" id="tooltip" role="tooltip"></div>
 
-<!-- Verbose step detail sections (below diagram) -->
-<div class="step-details" id="step-details">
-  <h2>Step Reference</h2>
-
-  <div class="step-section" id="step-init">
+<!-- Hidden verbose content — cloned into detail panel on step selection -->
+<div style="display:none" id="verbose-content">
+<div class="step-section" id="step-init">
     <h3><span class="badge badge-required">1</span> Init <a href="#diagram" class="back-link">Back to diagram</a></h3>
     <table class="prop-table">
       <tr><th>Command</th><td><code>/pipeline:init</code></td></tr>
@@ -1267,115 +1235,22 @@ function openPanel(stepId){
 
   document.getElementById("panelTitle").textContent=step.number+". "+step.name;
   var body=document.getElementById("panelBody");
-  body.textContent="";
-
-  // Description
-  var sec1=el("div",{className:"detail-section"},[el("p",{className:"detail-desc"},step.description)]);
-  body.appendChild(sec1);
-
-  // Properties table
-  var sec2=el("div",{className:"detail-section"});
-  sec2.appendChild(el("h3",null,"Properties"));
-  var tbl=el("table",{className:"detail-table"});
-  var rows=[
-    ["Command",step.command,!0],
-    ["Required",step.required?"Required":"Optional",!1],
-    ["Inputs",step.inputs.join(", "),!0],
-    ["Outputs",step.outputs.join(", "),!0],
-    ["Next",step.next||"terminal",!1],
-    ["Orchestrator",step.orchestrator,!0]
-  ];
-  rows.forEach(function(r){
-    var tr=el("tr");
-    tr.appendChild(el("td",null,r[0]));
-    var td=el("td");
-    if(r[2]){td.appendChild(el("code",null,r[1]));}
-    else{
-      if(r[0]==="Required"){
-        td.appendChild(el("span",{className:step.required?"badge badge-required":"badge badge-optional"},(step.required?"\u25A0 Required":"\u25B3 Optional")));
-      }else{td.textContent=r[1];}
-    }
-    tr.appendChild(td);
-    tbl.appendChild(tr);
-  });
-  sec2.appendChild(tbl);
-  body.appendChild(sec2);
-
-  // Failure routing
-  if(step.onFail||step.loopback){
-    var sec3=el("div",{className:"detail-section"});
-    sec3.appendChild(el("h3",null,"Failure Routing"));
-    if(step.onFail){
-      var fr=el("div",{className:"fail-route"});
-      fr.appendChild(el("span",{className:"badge badge-fail"},"\u25A0 FAIL"));
-      var arrow=document.createTextNode(" \u2192 ");
-      fr.appendChild(arrow);
-      fr.appendChild(el("strong",null,step.onFail));
-      fr.appendChild(document.createTextNode(" \u2014 "+step.onFailLabel));
-      sec3.appendChild(fr);
-    }
-    if(step.loopback){
-      var lb=el("div",{className:"fail-route"});
-      lb.appendChild(el("span",{className:"badge badge-fail"},"\u25A0 "+step.loopback.label));
-      lb.appendChild(document.createTextNode(" \u2192 "));
-      lb.appendChild(el("strong",null,step.loopback.target));
-      lb.appendChild(document.createTextNode(" \u2014 Re-examine the standard"));
-      sec3.appendChild(lb);
-    }
-    body.appendChild(sec3);
+  /* Clone the full verbose HTML from the hidden content section */
+  var source=document.getElementById("step-"+stepId);
+  if(source){
+    body.textContent="";
+    var clone=source.cloneNode(true);
+    /* Remove the h3 header (already shown in panel header) and back-links */
+    var h3=clone.querySelector("h3");
+    if(h3)h3.parentNode.removeChild(h3);
+    clone.querySelectorAll(".back-link").forEach(function(l){l.parentNode.removeChild(l);});
+    /* Append all children */
+    while(clone.firstChild)body.appendChild(clone.firstChild);
   }
-
-  // Stores
-  var hasStores=step.stores.postgres||step.stores.github||step.stores.files;
-  if(hasStores){
-    var sec4=el("div",{className:"detail-section"});
-    sec4.appendChild(el("h3",null,"Store Interactions"));
-    ["postgres","github","files"].forEach(function(k){
-      if(step.stores[k]){
-        var cls="store-tag store-"+k.substring(0,k==="postgres"?2:k==="github"?2:5).replace("po","pg").replace("gi","gh").replace("files","files");
-        // Fix class names
-        if(k==="postgres")cls="store-tag store-pg "+step.stores[k];
-        if(k==="github")cls="store-tag store-gh "+step.stores[k];
-        if(k==="files")cls="store-tag store-files "+step.stores[k];
-        var div=el("div");
-        div.appendChild(el("span",{className:cls},k.charAt(0).toUpperCase()+k.slice(1)+": "+step.stores[k]));
-        if(step.storeDetail[k])div.appendChild(document.createTextNode(" "+step.storeDetail[k]));
-        sec4.appendChild(div);
-      }
-    });
-    body.appendChild(sec4);
-  }
-
-  // Agents
-  if(step.agents.length>0){
-    var sec5=el("div",{className:"detail-section"});
-    sec5.appendChild(el("h3",null,"Agents Dispatched"));
-    var ul=el("ul",{className:"agent-list"});
-    step.agents.forEach(function(a){
-      ul.appendChild(el("li",null,[el("span",null,a.name),el("span",{className:"agent-tier"},a.tier+" / "+a.mode)]));
-    });
-    sec5.appendChild(ul);
-    body.appendChild(sec5);
-  }
-
-  // Doc links
-  var sec6=el("div",{className:"detail-section"});
-  sec6.appendChild(el("h3",null,"Documentation"));
-  var links=el("div",{className:"doc-links"});
-  step.docs.forEach(function(d){
-    links.appendChild(el("a",{href:d},d.split("/").pop().split("#")[0]));
-  });
-  sec6.appendChild(links);
-  body.appendChild(sec6);
 
   document.getElementById("detailPanel").classList.add("open");
   document.getElementById("diagramArea").classList.add("panel-open");
-
-  /* Also scroll the verbose section into view on mobile */
-  if(window.innerWidth<768){
-    var anchor=document.getElementById("step-"+stepId);
-    if(anchor)setTimeout(function(){anchor.scrollIntoView({behavior:"smooth"});},300);
-  }
+  body.scrollTop=0;
 }
 
 function closePanel(){
