@@ -6,7 +6,7 @@
   <img src="docs/assets/hero.png" alt="Pipeline — one plugin, full pipeline" width="700">
 </p>
 
-A web-first agent workflow engine for [Claude Code](https://docs.anthropic.com/en/docs/claude-code). A content-blind orchestrator routes stateless AI agents through a 13-step quality pipeline — from brainstorm to deploy — with agents reading context from and writing results to shared stores. First-class support for web and mobile development; adapted profiles for services, data pipelines, and automation.
+A web-first agent workflow engine for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) with 29 commands. A content-blind orchestrator routes stateless AI agents through a quality pipeline — from brainstorm to deploy — while standalone tools handle debugging, auditing, testing, and more. Agents read context from and write results to shared stores. First-class support for web and mobile development; adapted profiles for services, data pipelines, and automation.
 
 A one-line fix gets committed in seconds. A new feature gets designed, debated, built, reviewed, and security-tested — automatically.
 
@@ -70,7 +70,7 @@ You describe what you want. The orchestrator routes you through the full workflo
 
 Architect and QA activate automatically for LARGE/MILESTONE changes — you can skip them if you've already made your technology choices or want to handle QA yourself. For MEDIUM changes, these capabilities run invisibly inside plan and build. Your security policy (every-feature/milestone/on-demand) controls when red team and purple team run automatically.
 
-Every agent writes results to three stores (Postgres, GitHub issues, build-state) — this A2A protocol means downstream agents pick up where upstream agents left off without the orchestrator carrying content. See the **[workflow reference](docs/workflow-reference.md)** for the full 13-step graph with routing rules and failure paths.
+Every agent writes results to three stores (Postgres, GitHub issues, build-state) — this A2A protocol means downstream agents pick up where upstream agents left off without the orchestrator carrying content. See the **[system reference](docs/workflow-reference.md)** for the full architecture, or the **[interactive diagram](docs/workflow-diagram.html)** for a visual overview of all 29 commands.
 
 ### You finish a feature (MILESTONE)
 
@@ -300,17 +300,17 @@ Tracked items for future development. Checked items are shipped.
 - [x] `--quick` mode for init — `/pipeline:init --quick` auto-detects everything, makes all decisions, auto-installs Playwright/Postgres/Ollama models, prints decision log
 - [x] Compliance framework mapping — `/pipeline:compliance` maps red team CWE findings to 7 regulatory frameworks (NIST 800-53, PCI DSS, ISO 27001, NIST CSF, SOC 2, GDPR, HIPAA) with tiered mapping quality, coverage scope analysis, and evidence narrative generation. Integrated as optional Phase 4 in `/pipeline:security`.
 - [x] Antagonistic design debate
-- [x] Content-blind orchestrator — 13-step state machine with failure routing, loopback, and workflow state persistence in Postgres
+- [x] Content-blind orchestrator — state machine with failure routing, loopback, and workflow state persistence in Postgres
 - [x] Three-store A2A reporting — agents write to Postgres + GitHub + build-state; downstream agents read from stores
 - [x] V2 agent rewrite (23/23 agents) — store-read pattern, ANTI-RATIONALIZATION blocks, reporting contracts, engagement style, compliance awareness
-- [x] Workflow reference doc — exhaustive 13-step reference with routing rules, agent mappings, and three-store contracts
+- [x] System reference + interactive diagram — all 29 commands documented with dual-view diagram (capability map + orchestrator flow)
 - [ ] Prompt caching — API-based dispatch for token savings — `/pipeline:debate` dispatches Advocate, Skeptic, and Practitioner agents to stress-test specs before planning. Produces structured verdicts consumed by `/pipeline:plan`.
 
 ## What's Original to Pipeline
 
 These features don't trace to any prior work:
 
-- **Content-blind orchestrator** — a state machine that routes between 13 steps based on artifact existence and status codes, never reading content. Failure loops (review/qa FAIL → build) and loopback (purple 2x FAIL → architect) are graph edges, not conditional logic. The orchestrator is a workflow engine, not a build bot.
+- **Content-blind orchestrator** — a state machine that routes between steps based on artifact existence and status codes, never reading content. Failure loops (review/qa FAIL → build) and loopback (purple 2x FAIL → architect) are graph edges, not conditional logic. The orchestrator is a workflow engine, not a build bot.
 - **Three-store A2A protocol** — every agent writes to Postgres + GitHub issues + build-state.json on completion. Downstream agents read from these stores to pick up context. The orchestrator carries only IDs and status — zero content forwarding. This pub/sub pattern keeps token overhead constant regardless of pipeline depth.
 - **Stateless agent dispatch** — agents read their own context from shared stores (architecture plan, decisions, gotchas, task issues, build state) rather than receiving pasted context blocks. This means agent quality doesn't degrade as pipelines grow — each agent starts fresh with only what it needs.
 - **Engagement style system** — a single choice (expert/guided/full-guidance) at init propagates throughout the pipeline, controlling question depth in brainstorm, explanation detail in init, and workflow view complexity in the dashboard.

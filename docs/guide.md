@@ -493,7 +493,7 @@ The generated HTML is a self-contained file with no external dependencies. It in
 **Files tier** (default) — zero setup. Creates `docs/sessions/*.md`, `DECISIONS.md`, `docs/gotchas.md`. No search capability. Size-bounded to prevent context bloat (see [auto-persistence](#auto-persistence) below). Good for small projects or quick setups.
 
 **Postgres tier** — requires local PostgreSQL. Each project gets its own database (`pipeline_<project_name>`). Full history, semantically searchable. Gives you:
-- **Orchestrator workflow state** — the 13-step state machine persists step status, fail counts, and routing decisions in `workflow_state`. Required for LARGE/MILESTONE orchestrated workflows.
+- **Orchestrator workflow state** — the state machine persists step status, fail counts, and routing decisions in `workflow_state`. Required for LARGE/MILESTONE orchestrated workflows.
 - **Three-store A2A reporting** — agents write results to Postgres as the master store; GitHub issues and build-state mirror it.
 - Semantic search across all past sessions (requires [Ollama](https://ollama.com) running locally with any embedding model — no API keys, no cloud)
 - Keyword search across code index (works without Ollama)
