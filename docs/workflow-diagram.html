@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Pipeline Orchestrator — Workflow Diagram</title>
+<title>Pipeline — Workflow Diagram</title>
 <style>
 /* ── 1. Reset and tokens ─────────────────────────────────────────────── */
 :root {
@@ -28,6 +28,11 @@
   --node-optional: #f0f0ff;
   --node-selected: #dbeafe;
   --panel-bg: #ffffff;
+  --ring-core: #dbeafe;
+  --ring-quality: #e0f2fe;
+  --ring-standalone: #f0fdf4;
+  --ring-meta: #fef3c7;
+  --ring-utility: #f5f3ff;
   --mono: 'SF Mono', 'Cascadia Code', 'Fira Code', 'JetBrains Mono', Consolas, monospace;
   --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   --radius: 8px;
@@ -55,6 +60,11 @@
   --node-optional: #1a1a2e;
   --node-selected: #1e3a5f;
   --panel-bg: #141414;
+  --ring-core: #1e293b;
+  --ring-quality: #0c2d48;
+  --ring-standalone: #052e16;
+  --ring-meta: #422006;
+  --ring-utility: #1e1b4b;
 }
 .high-contrast {
   --bg: #000000;
@@ -77,6 +87,11 @@
   --node-optional: #000040;
   --node-selected: #003366;
   --panel-bg: #000000;
+  --ring-core: #000080;
+  --ring-quality: #003366;
+  --ring-standalone: #003300;
+  --ring-meta: #333300;
+  --ring-utility: #1a0033;
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
@@ -121,7 +136,7 @@ body {
   align-items: center;
   gap: 12px;
 }
-.theme-toggle, .hc-toggle {
+.ctrl-btn {
   background: var(--surface);
   border: 1px solid var(--border);
   color: var(--text);
@@ -133,7 +148,27 @@ body {
   min-height: 44px;
   min-width: 44px;
 }
-.theme-toggle:hover, .hc-toggle:hover { background: var(--surface-2); }
+.ctrl-btn:hover { background: var(--surface-2); }
+.ctrl-btn.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.view-toggle {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.view-toggle .ctrl-btn {
+  border: none;
+  border-radius: 0;
+  min-width: 120px;
+  text-align: center;
+}
+.view-toggle .ctrl-btn + .ctrl-btn {
+  border-left: 1px solid var(--border);
+}
 .nav-links {
   display: flex;
   gap: 16px;
@@ -204,7 +239,7 @@ body {
 .panel-close:hover { background: var(--surface); }
 .panel-body { padding: 20px; flex: 1; }
 
-/* ── 5. Diagram ──────────────────────────────────────────────────────── */
+/* ── 5. Orchestrator flow diagram ────────────────────────────────────── */
 .diagram {
   position: relative;
   min-width: 900px;
@@ -220,7 +255,7 @@ body {
   pointer-events: none;
 }
 
-/* ── 6. Nodes ────────────────────────────────────────────────────────── */
+/* ── 6. Nodes (shared between both views) ────────────────────────────── */
 .node {
   position: absolute;
   display: flex;
@@ -293,7 +328,68 @@ body {
   font-weight: 500;
 }
 
-/* ── 7. Tooltip ──────────────────────────────────────────────────────── */
+/* ── 7. Capability map ───────────────────────────────────────────────── */
+.capmap {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  margin: 0 auto;
+}
+.capmap svg {
+  width: 1200px;
+  min-width: 1200px;
+  height: auto;
+  flex-shrink: 0;
+}
+.capmap-ring {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 1;
+}
+.capmap-ring-label {
+  fill: var(--text-dim);
+  font-size: 13px;
+  font-family: var(--sans);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.capmap-node {
+  cursor: pointer;
+  transition: opacity 150ms ease;
+}
+.capmap-node:hover { opacity: 0.85; }
+.capmap-node:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.capmap-node-bg {
+  rx: 6;
+  ry: 6;
+  stroke: var(--border);
+  stroke-width: 1.5;
+  transition: stroke 150ms ease, stroke-width 150ms ease;
+}
+.capmap-node.selected .capmap-node-bg {
+  stroke: var(--accent);
+  stroke-width: 2.5;
+}
+.capmap-node.dimmed { opacity: 0.3; }
+.capmap-node-label {
+  font-size: 15px;
+  font-weight: 600;
+  font-family: var(--sans);
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+}
+.capmap-node-cmd {
+  font-size: 12px;
+  font-family: var(--mono);
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+  fill: var(--text-dim);
+}
+
+/* ── 8. Tooltip ──────────────────────────────────────────────────────── */
 .tooltip {
   position: fixed;
   background: var(--surface-2);
@@ -311,7 +407,7 @@ body {
 }
 .tooltip.visible { opacity: 1; }
 
-/* ── 8. Detail panel content ─────────────────────────────────────────── */
+/* ── 9. Detail panel content ─────────────────────────────────────────── */
 .detail-section { margin-bottom: 20px; }
 .detail-section h3 {
   font-size: 13px;
@@ -425,7 +521,7 @@ code {
 }
 .doc-links a:hover { background: var(--surface); }
 
-/* ── 9. Mobile layout ────────────────────────────────────────────────── */
+/* ── 10. Mobile layout ───────────────────────────────────────────────── */
 @media (max-width: 767px) {
   .diagram-area { display: none; }
   .mobile-list { display: block; }
@@ -446,11 +542,23 @@ code {
   .main { flex-direction: column; height: auto; }
   .header { padding: 12px 16px; }
   .nav-links { display: none; }
+  .view-toggle .ctrl-btn { min-width: 90px; font-size: 12px; padding: 6px 8px; }
 }
 @media (min-width: 768px) {
   .mobile-list { display: none; }
 }
 .mobile-list { padding: 16px; }
+.mobile-group-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 20px 0 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+}
+.mobile-group-title:first-child { margin-top: 0; }
 .mobile-card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -513,7 +621,7 @@ code {
 }
 @media (max-width: 767px) { .sheet-handle { display: block; } }
 
-/* ── 10. Legend ───────────────────────────────────────────────────────── */
+/* ── 11. Legend ───────────────────────────────────────────────────────── */
 .legend {
   display: flex;
   flex-wrap: wrap;
@@ -532,8 +640,14 @@ code {
   border: 2px solid var(--border);
   display: inline-block;
 }
+.legend-ring {
+  width: 16px;
+  height: 12px;
+  border-radius: 3px;
+  display: inline-block;
+}
 
-/* ── 11. Verbose content (rendered in panel + hidden source) ─────────── */
+/* ── 12. Verbose content (rendered in panel + hidden source) ─────────── */
 .panel-body p { margin: 10px 0; font-size: 14px; line-height: 1.8; }
 .panel-body strong { font-weight: 600; }
 .panel-body .prop-table {
@@ -587,7 +701,7 @@ code {
   line-height: 1.6;
 }
 
-/* ── 12. Reduced motion ──────────────────────────────────────────────── */
+/* ── 13. Reduced motion ──────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -601,10 +715,14 @@ code {
 <a href="#mobile-steps" class="skip-link">Skip to step list</a>
 
 <header class="header">
-  <h1>Pipeline Orchestrator</h1>
+  <h1>Pipeline</h1>
   <div class="header-controls">
-    <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme: Auto, Light, Dark">Auto</button>
-    <button class="hc-toggle" id="hcToggle" aria-label="Toggle high contrast mode">High Contrast</button>
+    <div class="view-toggle" role="tablist" aria-label="Diagram view">
+      <button class="ctrl-btn active" id="viewCapmap" role="tab" aria-selected="true" aria-controls="capmapArea">Capabilities</button>
+      <button class="ctrl-btn" id="viewFlow" role="tab" aria-selected="false" aria-controls="flowArea">Orchestrator</button>
+    </div>
+    <button class="ctrl-btn" id="themeToggle" aria-label="Toggle theme: Auto, Light, Dark">Auto</button>
+    <button class="ctrl-btn" id="hcToggle" aria-label="Toggle high contrast mode">High Contrast</button>
   </div>
   <nav class="nav-links" aria-label="Documentation links">
     <a href="workflow-reference.md">Workflow Reference</a>
@@ -616,18 +734,33 @@ code {
 
 <div class="main">
   <div class="diagram-area" id="diagramArea">
-    <div class="legend" role="img" aria-label="Diagram legend">
-      <div class="legend-item"><span class="legend-shape" style="border-radius:12px"></span> Start / End</div>
-      <div class="legend-item"><span class="legend-shape" style="border-radius:4px"></span> Action</div>
-      <div class="legend-item"><span class="legend-shape" style="border-radius:4px;transform:rotate(45deg);width:12px;height:12px"></span> Decision</div>
-      <div class="legend-item"><span class="legend-shape" style="border-radius:4px 4px 50% 50%;width:14px;height:16px"></span> Data Store</div>
-      <div class="legend-item"><span class="legend-swatch" style="background:var(--success-path)"></span> Success path</div>
-      <div class="legend-item"><span class="legend-swatch" style="background:var(--fail-path)"></span> Failure routing</div>
-      <div class="legend-item"><span class="legend-shape" style="border-style:dashed;border-radius:4px"></span> Optional</div>
+    <!-- View 1: Capability Map (default) -->
+    <div id="capmapArea" role="tabpanel" aria-labelledby="viewCapmap">
+      <div class="legend" role="img" aria-label="Capability map legend">
+        <div class="legend-item"><span class="legend-ring" style="background:var(--ring-core)"></span> Core Orchestrator</div>
+        <div class="legend-item"><span class="legend-ring" style="background:var(--ring-quality)"></span> Quality Gates</div>
+        <div class="legend-item"><span class="legend-ring" style="background:var(--ring-standalone)"></span> Standalone</div>
+        <div class="legend-item"><span class="legend-ring" style="background:var(--ring-meta)"></span> Meta</div>
+        <div class="legend-item"><span class="legend-ring" style="background:var(--ring-utility)"></span> Utilities</div>
+      </div>
+      <div class="capmap" id="capmap" role="img" aria-label="Pipeline capability map: 29 commands organized in 5 concentric rings by function"></div>
     </div>
-    <div class="diagram" id="diagram" role="img" aria-label="Pipeline workflow diagram: 13 steps from init to deploy with failure routing loops">
-      <div role="list" aria-label="Workflow steps" id="nodeContainer"></div>
-      <svg id="arrowSvg" aria-hidden="true"></svg>
+
+    <!-- View 2: Orchestrator Flow -->
+    <div id="flowArea" role="tabpanel" aria-labelledby="viewFlow" style="display:none">
+      <div class="legend" role="img" aria-label="Diagram legend">
+        <div class="legend-item"><span class="legend-shape" style="border-radius:12px"></span> Start / End</div>
+        <div class="legend-item"><span class="legend-shape" style="border-radius:4px"></span> Action</div>
+        <div class="legend-item"><span class="legend-shape" style="border-radius:4px;transform:rotate(45deg);width:12px;height:12px"></span> Decision</div>
+        <div class="legend-item"><span class="legend-shape" style="border-radius:4px 4px 50% 50%;width:14px;height:16px"></span> Data Store</div>
+        <div class="legend-item"><span class="legend-swatch" style="background:var(--success-path)"></span> Success path</div>
+        <div class="legend-item"><span class="legend-swatch" style="background:var(--fail-path)"></span> Failure routing</div>
+        <div class="legend-item"><span class="legend-shape" style="border-style:dashed;border-radius:4px"></span> Optional</div>
+      </div>
+      <div class="diagram" id="diagram" role="img" aria-label="Pipeline workflow diagram: 13 steps from init to deploy with failure routing loops">
+        <div role="list" aria-label="Workflow steps" id="nodeContainer"></div>
+        <svg id="arrowSvg" aria-hidden="true"></svg>
+      </div>
     </div>
   </div>
 
@@ -647,6 +780,11 @@ code {
 
 <!-- Hidden verbose content — cloned into detail panel on step selection -->
 <div style="display:none" id="verbose-content">
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     ORCHESTRATOR STEPS (1-13)
+     ═══════════════════════════════════════════════════════════════════════ -->
+
 <div class="step-section" id="step-init">
     <h3><span class="badge badge-required">1</span> Init <a href="#diagram" class="back-link">Back to diagram</a></h3>
     <table class="prop-table">
@@ -1036,6 +1174,175 @@ code {
     <p>Terminal step. The pipeline does not prescribe deployment — this is a placeholder for project-specific deployment workflows (Vercel, AWS, Docker, etc.).</p>
   </div>
 
+<!-- ═══════════════════════════════════════════════════════════════════════
+     STANDALONE COMMANDS (not in orchestrator)
+     ═══════════════════════════════════════════════════════════════════════ -->
+
+  <div class="step-section" id="step-triage">
+    <h3>Triage</h3>
+    <table class="prop-table">
+      <tr><th>Command</th><td><code>/pipeline:triage</code></td></tr>
+      <tr><th>Category</th><td>Standalone — invoked before starting the orchestrator</td></tr>
+    </table>
+    <p>Assesses change size (TINY / MEDIUM / LARGE / MILESTONE) and recommends the appropriate workflow. A TINY change skips brainstorm/plan entirely; a MILESTONE change activates every optional gate. Triage is the entry point for deciding how much pipeline to apply.</p>
+  </div>
+
+  <div class="step-section" id="step-simplify">
+    <h3>Simplify</h3>
+    <table class="prop-table">
+      <tr><th>Command</th><td><code>/pipeline:simplify</code></td></tr>
+      <tr><th>Category</th><td>Standalone — quality tool</td></tr>
+    </table>
+    <p>Targeted code simplification. Reviews specific files for SOLID violations, premature abstraction, dead code, and unnecessary complexity. Produces a findings report with suggested fixes. Can be invoked at any point in the lifecycle.</p>
+  </div>
+
+  <div class="step-section" id="step-test">
+    <h3>Test</h3>
+    <table class="prop-table">
+      <tr><th>Command</th><td><code>/pipeline:test</code></td></tr>
+      <tr><th>Category</th><td>Standalone — quality tool</td></tr>
+    </table>
+    <p>Runs the project test suite and produces a structured pass/fail report. Detects the test runner from pipeline.yml config. Parses output into a normalized format with pass count, fail count, and individual test results.</p>
+  </div>
+
+  <div class="step-section" id="step-debug">
+    <h3>Debug</h3>
+    <table class="prop-table">
+      <tr><th>Command</th><td><code>/pipeline:debug</code></td></tr>
+      <tr><th>Category</th><td>Standalone — diagnostic tool</td></tr>
+    </table>
+    <p>Systematic root-cause diagnosis. Follows 4 mandatory phases: reproduce, isolate, identify, fix. Routes by error class (runtime, build, type, network, state). No speculative fixes — every hypothesis requires evidence before acting. Prevents the common failure mode of guessing at fixes.</p>
+  </div>
+
+  <div class="step-section" id="step-audit">
+    <h3>Audit</h3>
+    <table class="prop-table">
+      <tr><th>Command</th><td><code>/pipeline:audit</code></td></tr>
+      <tr><th>Category</th><td>Standalone — quality tool (READ-ONLY)</td></tr>
+    </table>
+    <p>Full codebase review. Phase 0 grep scan identifies hotspots, then parallel sector agents review assigned file groups. Synthesis agent compiles findings across sectors. Strictly read-only — produces a findings report but makes no changes. Use for periodic health checks or pre-release audits.</p>
+  </div>
+
+  <div class="step-section" id="step-ui-review">
+    <h3>UI Review</h3>
+    <table class="prop-table">
+      <tr><th>Command</th><td><code>/pipeline:ui-review</code></td></tr>
+      <tr><th>Category</th><td>Standalone — quality tool</td></tr>
+    </table>
+    <p>Captures a screenshot and analyzes the UI for layout issues, hit target sizes, text legibility, visual inconsistencies, and accessibility concerns. Requires a running dev server. Produces an annotated findings report.</p>
+  </div>
+
+  <div class="step-section" id="step-markdown-review">
+    <h3>Markdown Review</h3>
+    <table class="prop-table">
+      <tr><th>Command</th><td><code>/pipeline:markdown-review</code></td></tr>
+      <tr><th>Category</th><td>Standalone — quality tool</td></tr>
+    </table>
+    <p>Full markdown health check. Reviews file hygiene (broken links, orphaned images), information architecture (heading hierarchy, TOC consistency), and A2A protocol compliance (frontmatter, DATA tags). Can apply automated fixes for structural issues.</p>
+  </div>
+
+  <div class="step-section" id="step-lint-agents">
+    <h3>Lint Agents</h3>
+    <table class="prop-table">
+      <tr><th>Command</th><td><code>/pipeline:lint-agents</code></td></tr>
+      <tr><th>Category</th><td>Standalone — quality tool</td></tr>
+    </table>
+    <p>Deterministic structural linting for agent prompt templates. Runs 7 regex checks via Node script: DATA tag boundaries, placeholder escaping, role separation, injection prevention patterns, frontmatter validation. Used as a preflight gate in the commit command.</p>
+  </div>
+
+  <div class="step-section" id="step-remediate">
+    <h3>Remediate</h3>
+    <table class="prop-table">
+      <tr><th>Command</th><td><code>/pipeline:remediate</code></td></tr>
+      <tr><th>Category</th><td>Standalone — remediation engine</td></tr>
+    </table>
+    <p>Multi-source remediation engine. Parses findings from review, audit, red team, or purple team reports. Creates issue tickets for each finding, applies batch fixes, and verifies each fix. Orchestrator step 9a (inline with red team cycle).</p>
+  </div>
+
+  <div class="step-section" id="step-compliance">
+    <h3>Compliance</h3>
+    <table class="prop-table">
+      <tr><th>Command</th><td><code>/pipeline:compliance</code></td></tr>
+      <tr><th>Category</th><td>Standalone — security tool</td></tr>
+    </table>
+    <p>Checks codebase against configured compliance frameworks (SOC2, HIPAA, PCI-DSS, GDPR). Produces a compliance posture report with pass/fail per control. Integrated into the red team specialist rotation when the compliance domain is active.</p>
+  </div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     META COMMANDS
+     ═══════════════════════════════════════════════════════════════════════ -->
+
+  <div class="step-section" id="step-chain">
+    <h3>Chain</h3>
+    <table class="prop-table">
+      <tr><th>Command</th><td><code>/pipeline:chain</code></td></tr>
+      <tr><th>Category</th><td>Meta — orchestration wrapper</td></tr>
+    </table>
+    <p>Chains pipeline steps sequentially. Runs from the current orchestrator position to end of graph (auto mode) or runs only named steps (explicit mode). Passes nothing to sub-commands — each handles its own user interaction, orchestrator completion, and store writes. The chain's only orchestrator interaction is querying <code>next</code> and recording skips for excluded steps.</p>
+  </div>
+
+  <div class="step-section" id="step-security">
+    <h3>Security</h3>
+    <table class="prop-table">
+      <tr><th>Command</th><td><code>/pipeline:security</code></td></tr>
+      <tr><th>Category</th><td>Meta — compound security workflow</td></tr>
+    </table>
+    <p>Full security loop: red team assessment, remediation, then purple team verification. Runs each phase with user gates between them. Wraps the three security-related commands into a single workflow with approval checkpoints.</p>
+  </div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     UTILITY COMMANDS
+     ═══════════════════════════════════════════════════════════════════════ -->
+
+  <div class="step-section" id="step-dashboard">
+    <h3>Dashboard</h3>
+    <table class="prop-table">
+      <tr><th>Command</th><td><code>/pipeline:dashboard</code></td></tr>
+      <tr><th>Category</th><td>Utility</td></tr>
+    </table>
+    <p>Generates a static HTML project dashboard. Snapshot of current workflow phase, task completion, findings summary, and recommendations. Reads from all three stores (Postgres, issues, files) to compile the view.</p>
+  </div>
+
+  <div class="step-section" id="step-knowledge">
+    <h3>Knowledge</h3>
+    <table class="prop-table">
+      <tr><th>Command</th><td><code>/pipeline:knowledge</code></td></tr>
+      <tr><th>Category</th><td>Utility</td></tr>
+    </table>
+    <p>Knowledge DB operations: setup, status, search, session recording, task management. Interface to the Postgres knowledge store. Manages sessions, decisions, gotchas, research notes, and code index entries.</p>
+  </div>
+
+  <div class="step-section" id="step-worktree">
+    <h3>Worktree</h3>
+    <table class="prop-table">
+      <tr><th>Command</th><td><code>/pipeline:worktree</code></td></tr>
+      <tr><th>Category</th><td>Utility</td></tr>
+    </table>
+    <p>Creates an isolated git worktree for feature work. Sets up a separate working directory on a new branch so the main branch stays clean during development. Useful for parallel feature work.</p>
+  </div>
+
+  <div class="step-section" id="step-update">
+    <h3>Update</h3>
+    <table class="prop-table">
+      <tr><th>Command</th><td><code>/pipeline:update</code></td></tr>
+      <tr><th>Category</th><td>Utility</td></tr>
+    </table>
+    <p>Updates pipeline configuration. Re-detects integrations, changes commands, sectors, knowledge tier, or any setting in <code>.claude/pipeline.yml</code>. Non-destructive — preserves existing config values not being changed.</p>
+  </div>
+
+  <div class="step-section" id="step-release">
+    <h3>Release</h3>
+    <table class="prop-table">
+      <tr><th>Command</th><td><code>/pipeline:release</code></td></tr>
+      <tr><th>Category</th><td>Utility</td></tr>
+    </table>
+    <p>Changelog generation, version bump, git tag creation, and optional deploy trigger. Compiles changes since last release from git log and Postgres session records. Follows semver conventions based on change classification.</p>
+  </div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     ROUTING RULES + CHAIN (shared reference)
+     ═══════════════════════════════════════════════════════════════════════ -->
+
   <h2 id="routing-rules">Routing Rules</h2>
   <table class="prop-table">
     <tr><th>Condition</th><th>Source Step</th><th>Target</th><th>Rule</th></tr>
@@ -1066,36 +1373,73 @@ code {
 </div>
 
 <script>
-/* ── Step data (single source of truth) ──────────────────────────────── */
-/* All rendering is driven from this array. To update the diagram,
+/* ══════════════════════════════════════════════════════════════════════════
+   DATA MODEL — single source of truth for both views
+   All rendering is driven from these arrays. To update the diagram,
    edit this data — do not modify HTML elements directly.
    Data is static and hardcoded (no user input), so DOM construction
-   from this data carries no XSS risk. */
-var STEPS=[{id:"init",name:"Init",number:1,command:"/pipeline:init",shape:"pill",required:!0,shortDesc:"Create project configuration",description:"Creates the project configuration. Detects project profile, asks engagement style (expert/guided/full-guidance) and security policy (every-feature/milestone/on-demand). Sets up GitHub repo and issue tracking. Calls orchestrator.js start to create the workflow.",inputs:["None (entry point)"],outputs:[".claude/pipeline.yml"],next:"brainstorm",onFail:null,onFailLabel:null,orchestrator:"start &lt;project&gt;-&lt;date&gt;, then complete init PASS",stores:{postgres:"write",github:"write",files:"write"},storeDetail:{postgres:"Session record",github:"Epic creation",files:"pipeline.yml"},agents:[],docs:["workflow-reference.md#1-init","reference.md"]},{id:"brainstorm",name:"Brainstorm",number:2,command:"/pipeline:brainstorm",shape:"rect",required:!0,shortDesc:"Engagement-scaled requirements gathering",description:"Engagement-scaled question flow. Explores context, asks clarifying questions (depth controlled by engagement style), derives implied features, proposes approaches, evaluates Big 4 + Compliance, tracks TBDs, writes spec document, runs spec review loop (max 3 iterations).",inputs:[".claude/pipeline.yml"],outputs:["docs/specs/*.md"],next:"plan",onFail:null,onFailLabel:null,orchestrator:"complete brainstorm PASS|FAIL",stores:{postgres:"write",github:"write",files:"write"},storeDetail:{postgres:"Spec summary",github:"Epic checklist",files:"Spec document"},agents:[{name:"researcher",tier:"haiku",mode:"parallel"},{name:"spec-reviewer",tier:"haiku",mode:"sequential"}],docs:["workflow-reference.md#2-brainstorm"]},{id:"plan",name:"Plan",number:3,command:"/pipeline:plan",shape:"rect",required:!0,shortDesc:"Implementation plan with ordered tasks",description:"Reads spec, generates implementation plan with ordered tasks. Resolves TBDs from brainstorm. Plan reviewer validates completeness, spec alignment, and buildability. For LARGE+ changes, the plan includes QA strategy inline.",inputs:["docs/specs/*.md"],outputs:["docs/plans/*.md"],next:"debate",onFail:null,onFailLabel:null,orchestrator:"complete plan PASS|FAIL",stores:{postgres:"write",github:"write",files:"write"},storeDetail:{postgres:"Plan summary",github:"Epic checklist",files:"Plan document"},agents:[{name:"plan-reviewer",tier:"haiku",mode:"sequential"}],docs:["workflow-reference.md#3-plan"]},{id:"debate",name:"Debate",number:4,command:"/pipeline:debate",shape:"diamond",required:!1,shortDesc:"Three-agent antagonistic design review",description:'Three-agent antagonistic design debate. Advocate steelmans, Skeptic attacks feasibility, Practitioner grounds in reality. Each produces a position paper; the command synthesizes a verdict with disposition: proceed, proceed-with-constraints, or rethink. Rethink routes back to brainstorm.',inputs:["docs/plans/*.md"],outputs:["docs/findings/debate-*.md"],next:"architect",onFail:"brainstorm",onFailLabel:"Rethink",orchestrator:'complete debate PASS|FAIL or PASS "skipped"',stores:{postgres:"write",github:"write",files:"write"},storeDetail:{postgres:"Verdict summary",github:"Epic comment",files:"Verdict document"},agents:[{name:"advocate",tier:"sonnet",mode:"parallel"},{name:"skeptic",tier:"sonnet",mode:"parallel"},{name:"practitioner",tier:"sonnet",mode:"parallel"}],docs:["workflow-reference.md#4-debate-optional"]},{id:"architect",name:"Architect",number:5,command:"/pipeline:architect",shape:"rect",required:!1,shortDesc:"Technology decisions via domain specialists",description:"Recon scans the codebase for existing patterns. Domain specialists propose decisions per area (DATA, STATE, UI, API, INFRA, TEST). Lead architect resolves conflicts and produces the architecture document with typed contracts, security standards, testing standards, and banned patterns. Loopback target: purple 2x FAIL routes here.",inputs:["docs/plans/*.md"],outputs:["docs/architecture.md"],next:"build",onFail:null,onFailLabel:null,orchestrator:'complete architect PASS or PASS "skipped"',stores:{postgres:"write",github:"write",files:"write"},storeDetail:{postgres:"Decision records",github:"Epic comment",files:"Architecture doc"},agents:[{name:"recon",tier:"haiku",mode:"sequential"},{name:"specialists",tier:"sonnet",mode:"parallel per domain"},{name:"lead architect",tier:"opus",mode:"sequential"}],docs:["workflow-reference.md#5-architect-optional"]},{id:"build",name:"Build",number:6,command:"/pipeline:build",shape:"rect",required:!0,shortDesc:"Subagent-driven plan execution",description:"Dispatches one implementer per plan task (sequential). Each implementer reads its own context from stores. Post-task reviewer runs after each implementer; issues loop back until approved. Failure routing target: review FAIL and qa FAIL both route here.",inputs:["docs/plans/*.md"],outputs:["Feature branch with commits"],next:"review",onFail:null,onFailLabel:null,orchestrator:"complete build PASS|FAIL",stores:{postgres:"write",github:"write",files:"write"},storeDetail:{postgres:"Per-task result",github:"Task issue comments",files:"build-state.json"},agents:[{name:"implementer",tier:"haiku/sonnet",mode:"sequential per task"},{name:"post-task reviewer",tier:"haiku/sonnet",mode:"after each task"}],docs:["workflow-reference.md#6-build"]},{id:"review",name:"Review",number:7,command:"/pipeline:review",shape:"diamond",required:!0,shortDesc:"Code review with severity tiers",description:"PR-scoped diff review. Runs static analysis, checks arch plan compliance (module boundaries, typed contracts, banned patterns), applies review criteria from config. Cross-file contract verification, structural completeness audit, fallback symmetry checks.",inputs:["Feature branch exists"],outputs:["Status: PASS or FAIL"],next:"qa",onFail:"build",onFailLabel:"Fix issues",orchestrator:"complete review PASS|FAIL",stores:{postgres:"write",github:"write",files:"write"},storeDetail:{postgres:"Review verdict",github:"Task issue comment",files:"Review status"},agents:[],docs:["workflow-reference.md#7-review"]},{id:"qa",name:"QA",number:8,command:"/pipeline:qa",shape:"diamond",required:!0,shortDesc:"Test planning and verification",description:"For LARGE+: full test plan with parallel workers per work package + seam pass. For MEDIUM: targeted 3-5 checks. Risk-driven testing, identifies component interaction risks. Verifier synthesizes worker results, runs seam tests, triages failures.",inputs:["review = PASS"],outputs:["Status: PASS or FAIL"],next:"redteam",onFail:"build",onFailLabel:"Fix issues",orchestrator:"complete qa PASS|FAIL",stores:{postgres:"write",github:"write",files:"write"},storeDetail:{postgres:"Per-WP results + verdict",github:"Task issue comments",files:"QA status"},agents:[{name:"qa-planner",tier:"opus",mode:"sequential"},{name:"qa-worker",tier:"sonnet",mode:"parallel per WP"},{name:"qa-verifier",tier:"opus",mode:"sequential"}],docs:["workflow-reference.md#8-qa"]},{id:"redteam",name:"Red Team",number:9,command:"/pipeline:redteam",shape:"rect",required:!1,shortDesc:"Security assessment with specialist agents",description:"Diff-scoped security assessment. Recon enumerates attack surface. Domain specialists test specific areas (INJ, AUTH, XSS, DEPS, COMPLIANCE). Lead analyst chains findings, deduplicates, builds risk matrix and remediation roadmap.",inputs:["qa = PASS"],outputs:["docs/findings/redteam-*.md"],next:"purple",onFail:null,onFailLabel:null,orchestrator:'complete redteam PASS or PASS "skipped"',stores:{postgres:"write",github:"write",files:"write"},storeDetail:{postgres:"Per-domain findings",github:"Task issue comments",files:"Redteam report"},agents:[{name:"recon",tier:"haiku",mode:"sequential"},{name:"specialists",tier:"sonnet",mode:"parallel per domain"},{name:"lead analyst",tier:"opus",mode:"sequential"}],docs:["workflow-reference.md#9-red-team-optional"]},{id:"purple",name:"Purple",number:10,command:"/pipeline:purpleteam",shape:"diamond",required:!1,shortDesc:"Verify fixes by replaying exploits",description:"Verifies each red team finding fix by replaying the exploitation scenario. Strict role boundary: verifiers report VERIFIED/REGRESSION/INCOMPLETE, never suggest fixes. Loopback: 2x FAIL on same finding routes to architect.",inputs:["docs/findings/redteam-*.md"],outputs:["Status: PASS or FAIL"],next:"commit",onFail:null,onFailLabel:null,loopback:{target:"architect",maxFails:2,label:"2x FAIL"},orchestrator:'complete purple PASS|FAIL or PASS "skipped"',stores:{postgres:"write",github:"write",files:"write"},storeDetail:{postgres:"Per-finding verdict",github:"Task issue comments",files:"Purple status"},agents:[{name:"verifier",tier:"sonnet",mode:"parallel per finding"},{name:"chain analyst",tier:"opus",mode:"sequential"},{name:"posture analyst",tier:"opus",mode:"sequential"}],docs:["workflow-reference.md#10-purple-team-optional"]},{id:"commit",name:"Commit",number:11,command:"/pipeline:commit",shape:"rect",required:!0,shortDesc:"Preflight gates then commit + push",description:"Preflight gate chain: review gate, typecheck, lint, test, agent template lint. If all pass, creates the commit. Category 4 utility: skips GitHub issue comments.",inputs:["review = PASS","qa = PASS"],outputs:["Status: PASS"],next:"finish",onFail:null,onFailLabel:null,orchestrator:"complete commit PASS (always)",stores:{postgres:null,github:null,files:"write"},storeDetail:{files:"Commit SHA"},agents:[],docs:["workflow-reference.md#11-commit"]},{id:"finish",name:"Finish",number:12,command:"/pipeline:finish",shape:"rect",required:!0,shortDesc:"Merge PR, close epic, sync stores",description:"Merges PR via platform.js. Compiles single epic summary from Postgres (5K limit). Closes feature epic. Regenerates dashboard. Syncs README roadmap from Postgres.",inputs:["commit = PASS"],outputs:["Status: merged"],next:"deploy",onFail:null,onFailLabel:null,orchestrator:"complete finish PASS|FAIL",stores:{postgres:"write",github:"write",files:"write"},storeDetail:{postgres:"Closes session",github:"Epic summary",files:"Cleanup"},agents:[],docs:["workflow-reference.md#12-finish"]},{id:"deploy",name:"Deploy",number:13,command:"Project-specific",shape:"pill",required:!1,shortDesc:"Project-specific deployment",description:"Terminal step. The pipeline does not prescribe deployment. This is a placeholder for project-specific deployment workflows.",inputs:["finish = PASS"],outputs:["Status: deployed"],next:null,onFail:null,onFailLabel:null,orchestrator:"N/A",stores:{postgres:null,github:null,files:null},storeDetail:{},agents:[],docs:["workflow-reference.md#13-deploy-optional"]}];
+   from this data carries no XSS risk.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Orchestrator steps (linear flow, View 2) ────────────────────────── */
+var STEPS=[{id:"init",name:"Init",number:1,command:"/pipeline:init",shape:"pill",required:!0,shortDesc:"Create project configuration",next:"brainstorm",onFail:null,onFailLabel:null,stores:{postgres:"write",github:"write",files:"write"},storeDetail:{postgres:"Session record",github:"Epic creation",files:"pipeline.yml"},agents:[],ring:"core"},{id:"brainstorm",name:"Brainstorm",number:2,command:"/pipeline:brainstorm",shape:"rect",required:!0,shortDesc:"Engagement-scaled requirements gathering",next:"plan",onFail:null,onFailLabel:null,stores:{postgres:"write",github:"write",files:"write"},storeDetail:{postgres:"Spec summary",github:"Epic checklist",files:"Spec document"},agents:[{name:"researcher",tier:"haiku"},{name:"spec-reviewer",tier:"haiku"}],ring:"core"},{id:"plan",name:"Plan",number:3,command:"/pipeline:plan",shape:"rect",required:!0,shortDesc:"Implementation plan with ordered tasks",next:"debate",onFail:null,onFailLabel:null,stores:{postgres:"write",github:"write",files:"write"},storeDetail:{postgres:"Plan summary",github:"Epic checklist",files:"Plan document"},agents:[{name:"plan-reviewer",tier:"haiku"}],ring:"core"},{id:"debate",name:"Debate",number:4,command:"/pipeline:debate",shape:"diamond",required:!1,shortDesc:"Three-agent antagonistic design review",next:"architect",onFail:"brainstorm",onFailLabel:"Rethink",stores:{postgres:"write",github:"write",files:"write"},storeDetail:{postgres:"Verdict summary",github:"Epic comment",files:"Verdict document"},agents:[{name:"advocate",tier:"sonnet"},{name:"skeptic",tier:"sonnet"},{name:"practitioner",tier:"sonnet"}],ring:"core"},{id:"architect",name:"Architect",number:5,command:"/pipeline:architect",shape:"rect",required:!1,shortDesc:"Technology decisions via domain specialists",next:"build",onFail:null,onFailLabel:null,stores:{postgres:"write",github:"write",files:"write"},storeDetail:{postgres:"Decision records",github:"Epic comment",files:"Architecture doc"},agents:[{name:"recon",tier:"haiku"},{name:"specialists",tier:"sonnet"},{name:"lead architect",tier:"opus"}],ring:"core"},{id:"build",name:"Build",number:6,command:"/pipeline:build",shape:"rect",required:!0,shortDesc:"Subagent-driven plan execution",next:"review",onFail:null,onFailLabel:null,stores:{postgres:"write",github:"write",files:"write"},storeDetail:{postgres:"Per-task result",github:"Task issue comments",files:"build-state.json"},agents:[{name:"implementer",tier:"haiku/sonnet"},{name:"post-task reviewer",tier:"haiku/sonnet"}],ring:"core"},{id:"review",name:"Review",number:7,command:"/pipeline:review",shape:"diamond",required:!0,shortDesc:"Code review with severity tiers",next:"qa",onFail:"build",onFailLabel:"Fix issues",stores:{postgres:"write",github:"write",files:"write"},storeDetail:{postgres:"Review verdict",github:"Task issue comment",files:"Review status"},agents:[],ring:"quality"},{id:"qa",name:"QA",number:8,command:"/pipeline:qa",shape:"diamond",required:!0,shortDesc:"Test planning and verification",next:"redteam",onFail:"build",onFailLabel:"Fix issues",stores:{postgres:"write",github:"write",files:"write"},storeDetail:{postgres:"Per-WP results + verdict",github:"Task issue comments",files:"QA status"},agents:[{name:"qa-planner",tier:"opus"},{name:"qa-worker",tier:"sonnet"},{name:"qa-verifier",tier:"opus"}],ring:"quality"},{id:"redteam",name:"Red Team",number:9,command:"/pipeline:redteam",shape:"rect",required:!1,shortDesc:"Security assessment with specialist agents",next:"purple",onFail:null,onFailLabel:null,stores:{postgres:"write",github:"write",files:"write"},storeDetail:{postgres:"Per-domain findings",github:"Task issue comments",files:"Redteam report"},agents:[{name:"recon",tier:"haiku"},{name:"specialists",tier:"sonnet"},{name:"lead analyst",tier:"opus"}],ring:"quality"},{id:"purple",name:"Purple",number:10,command:"/pipeline:purpleteam",shape:"diamond",required:!1,shortDesc:"Verify fixes by replaying exploits",next:"commit",onFail:null,onFailLabel:null,loopback:{target:"architect",maxFails:2,label:"2x FAIL"},stores:{postgres:"write",github:"write",files:"write"},storeDetail:{postgres:"Per-finding verdict",github:"Task issue comments",files:"Purple status"},agents:[{name:"verifier",tier:"sonnet"},{name:"chain analyst",tier:"opus"},{name:"posture analyst",tier:"opus"}],ring:"quality"},{id:"commit",name:"Commit",number:11,command:"/pipeline:commit",shape:"rect",required:!0,shortDesc:"Preflight gates then commit + push",next:"finish",onFail:null,onFailLabel:null,stores:{postgres:null,github:null,files:"write"},storeDetail:{files:"Commit SHA"},agents:[],ring:"core"},{id:"finish",name:"Finish",number:12,command:"/pipeline:finish",shape:"rect",required:!0,shortDesc:"Merge PR, close epic, sync stores",next:"deploy",onFail:null,onFailLabel:null,stores:{postgres:"write",github:"write",files:"write"},storeDetail:{postgres:"Closes session",github:"Epic summary",files:"Cleanup"},agents:[],ring:"core"},{id:"deploy",name:"Deploy",number:13,command:"Project-specific",shape:"pill",required:!1,shortDesc:"Project-specific deployment",next:null,onFail:null,onFailLabel:null,stores:{postgres:null,github:null,files:null},storeDetail:{},agents:[],ring:"core"}];
+
+/* ── All 29 commands for the capability map (View 1) ─────────────────── */
+/* ring: core | quality | standalone | meta | utility */
+var ALL_COMMANDS=[
+  /* Core orchestrator (center ring) */
+  {id:"init",name:"Init",command:"/pipeline:init",shortDesc:"Create project configuration",ring:"core"},
+  {id:"brainstorm",name:"Brainstorm",command:"/pipeline:brainstorm",shortDesc:"Engagement-scaled requirements gathering",ring:"core"},
+  {id:"plan",name:"Plan",command:"/pipeline:plan",shortDesc:"Implementation plan with ordered tasks",ring:"core"},
+  {id:"debate",name:"Debate",command:"/pipeline:debate",shortDesc:"Three-agent antagonistic design review",ring:"core"},
+  {id:"architect",name:"Architect",command:"/pipeline:architect",shortDesc:"Technology decisions via domain specialists",ring:"core"},
+  {id:"build",name:"Build",command:"/pipeline:build",shortDesc:"Subagent-driven plan execution",ring:"core"},
+  {id:"commit",name:"Commit",command:"/pipeline:commit",shortDesc:"Preflight gates then commit + push",ring:"core"},
+  {id:"finish",name:"Finish",command:"/pipeline:finish",shortDesc:"Merge PR, close epic, sync stores",ring:"core"},
+  /* Quality gates (second ring) */
+  {id:"review",name:"Review",command:"/pipeline:review",shortDesc:"Code review with severity tiers",ring:"quality"},
+  {id:"qa",name:"QA",command:"/pipeline:qa",shortDesc:"Test planning and verification",ring:"quality"},
+  {id:"redteam",name:"Red Team",command:"/pipeline:redteam",shortDesc:"Security assessment with specialist agents",ring:"quality"},
+  {id:"purple",name:"Purple",command:"/pipeline:purpleteam",shortDesc:"Verify fixes by replaying exploits",ring:"quality"},
+  {id:"compliance",name:"Compliance",command:"/pipeline:compliance",shortDesc:"Framework compliance checking",ring:"quality"},
+  {id:"remediate",name:"Remediate",command:"/pipeline:remediate",shortDesc:"Multi-source finding remediation",ring:"quality"},
+  /* Standalone tools (third ring) */
+  {id:"triage",name:"Triage",command:"/pipeline:triage",shortDesc:"Assess change size, recommend workflow",ring:"standalone"},
+  {id:"simplify",name:"Simplify",command:"/pipeline:simplify",shortDesc:"Targeted code simplification",ring:"standalone"},
+  {id:"test",name:"Test",command:"/pipeline:test",shortDesc:"Run test suite, structured report",ring:"standalone"},
+  {id:"debug",name:"Debug",command:"/pipeline:debug",shortDesc:"Systematic root-cause diagnosis",ring:"standalone"},
+  {id:"audit",name:"Audit",command:"/pipeline:audit",shortDesc:"Full codebase review (read-only)",ring:"standalone"},
+  {id:"ui-review",name:"UI Review",command:"/pipeline:ui-review",shortDesc:"Screenshot-based UI analysis",ring:"standalone"},
+  {id:"markdown-review",name:"MD Review",command:"/pipeline:markdown-review",shortDesc:"Markdown health check + fixes",ring:"standalone"},
+  {id:"lint-agents",name:"Lint Agents",command:"/pipeline:lint-agents",shortDesc:"Agent template structural linting",ring:"standalone"},
+  /* Meta commands (fourth ring) */
+  {id:"chain",name:"Chain",command:"/pipeline:chain",shortDesc:"Run steps sequentially",ring:"meta"},
+  {id:"security",name:"Security",command:"/pipeline:security",shortDesc:"Full security loop (red + fix + purple)",ring:"meta"},
+  /* Utilities (outer ring) */
+  {id:"dashboard",name:"Dashboard",command:"/pipeline:dashboard",shortDesc:"Generate project dashboard HTML",ring:"utility"},
+  {id:"knowledge",name:"Knowledge",command:"/pipeline:knowledge",shortDesc:"Knowledge DB operations",ring:"utility"},
+  {id:"worktree",name:"Worktree",command:"/pipeline:worktree",shortDesc:"Isolated git worktree for features",ring:"utility"},
+  {id:"update",name:"Update",command:"/pipeline:update",shortDesc:"Update pipeline configuration",ring:"utility"},
+  {id:"release",name:"Release",command:"/pipeline:release",shortDesc:"Changelog + version bump + tag",ring:"utility"}
+];
 
 var STORES_DATA=[{id:"postgres",name:"Postgres",color:"store-pg"},{id:"issues",name:"Issues",color:"store-gh"},{id:"files",name:"Files",color:"store-files"}];
 
 var FAILURE_ROUTES=[{from:"review",to:"build",label:"FAIL",alwaysVisible:!0},{from:"qa",to:"build",label:"FAIL",alwaysVisible:!0},{from:"debate",to:"brainstorm",label:"Rethink",alwaysVisible:!1},{from:"purple",to:"architect",label:"2x FAIL",alwaysVisible:!1}];
 
-/* ── Layout constants ────────────────────────────────────────────────── */
-var NODE_W=110,NODE_H=52,DIAMOND_S=76,GAP=28,ROW_Y=60,STORE_Y=240;
+var RING_META={
+  core:{label:"Core Orchestrator",color:"var(--ring-core)",textColor:"var(--text)"},
+  quality:{label:"Quality Gates",color:"var(--ring-quality)",textColor:"var(--text)"},
+  standalone:{label:"Standalone Tools",color:"var(--ring-standalone)",textColor:"var(--text)"},
+  meta:{label:"Meta Commands",color:"var(--ring-meta)",textColor:"var(--text)"},
+  utility:{label:"Utilities",color:"var(--ring-utility)",textColor:"var(--text)"}
+};
 
-function calcPositions(){
-  var p={},x=20;
-  STEPS.forEach(function(s){
-    var w=s.shape==="diamond"?DIAMOND_S:NODE_W;
-    var h=s.shape==="diamond"?DIAMOND_S:NODE_H;
-    p[s.id]={x:x,y:ROW_Y,w:w,h:h,cx:x+w/2,cy:ROW_Y+h/2};
-    x+=w+GAP;
-  });
-  var totalW=x-GAP,storeGap=100,sx=totalW/2-storeGap;
-  STORES_DATA.forEach(function(s,i){
-    p[s.id]={x:sx+i*storeGap-36,y:STORE_Y,w:72,h:64,cx:sx+i*storeGap,cy:STORE_Y+32};
-  });
-  return p;
-}
+var RING_ORDER=["core","quality","standalone","meta","utility"];
 
-var pos=calcPositions(),selectedStep=null;
+/* ── State ───────────────────────────────────────────────────────────── */
+var currentView="capmap"; /* "capmap" or "flow" */
+var selectedStep=null;
 
 /* ── Safe DOM helpers ────────────────────────────────────────────────── */
 function el(tag,attrs,children){
@@ -1116,7 +1460,98 @@ function svgEl(tag,attrs){
   return e;
 }
 
-/* ── Render diagram (desktop) ────────────────────────────────────────── */
+/* ══════════════════════════════════════════════════════════════════════════
+   VIEW 1 — CAPABILITY MAP (concentric rings)
+   ══════════════════════════════════════════════════════════════════════════ */
+function renderCapabilityMap(){
+  var container=document.getElementById("capmap");
+  container.textContent="";
+
+  var W=1500,H=1500;
+  var cx=W/2,cy=H/2;
+  var ringRadii=[0,230,370,500,600,690];
+  var nodeW=120,nodeH=50;
+
+  var svg=document.createElementNS("http://www.w3.org/2000/svg","svg");
+  svg.setAttribute("viewBox","0 0 "+W+" "+H);
+  svg.setAttribute("width","100%");
+  svg.setAttribute("role","img");
+  svg.setAttribute("aria-label","Pipeline capability map: 29 commands in 5 concentric rings");
+
+  /* Draw ring backgrounds */
+  for(var i=RING_ORDER.length-1;i>=0;i--){
+    var ring=svgEl("circle",{cx:String(cx),cy:String(cy),r:String(ringRadii[i+1]),fill:RING_META[RING_ORDER[i]].color,stroke:"var(--border)","stroke-width":"1",opacity:"0.5"});
+    svg.appendChild(ring);
+  }
+
+  /* Draw ring labels */
+  RING_ORDER.forEach(function(ringId,i){
+    var labelR=ringRadii[i+1]-12;
+    var label=svgEl("text",{x:String(cx),y:String(cy-labelR),"text-anchor":"middle",fill:"var(--text-dim)","font-size":"14","font-family":"var(--sans)","font-weight":"600","letter-spacing":"0.08em"});
+    label.textContent=RING_META[ringId].label.toUpperCase();
+    svg.appendChild(label);
+  });
+
+  /* Group commands by ring */
+  var groups={};
+  RING_ORDER.forEach(function(r){groups[r]=[];});
+  ALL_COMMANDS.forEach(function(cmd){groups[cmd.ring].push(cmd);});
+
+  /* Place nodes around each ring — use outer-biased radius for dense inner rings */
+  RING_ORDER.forEach(function(ringId,ringIdx){
+    var cmds=groups[ringId];
+    var inner=ringRadii[ringIdx],outer=ringRadii[ringIdx+1];
+    var r=ringIdx===0?(outer*0.7):(inner+outer)/2; /* core ring uses 70% of outer to avoid center cramming */
+    var startAngle=-Math.PI/2; /* top */
+    var angleStep=cmds.length>0?(2*Math.PI/cmds.length):0;
+
+    cmds.forEach(function(cmd,i){
+      var angle=startAngle+i*angleStep;
+      var nx=cx+r*Math.cos(angle)-nodeW/2;
+      var ny=cy+r*Math.sin(angle)-nodeH/2;
+
+      var g=svgEl("g",{class:"capmap-node",tabindex:"0",role:"button","data-step":cmd.id,"aria-label":cmd.name+": "+cmd.shortDesc+". Press Enter for details."});
+
+      var bg=svgEl("rect",{class:"capmap-node-bg",x:String(nx),y:String(ny),width:String(nodeW),height:String(nodeH),fill:RING_META[ringId].color});
+      g.appendChild(bg);
+
+      var label=svgEl("text",{class:"capmap-node-label",x:String(nx+nodeW/2),y:String(ny+nodeH/2-6),fill:"var(--text)"});
+      label.textContent=cmd.name;
+      g.appendChild(label);
+
+      var cmdLabel=svgEl("text",{class:"capmap-node-cmd",x:String(nx+nodeW/2),y:String(ny+nodeH/2+12)});
+      cmdLabel.textContent=cmd.command.length>22?cmd.command.substring(0,20)+"...":cmd.command;
+      g.appendChild(cmdLabel);
+
+      svg.appendChild(g);
+    });
+  });
+
+  container.appendChild(svg);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   VIEW 2 — ORCHESTRATOR FLOW (linear diagram)
+   ══════════════════════════════════════════════════════════════════════════ */
+var NODE_W=110,NODE_H=52,DIAMOND_S=76,GAP=28,ROW_Y=60,STORE_Y=240;
+
+function calcPositions(){
+  var p={},x=20;
+  STEPS.forEach(function(s){
+    var w=s.shape==="diamond"?DIAMOND_S:NODE_W;
+    var h=s.shape==="diamond"?DIAMOND_S:NODE_H;
+    p[s.id]={x:x,y:ROW_Y,w:w,h:h,cx:x+w/2,cy:ROW_Y+h/2};
+    x+=w+GAP;
+  });
+  var totalW=x-GAP,storeGap=100,sx=totalW/2-storeGap;
+  STORES_DATA.forEach(function(s,i){
+    p[s.id]={x:sx+i*storeGap-36,y:STORE_Y,w:72,h:64,cx:sx+i*storeGap,cy:STORE_Y+32};
+  });
+  return p;
+}
+
+var pos=calcPositions();
+
 function renderDiagram(){
   var container=document.getElementById("nodeContainer");
   var svg=document.getElementById("arrowSvg");
@@ -1152,7 +1587,7 @@ function renderDiagram(){
     container.appendChild(node);
   });
 
-  // SVG arrows
+  /* SVG arrows */
   while(svg.firstChild)svg.removeChild(svg.firstChild);
   var defs=svgEl("defs");
   var m1=svgEl("marker",{id:"ah",markerWidth:"8",markerHeight:"6",refX:"8",refY:"3",orient:"auto"});
@@ -1179,61 +1614,101 @@ function renderDiagram(){
   });
 }
 
-/* ── Render mobile list ──────────────────────────────────────────────── */
+/* ══════════════════════════════════════════════════════════════════════════
+   MOBILE LIST (adapts to current view)
+   ══════════════════════════════════════════════════════════════════════════ */
 function renderMobileList(){
   var container=document.getElementById("mobile-steps");
   container.textContent="";
-  STEPS.forEach(function(step){
-    var card=el("div",{className:"mobile-card"+(step.required?"":" optional"),tabindex:"0",role:"listitem","data-step":step.id,"aria-label":"Step "+step.number+": "+step.name+". "+step.shortDesc+". Press Enter for details."});
-    var header=el("div",{className:"mobile-card-header"},[
-      el("span",{className:"mobile-card-num"},String(step.number)),
-      el("span",{className:"mobile-card-name"},step.name),
-      step.required?null:el("span",{className:"badge badge-optional"},"Optional")
-    ]);
-    card.appendChild(header);
-    card.appendChild(el("div",{className:"mobile-card-cmd"},step.command));
-    card.appendChild(el("div",{className:"mobile-card-desc"},step.shortDesc));
-    if(step.onFail){
-      var failEl=el("div",{className:"mobile-card-fail"});
-      failEl.textContent="\u2937 On fail \u2192 "+step.onFail;
-      card.appendChild(failEl);
-    }
-    if(step.loopback){
-      var lbEl=el("div",{className:"mobile-card-fail"});
-      lbEl.textContent="\u21BA "+step.loopback.label+" \u2192 "+step.loopback.target;
-      card.appendChild(lbEl);
-    }
-    container.appendChild(card);
-    if(step.next){
-      var arrow=el("div",{className:"mobile-arrow","aria-hidden":"true"});
-      arrow.textContent="\u25BC";
-      container.appendChild(arrow);
-    }
-  });
+
+  if(currentView==="capmap"){
+    /* Grouped card list by ring */
+    RING_ORDER.forEach(function(ringId){
+      var cmds=ALL_COMMANDS.filter(function(c){return c.ring===ringId;});
+      if(cmds.length===0)return;
+      var title=el("div",{className:"mobile-group-title"},RING_META[ringId].label);
+      container.appendChild(title);
+      cmds.forEach(function(cmd){
+        var card=el("div",{className:"mobile-card",tabindex:"0",role:"listitem","data-step":cmd.id,"aria-label":cmd.name+": "+cmd.shortDesc+". Press Enter for details."});
+        var header=el("div",{className:"mobile-card-header"},[
+          el("span",{className:"mobile-card-name"},cmd.name)
+        ]);
+        card.appendChild(header);
+        card.appendChild(el("div",{className:"mobile-card-cmd"},cmd.command));
+        card.appendChild(el("div",{className:"mobile-card-desc"},cmd.shortDesc));
+        container.appendChild(card);
+      });
+    });
+  } else {
+    /* Sequential card list for orchestrator flow */
+    STEPS.forEach(function(step){
+      var card=el("div",{className:"mobile-card"+(step.required?"":" optional"),tabindex:"0",role:"listitem","data-step":step.id,"aria-label":"Step "+step.number+": "+step.name+". "+step.shortDesc+". Press Enter for details."});
+      var header=el("div",{className:"mobile-card-header"},[
+        el("span",{className:"mobile-card-num"},String(step.number)),
+        el("span",{className:"mobile-card-name"},step.name),
+        step.required?null:el("span",{className:"badge badge-optional"},"Optional")
+      ]);
+      card.appendChild(header);
+      card.appendChild(el("div",{className:"mobile-card-cmd"},step.command));
+      card.appendChild(el("div",{className:"mobile-card-desc"},step.shortDesc));
+      if(step.onFail){
+        var failEl=el("div",{className:"mobile-card-fail"});
+        failEl.textContent="\u2937 On fail \u2192 "+step.onFail;
+        card.appendChild(failEl);
+      }
+      if(step.loopback){
+        var lbEl=el("div",{className:"mobile-card-fail"});
+        lbEl.textContent="\u21BA "+step.loopback.label+" \u2192 "+step.loopback.target;
+        card.appendChild(lbEl);
+      }
+      container.appendChild(card);
+      if(step.next){
+        var arrow=el("div",{className:"mobile-arrow","aria-hidden":"true"});
+        arrow.textContent="\u25BC";
+        container.appendChild(arrow);
+      }
+    });
+  }
 }
 
-/* ── Detail panel ────────────────────────────────────────────────────── */
+/* ══════════════════════════════════════════════════════════════════════════
+   DETAIL PANEL (shared between both views)
+   ══════════════════════════════════════════════════════════════════════════ */
 function openPanel(stepId){
-  var step=STEPS.find(function(s){return s.id===stepId;});
-  if(!step)return;
+  panelTrigger=document.activeElement;
   selectedStep=stepId;
 
-  document.querySelectorAll(".node[data-step]").forEach(function(n){
-    n.classList.toggle("selected",n.getAttribute("data-step")===stepId);
-    n.classList.toggle("dimmed",n.getAttribute("data-step")!==stepId);
-    n.setAttribute("aria-expanded",n.getAttribute("data-step")===stepId?"true":"false");
-  });
-
-  document.querySelectorAll(".arrow-fail, .arrow-fail-label").forEach(function(e){
-    var from=e.getAttribute("data-from");
-    var route=FAILURE_ROUTES.find(function(r){return r.from===from;});
-    if(route){
-      var show=route.alwaysVisible||from===stepId||route.to===stepId;
-      e.setAttribute("opacity",show?"0.85":(route.alwaysVisible?"0.6":"0"));
+  /* Highlight selected node in whichever view is active */
+  document.querySelectorAll("[data-step]").forEach(function(n){
+    var isMatch=n.getAttribute("data-step")===stepId;
+    if(n.classList.contains("capmap-node")){
+      n.classList.toggle("selected",isMatch);
+      n.classList.toggle("dimmed",!isMatch);
+    } else if(n.classList.contains("node")){
+      n.classList.toggle("selected",isMatch);
+      n.classList.toggle("dimmed",!isMatch);
+      n.setAttribute("aria-expanded",isMatch?"true":"false");
     }
   });
 
-  document.getElementById("panelTitle").textContent=step.number+". "+step.name;
+  /* Show failure routes on flow view */
+  if(currentView==="flow"){
+    document.querySelectorAll(".arrow-fail, .arrow-fail-label").forEach(function(e){
+      var from=e.getAttribute("data-from");
+      var route=FAILURE_ROUTES.find(function(r){return r.from===from;});
+      if(route){
+        var show=route.alwaysVisible||from===stepId||route.to===stepId;
+        e.setAttribute("opacity",show?"0.85":(route.alwaysVisible?"0.6":"0"));
+      }
+    });
+  }
+
+  /* Find display name */
+  var step=STEPS.find(function(s){return s.id===stepId;});
+  var cmd=ALL_COMMANDS.find(function(c){return c.id===stepId;});
+  var displayName=step?(step.number+". "+step.name):(cmd?cmd.name:stepId);
+
+  document.getElementById("panelTitle").textContent=displayName;
   var body=document.getElementById("panelBody");
   /* Clone the full verbose HTML from the hidden content section */
   var source=document.getElementById("step-"+stepId);
@@ -1246,26 +1721,69 @@ function openPanel(stepId){
     clone.querySelectorAll(".back-link").forEach(function(l){l.parentNode.removeChild(l);});
     /* Append all children */
     while(clone.firstChild)body.appendChild(clone.firstChild);
+  } else {
+    body.textContent="";
+    body.appendChild(el("p",{},"No detailed information available for this command."));
   }
 
   document.getElementById("detailPanel").classList.add("open");
   document.getElementById("diagramArea").classList.add("panel-open");
   body.scrollTop=0;
+  /* Move focus into the panel for keyboard/screen reader users */
+  document.getElementById("panelClose").focus();
 }
 
+var panelTrigger=null;
 function closePanel(){
   selectedStep=null;
+  if(panelTrigger){try{panelTrigger.focus();}catch(e){}panelTrigger=null;}
   document.getElementById("detailPanel").classList.remove("open");
   document.getElementById("diagramArea").classList.remove("panel-open");
-  document.querySelectorAll(".node[data-step]").forEach(function(n){
+  document.querySelectorAll("[data-step]").forEach(function(n){
     n.classList.remove("selected","dimmed");
-    n.setAttribute("aria-expanded","false");
+    if(n.hasAttribute("aria-expanded"))n.setAttribute("aria-expanded","false");
   });
-  document.querySelectorAll(".arrow-fail, .arrow-fail-label").forEach(function(e){
-    var route=FAILURE_ROUTES.find(function(r){return r.from===e.getAttribute("data-from");});
-    if(route)e.setAttribute("opacity",route.alwaysVisible?"0.6":"0");
-  });
+  if(currentView==="flow"){
+    document.querySelectorAll(".arrow-fail, .arrow-fail-label").forEach(function(e){
+      var route=FAILURE_ROUTES.find(function(r){return r.from===e.getAttribute("data-from");});
+      if(route)e.setAttribute("opacity",route.alwaysVisible?"0.6":"0");
+    });
+  }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   VIEW TOGGLE
+   ══════════════════════════════════════════════════════════════════════════ */
+function switchView(view){
+  if(view===currentView)return;
+  closePanel();
+  currentView=view;
+
+  var capmapArea=document.getElementById("capmapArea");
+  var flowArea=document.getElementById("flowArea");
+  var btnCapmap=document.getElementById("viewCapmap");
+  var btnFlow=document.getElementById("viewFlow");
+
+  if(view==="capmap"){
+    capmapArea.style.display="";
+    flowArea.style.display="none";
+    btnCapmap.classList.add("active");
+    btnCapmap.setAttribute("aria-selected","true");
+    btnFlow.classList.remove("active");
+    btnFlow.setAttribute("aria-selected","false");
+  } else {
+    capmapArea.style.display="none";
+    flowArea.style.display="";
+    btnFlow.classList.add("active");
+    btnFlow.setAttribute("aria-selected","true");
+    btnCapmap.classList.remove("active");
+    btnCapmap.setAttribute("aria-selected","false");
+  }
+  renderMobileList();
+}
+
+document.getElementById("viewCapmap").addEventListener("click",function(){switchView("capmap");});
+document.getElementById("viewFlow").addEventListener("click",function(){switchView("flow");});
 
 /* ── Tooltip ─────────────────────────────────────────────────────────── */
 var tooltipEl=document.getElementById("tooltip");
@@ -1306,7 +1824,7 @@ applyTheme();
 document.addEventListener("click",function(e){
   var node=e.target.closest("[data-step]");
   if(node){var id=node.getAttribute("data-step");if(selectedStep===id)closePanel();else openPanel(id);return;}
-  if(!e.target.closest(".detail-panel")&&!e.target.closest("[data-step]")&&selectedStep)closePanel();
+  if(!e.target.closest(".detail-panel")&&!e.target.closest("[data-step]")&&!e.target.closest(".view-toggle")&&selectedStep)closePanel();
 });
 document.addEventListener("keydown",function(e){
   if(e.key==="Escape"&&selectedStep){closePanel();return;}
@@ -1314,7 +1832,7 @@ document.addEventListener("keydown",function(e){
     var node=document.activeElement&&document.activeElement.closest?document.activeElement.closest("[data-step]"):null;
     if(node){e.preventDefault();var id=node.getAttribute("data-step");if(selectedStep===id)closePanel();else openPanel(id);}
   }
-  if(e.key==="ArrowRight"||e.key==="ArrowLeft"){
+  if(currentView==="flow"&&(e.key==="ArrowRight"||e.key==="ArrowLeft")){
     var cur=document.activeElement&&document.activeElement.closest?document.activeElement.closest("[data-step]"):null;
     if(cur){
       var idx=-1;STEPS.forEach(function(s,i){if(s.id===cur.getAttribute("data-step"))idx=i;});
@@ -1327,7 +1845,11 @@ document.addEventListener("keydown",function(e){
 });
 document.addEventListener("mouseover",function(e){
   var node=e.target.closest("[data-step]");
-  if(node){var step=STEPS.find(function(s){return s.id===node.getAttribute("data-step");});if(step)showTooltip(e,step.shortDesc);}
+  if(node){
+    var id=node.getAttribute("data-step");
+    var cmd=ALL_COMMANDS.find(function(c){return c.id===id;});
+    if(cmd)showTooltip(e,cmd.shortDesc);
+  }
 });
 document.addEventListener("mouseout",function(e){if(e.target.closest("[data-step]"))hideTooltip();});
 document.addEventListener("mousemove",function(e){
@@ -1336,6 +1858,7 @@ document.addEventListener("mousemove",function(e){
 document.getElementById("panelClose").addEventListener("click",closePanel);
 
 /* ── Init ────────────────────────────────────────────────────────────── */
+renderCapabilityMap();
 renderDiagram();
 renderMobileList();
 </script>
