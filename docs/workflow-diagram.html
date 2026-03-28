@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pipeline Orchestrator — Workflow Diagram</title>
+<style>
+/* ── 1. Reset and tokens ─────────────────────────────────────────────── */
+:root {
+  --bg: #ffffff;
+  --surface: #f5f5f5;
+  --surface-2: #e8e8e8;
+  --border: #e0e0e0;
+  --text: #1a1a1a;
+  --text-muted: #525252;
+  --text-dim: #737373;
+  --accent: #2563eb;
+  --accent-dim: #1e40af;
+  --success: #16a34a;
+  --warn: #ca8a04;
+  --fail: #dc2626;
+  --success-path: #2563eb;
+  --fail-path: #ea580c;
+  --store-pg: #0891b2;
+  --store-gh: #525252;
+  --store-files: #7c3aed;
+  --node-required: #e2e8f0;
+  --node-optional: #f0f0ff;
+  --node-selected: #dbeafe;
+  --panel-bg: #ffffff;
+  --mono: 'SF Mono', 'Cascadia Code', 'Fira Code', 'JetBrains Mono', Consolas, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --radius: 8px;
+  --transition: 200ms ease;
+}
+.dark {
+  --bg: #0a0a0a;
+  --surface: #141414;
+  --surface-2: #1c1c1c;
+  --border: #2a2a2a;
+  --text: #e5e5e5;
+  --text-muted: #a3a3a3;
+  --text-dim: #737373;
+  --accent: #3b82f6;
+  --accent-dim: #1d4ed8;
+  --success: #22c55e;
+  --warn: #eab308;
+  --fail: #ef4444;
+  --success-path: #3b82f6;
+  --fail-path: #f97316;
+  --store-pg: #06b6d4;
+  --store-gh: #a3a3a3;
+  --store-files: #a78bfa;
+  --node-required: #1e293b;
+  --node-optional: #1a1a2e;
+  --node-selected: #1e3a5f;
+  --panel-bg: #141414;
+}
+.high-contrast {
+  --bg: #000000;
+  --surface: #000000;
+  --surface-2: #1a1a1a;
+  --border: #ffffff;
+  --text: #ffffff;
+  --text-muted: #ffffff;
+  --text-dim: #ffffff;
+  --accent: #00ccff;
+  --success: #00ff00;
+  --warn: #ffff00;
+  --fail: #ff0000;
+  --success-path: #00ccff;
+  --fail-path: #ff6600;
+  --store-pg: #00dddd;
+  --store-gh: #ffffff;
+  --store-files: #cc99ff;
+  --node-required: #000080;
+  --node-optional: #000040;
+  --node-selected: #003366;
+  --panel-bg: #000000;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── 2. Skip links ───────────────────────────────────────────────────── */
+.skip-link {
+  position: absolute;
+  top: -100px;
+  left: 16px;
+  background: var(--accent);
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: var(--radius);
+  z-index: 1000;
+  text-decoration: none;
+  font-weight: 600;
+}
+.skip-link:focus { top: 16px; }
+
+/* ── 3. Header ───────────────────────────────────────────────────────── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.header h1 {
+  font-size: 20px;
+  font-weight: 700;
+}
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.theme-toggle, .hc-toggle {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px 12px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 13px;
+  font-family: var(--sans);
+  min-height: 44px;
+  min-width: 44px;
+}
+.theme-toggle:hover, .hc-toggle:hover { background: var(--surface-2); }
+.nav-links {
+  display: flex;
+  gap: 16px;
+  font-size: 13px;
+}
+.nav-links a {
+  color: var(--accent);
+  text-decoration: none;
+  padding: 4px 0;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+.nav-links a:hover { text-decoration: underline; }
+
+/* ── 4. Desktop layout ───────────────────────────────────────────────── */
+.main {
+  display: flex;
+  height: calc(100vh - 65px);
+}
+.diagram-area {
+  flex: 1;
+  overflow: auto;
+  padding: 32px;
+  position: relative;
+  transition: flex var(--transition);
+}
+.diagram-area.panel-open { flex: 0.55; }
+.detail-panel {
+  width: 0;
+  overflow: hidden;
+  border-left: 1px solid var(--border);
+  background: var(--panel-bg);
+  transition: width var(--transition);
+  display: flex;
+  flex-direction: column;
+}
+.detail-panel.open {
+  width: 45%;
+  overflow-y: auto;
+}
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--panel-bg);
+  z-index: 10;
+}
+.panel-header h2 { font-size: 18px; font-weight: 700; }
+.panel-close {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text);
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.panel-close:hover { background: var(--surface); }
+.panel-body { padding: 20px; flex: 1; }
+
+/* ── 5. Diagram ──────────────────────────────────────────────────────── */
+.diagram {
+  position: relative;
+  min-width: 900px;
+  min-height: 340px;
+  margin: 0 auto;
+}
+.diagram svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* ── 6. Nodes ────────────────────────────────────────────────────────── */
+.node {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: opacity var(--transition), transform var(--transition), box-shadow var(--transition);
+  text-align: center;
+  border: 2px solid var(--border);
+  background: var(--node-required);
+  z-index: 2;
+}
+.node:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+.node.optional {
+  border-style: dashed;
+  background: var(--node-optional);
+}
+.node.selected {
+  background: var(--node-selected);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent);
+  transform: scale(1.05);
+}
+.node.dimmed { opacity: 0.35; }
+.node:hover:not(.dimmed) { transform: scale(1.03); }
+.node.rect {
+  width: 110px;
+  height: 52px;
+  border-radius: var(--radius);
+}
+.node.pill {
+  width: 110px;
+  height: 52px;
+  border-radius: 26px;
+}
+.node.diamond {
+  width: 76px;
+  height: 76px;
+  border-radius: var(--radius);
+  transform: rotate(45deg);
+}
+.node.diamond .node-inner { transform: rotate(-45deg); }
+.node.diamond.selected { transform: rotate(45deg) scale(1.05); }
+.node.diamond:hover:not(.dimmed) { transform: rotate(45deg) scale(1.03); }
+.node.cylinder {
+  width: 72px;
+  height: 64px;
+  border-radius: 8px 8px 50% 50% / 8px 8px 20px 20px;
+  cursor: default;
+}
+.node-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+.node-label {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.node-num {
+  font-size: 9px;
+  color: var(--text-dim);
+  font-weight: 500;
+}
+
+/* ── 7. Tooltip ──────────────────────────────────────────────────────── */
+.tooltip {
+  position: fixed;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px 10px;
+  border-radius: var(--radius);
+  font-size: 12px;
+  max-width: 240px;
+  pointer-events: none;
+  z-index: 100;
+  opacity: 0;
+  transition: opacity 150ms ease;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.tooltip.visible { opacity: 1; }
+
+/* ── 8. Detail panel content ─────────────────────────────────────────── */
+.detail-section { margin-bottom: 20px; }
+.detail-section h3 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+.detail-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.detail-table td {
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.detail-table td:first-child {
+  font-weight: 600;
+  width: 110px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  padding-right: 12px;
+}
+.detail-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  margin-bottom: 16px;
+}
+.store-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  margin: 2px 4px 2px 0;
+}
+.store-tag.read { border: 1px solid currentColor; }
+.store-tag.write { color: #fff; }
+.store-pg { color: var(--store-pg); }
+.store-pg.write { background: var(--store-pg); }
+.store-gh { color: var(--store-gh); }
+.store-gh.write { background: var(--store-gh); }
+.store-files { color: var(--store-files); }
+.store-files.write { background: var(--store-files); }
+code {
+  font-family: var(--mono);
+  font-size: 12px;
+  background: var(--surface);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.badge-required { background: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent); }
+.badge-optional { background: color-mix(in srgb, var(--warn) 15%, transparent); color: var(--warn); }
+.badge-pass { background: color-mix(in srgb, var(--success) 15%, transparent); color: var(--success); }
+.badge-fail { background: color-mix(in srgb, var(--fail) 15%, transparent); color: var(--fail); }
+.fail-route {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: color-mix(in srgb, var(--fail-path) 10%, transparent);
+  border-left: 3px solid var(--fail-path);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  font-size: 13px;
+  margin-top: 8px;
+}
+.agent-list {
+  list-style: none;
+  padding: 0;
+}
+.agent-list li {
+  padding: 4px 0;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+}
+.agent-tier {
+  font-size: 11px;
+  font-family: var(--mono);
+  color: var(--text-dim);
+}
+.doc-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+.doc-links a {
+  font-size: 12px;
+  color: var(--accent);
+  text-decoration: none;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+.doc-links a:hover { background: var(--surface); }
+
+/* ── 9. Mobile layout ────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .diagram-area { display: none; }
+  .mobile-list { display: block; }
+  .detail-panel { display: none; }
+  .detail-panel.open {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 70vh;
+    border-left: none;
+    border-top: 1px solid var(--border);
+    border-radius: 16px 16px 0 0;
+    z-index: 50;
+  }
+  .main { flex-direction: column; height: auto; }
+  .header { padding: 12px 16px; }
+  .nav-links { display: none; }
+}
+@media (min-width: 768px) {
+  .mobile-list { display: none; }
+}
+.mobile-list { padding: 16px; }
+.mobile-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 2px;
+  cursor: pointer;
+  transition: background var(--transition);
+  min-height: 64px;
+}
+.mobile-card:hover, .mobile-card:focus-visible { background: var(--surface-2); }
+.mobile-card:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+.mobile-card.optional { border-style: dashed; opacity: 0.85; }
+.mobile-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.mobile-card-num {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-dim);
+  min-width: 20px;
+}
+.mobile-card-name { font-weight: 600; font-size: 15px; flex: 1; }
+.mobile-card-cmd {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+.mobile-card-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+.mobile-card-fail {
+  font-size: 12px;
+  color: var(--fail-path);
+  margin-top: 6px;
+}
+.mobile-arrow {
+  text-align: center;
+  color: var(--success-path);
+  font-size: 18px;
+  line-height: 1;
+  padding: 2px 0;
+}
+.sheet-handle {
+  display: none;
+  width: 40px;
+  height: 4px;
+  background: var(--text-dim);
+  border-radius: 2px;
+  margin: 8px auto 4px;
+}
+@media (max-width: 767px) { .sheet-handle { display: block; } }
+
+/* ── 10. Legend ───────────────────────────────────────────────────────── */
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 12px 0;
+  margin-bottom: 16px;
+  font-size: 12px;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+}
+.legend-item { display: flex; align-items: center; gap: 6px; }
+.legend-swatch { width: 24px; height: 3px; border-radius: 2px; }
+.legend-shape {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border);
+  display: inline-block;
+}
+
+/* ── 11. Reduced motion ──────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+</style>
+</head>
+<body>
+<a href="#diagram" class="skip-link">Skip to diagram</a>
+<a href="#mobile-steps" class="skip-link">Skip to step list</a>
+
+<header class="header">
+  <h1>Pipeline Orchestrator</h1>
+  <div class="header-controls">
+    <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme: Auto, Light, Dark">Auto</button>
+    <button class="hc-toggle" id="hcToggle" aria-label="Toggle high contrast mode">High Contrast</button>
+  </div>
+  <nav class="nav-links" aria-label="Documentation links">
+    <a href="workflow-reference.md">Workflow Reference</a>
+    <a href="reference.md">Command Reference</a>
+    <a href="guide.md">Getting Started</a>
+    <a href="index.html">Dashboard</a>
+  </nav>
+</header>
+
+<div class="main">
+  <div class="diagram-area" id="diagramArea">
+    <div class="legend" role="img" aria-label="Diagram legend">
+      <div class="legend-item"><span class="legend-shape" style="border-radius:12px"></span> Start / End</div>
+      <div class="legend-item"><span class="legend-shape" style="border-radius:4px"></span> Action</div>
+      <div class="legend-item"><span class="legend-shape" style="border-radius:4px;transform:rotate(45deg);width:12px;height:12px"></span> Decision</div>
+      <div class="legend-item"><span class="legend-shape" style="border-radius:4px 4px 50% 50%;width:14px;height:16px"></span> Data Store</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--success-path)"></span> Success path</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--fail-path)"></span> Failure routing</div>
+      <div class="legend-item"><span class="legend-shape" style="border-style:dashed;border-radius:4px"></span> Optional</div>
+    </div>
+    <div class="diagram" id="diagram" role="img" aria-label="Pipeline workflow diagram: 13 steps from init to deploy with failure routing loops">
+      <div role="list" aria-label="Workflow steps" id="nodeContainer"></div>
+      <svg id="arrowSvg" aria-hidden="true"></svg>
+    </div>
+  </div>
+
+  <div class="mobile-list" id="mobile-steps" role="list" aria-label="Workflow steps"></div>
+
+  <aside class="detail-panel" id="detailPanel" role="complementary" aria-label="Step details" aria-live="polite">
+    <div class="sheet-handle"></div>
+    <div class="panel-header">
+      <h2 id="panelTitle">Step Details</h2>
+      <button class="panel-close" id="panelClose" aria-label="Close detail panel">&times;</button>
+    </div>
+    <div class="panel-body" id="panelBody"></div>
+  </aside>
+</div>
+
+<div class="tooltip" id="tooltip" role="tooltip"></div>
+
+<script>
+/* ── Step data (single source of truth) ──────────────────────────────── */
+/* All rendering is driven from this array. To update the diagram,
+   edit this data — do not modify HTML elements directly.
+   Data is static and hardcoded (no user input), so DOM construction
+   from this data carries no XSS risk. */
+var STEPS=[{id:"init",name:"Init",number:1,command:"/pipeline:init",shape:"pill",required:!0,shortDesc:"Create project configuration",description:"Creates the project configuration. Detects project profile, asks engagement style (expert/guided/full-guidance) and security policy (every-feature/milestone/on-demand). Sets up GitHub repo and issue tracking. Calls orchestrator.js start to create the workflow.",inputs:["None (entry point)"],outputs:[".claude/pipeline.yml"],next:"brainstorm",onFail:null,onFailLabel:null,orchestrator:"start &lt;project&gt;-&lt;date&gt;, then complete init PASS",stores:{postgres:"write",github:"write",files:"write"},storeDetail:{postgres:"Session record",github:"Epic creation",files:"pipeline.yml"},agents:[],docs:["workflow-reference.md#1-init","reference.md"]},{id:"brainstorm",name:"Brainstorm",number:2,command:"/pipeline:brainstorm",shape:"rect",required:!0,shortDesc:"Engagement-scaled requirements gathering",description:"Engagement-scaled question flow. Explores context, asks clarifying questions (depth controlled by engagement style), derives implied features, proposes approaches, evaluates Big 4 + Compliance, tracks TBDs, writes spec document, runs spec review loop (max 3 iterations).",inputs:[".claude/pipeline.yml"],outputs:["docs/specs/*.md"],next:"plan",onFail:null,onFailLabel:null,orchestrator:"complete brainstorm PASS|FAIL",stores:{postgres:"write",github:"write",files:"write"},storeDetail:{postgres:"Spec summary",github:"Epic checklist",files:"Spec document"},agents:[{name:"researcher",tier:"haiku",mode:"parallel"},{name:"spec-reviewer",tier:"haiku",mode:"sequential"}],docs:["workflow-reference.md#2-brainstorm"]},{id:"plan",name:"Plan",number:3,command:"/pipeline:plan",shape:"rect",required:!0,shortDesc:"Implementation plan with ordered tasks",description:"Reads spec, generates implementation plan with ordered tasks. Resolves TBDs from brainstorm. Plan reviewer validates completeness, spec alignment, and buildability. For LARGE+ changes, the plan includes QA strategy inline.",inputs:["docs/specs/*.md"],outputs:["docs/plans/*.md"],next:"debate",onFail:null,onFailLabel:null,orchestrator:"complete plan PASS|FAIL",stores:{postgres:"write",github:"write",files:"write"},storeDetail:{postgres:"Plan summary",github:"Epic checklist",files:"Plan document"},agents:[{name:"plan-reviewer",tier:"haiku",mode:"sequential"}],docs:["workflow-reference.md#3-plan"]},{id:"debate",name:"Debate",number:4,command:"/pipeline:debate",shape:"diamond",required:!1,shortDesc:"Three-agent antagonistic design review",description:'Three-agent antagonistic design debate. Advocate steelmans, Skeptic attacks feasibility, Practitioner grounds in reality. Each produces a position paper; the command synthesizes a verdict with disposition: proceed, proceed-with-constraints, or rethink. Rethink routes back to brainstorm.',inputs:["docs/plans/*.md"],outputs:["docs/findings/debate-*.md"],next:"architect",onFail:"brainstorm",onFailLabel:"Rethink",orchestrator:'complete debate PASS|FAIL or PASS "skipped"',stores:{postgres:"write",github:"write",files:"write"},storeDetail:{postgres:"Verdict summary",github:"Epic comment",files:"Verdict document"},agents:[{name:"advocate",tier:"sonnet",mode:"parallel"},{name:"skeptic",tier:"sonnet",mode:"parallel"},{name:"practitioner",tier:"sonnet",mode:"parallel"}],docs:["workflow-reference.md#4-debate-optional"]},{id:"architect",name:"Architect",number:5,command:"/pipeline:architect",shape:"rect",required:!1,shortDesc:"Technology decisions via domain specialists",description:"Recon scans the codebase for existing patterns. Domain specialists propose decisions per area (DATA, STATE, UI, API, INFRA, TEST). Lead architect resolves conflicts and produces the architecture document with typed contracts, security standards, testing standards, and banned patterns. Loopback target: purple 2x FAIL routes here.",inputs:["docs/plans/*.md"],outputs:["docs/architecture.md"],next:"build",onFail:null,onFailLabel:null,orchestrator:'complete architect PASS or PASS "skipped"',stores:{postgres:"write",github:"write",files:"write"},storeDetail:{postgres:"Decision records",github:"Epic comment",files:"Architecture doc"},agents:[{name:"recon",tier:"haiku",mode:"sequential"},{name:"specialists",tier:"sonnet",mode:"parallel per domain"},{name:"lead architect",tier:"opus",mode:"sequential"}],docs:["workflow-reference.md#5-architect-optional"]},{id:"build",name:"Build",number:6,command:"/pipeline:build",shape:"rect",required:!0,shortDesc:"Subagent-driven plan execution",description:"Dispatches one implementer per plan task (sequential). Each implementer reads its own context from stores. Post-task reviewer runs after each implementer; issues loop back until approved. Failure routing target: review FAIL and qa FAIL both route here.",inputs:["docs/plans/*.md"],outputs:["Feature branch with commits"],next:"review",onFail:null,onFailLabel:null,orchestrator:"complete build PASS|FAIL",stores:{postgres:"write",github:"write",files:"write"},storeDetail:{postgres:"Per-task result",github:"Task issue comments",files:"build-state.json"},agents:[{name:"implementer",tier:"haiku/sonnet",mode:"sequential per task"},{name:"post-task reviewer",tier:"haiku/sonnet",mode:"after each task"}],docs:["workflow-reference.md#6-build"]},{id:"review",name:"Review",number:7,command:"/pipeline:review",shape:"diamond",required:!0,shortDesc:"Code review with severity tiers",description:"PR-scoped diff review. Runs static analysis, checks arch plan compliance (module boundaries, typed contracts, banned patterns), applies review criteria from config. Cross-file contract verification, structural completeness audit, fallback symmetry checks.",inputs:["Feature branch exists"],outputs:["Status: PASS or FAIL"],next:"qa",onFail:"build",onFailLabel:"Fix issues",orchestrator:"complete review PASS|FAIL",stores:{postgres:"write",github:"write",files:"write"},storeDetail:{postgres:"Review verdict",github:"Task issue comment",files:"Review status"},agents:[],docs:["workflow-reference.md#7-review"]},{id:"qa",name:"QA",number:8,command:"/pipeline:qa",shape:"diamond",required:!0,shortDesc:"Test planning and verification",description:"For LARGE+: full test plan with parallel workers per work package + seam pass. For MEDIUM: targeted 3-5 checks. Risk-driven testing, identifies component interaction risks. Verifier synthesizes worker results, runs seam tests, triages failures.",inputs:["review = PASS"],outputs:["Status: PASS or FAIL"],next:"redteam",onFail:"build",onFailLabel:"Fix issues",orchestrator:"complete qa PASS|FAIL",stores:{postgres:"write",github:"write",files:"write"},storeDetail:{postgres:"Per-WP results + verdict",github:"Task issue comments",files:"QA status"},agents:[{name:"qa-planner",tier:"opus",mode:"sequential"},{name:"qa-worker",tier:"sonnet",mode:"parallel per WP"},{name:"qa-verifier",tier:"opus",mode:"sequential"}],docs:["workflow-reference.md#8-qa"]},{id:"redteam",name:"Red Team",number:9,command:"/pipeline:redteam",shape:"rect",required:!1,shortDesc:"Security assessment with specialist agents",description:"Diff-scoped security assessment. Recon enumerates attack surface. Domain specialists test specific areas (INJ, AUTH, XSS, DEPS, COMPLIANCE). Lead analyst chains findings, deduplicates, builds risk matrix and remediation roadmap.",inputs:["qa = PASS"],outputs:["docs/findings/redteam-*.md"],next:"purple",onFail:null,onFailLabel:null,orchestrator:'complete redteam PASS or PASS "skipped"',stores:{postgres:"write",github:"write",files:"write"},storeDetail:{postgres:"Per-domain findings",github:"Task issue comments",files:"Redteam report"},agents:[{name:"recon",tier:"haiku",mode:"sequential"},{name:"specialists",tier:"sonnet",mode:"parallel per domain"},{name:"lead analyst",tier:"opus",mode:"sequential"}],docs:["workflow-reference.md#9-red-team-optional"]},{id:"purple",name:"Purple",number:10,command:"/pipeline:purpleteam",shape:"diamond",required:!1,shortDesc:"Verify fixes by replaying exploits",description:"Verifies each red team finding fix by replaying the exploitation scenario. Strict role boundary: verifiers report VERIFIED/REGRESSION/INCOMPLETE, never suggest fixes. Loopback: 2x FAIL on same finding routes to architect.",inputs:["docs/findings/redteam-*.md"],outputs:["Status: PASS or FAIL"],next:"commit",onFail:null,onFailLabel:null,loopback:{target:"architect",maxFails:2,label:"2x FAIL"},orchestrator:'complete purple PASS|FAIL or PASS "skipped"',stores:{postgres:"write",github:"write",files:"write"},storeDetail:{postgres:"Per-finding verdict",github:"Task issue comments",files:"Purple status"},agents:[{name:"verifier",tier:"sonnet",mode:"parallel per finding"},{name:"chain analyst",tier:"opus",mode:"sequential"},{name:"posture analyst",tier:"opus",mode:"sequential"}],docs:["workflow-reference.md#10-purple-team-optional"]},{id:"commit",name:"Commit",number:11,command:"/pipeline:commit",shape:"rect",required:!0,shortDesc:"Preflight gates then commit + push",description:"Preflight gate chain: review gate, typecheck, lint, test, agent template lint. If all pass, creates the commit. Category 4 utility: skips GitHub issue comments.",inputs:["review = PASS","qa = PASS"],outputs:["Status: PASS"],next:"finish",onFail:null,onFailLabel:null,orchestrator:"complete commit PASS (always)",stores:{postgres:null,github:null,files:"write"},storeDetail:{files:"Commit SHA"},agents:[],docs:["workflow-reference.md#11-commit"]},{id:"finish",name:"Finish",number:12,command:"/pipeline:finish",shape:"rect",required:!0,shortDesc:"Merge PR, close epic, sync stores",description:"Merges PR via platform.js. Compiles single epic summary from Postgres (5K limit). Closes feature epic. Regenerates dashboard. Syncs README roadmap from Postgres.",inputs:["commit = PASS"],outputs:["Status: merged"],next:"deploy",onFail:null,onFailLabel:null,orchestrator:"complete finish PASS|FAIL",stores:{postgres:"write",github:"write",files:"write"},storeDetail:{postgres:"Closes session",github:"Epic summary",files:"Cleanup"},agents:[],docs:["workflow-reference.md#12-finish"]},{id:"deploy",name:"Deploy",number:13,command:"Project-specific",shape:"pill",required:!1,shortDesc:"Project-specific deployment",description:"Terminal step. The pipeline does not prescribe deployment. This is a placeholder for project-specific deployment workflows.",inputs:["finish = PASS"],outputs:["Status: deployed"],next:null,onFail:null,onFailLabel:null,orchestrator:"N/A",stores:{postgres:null,github:null,files:null},storeDetail:{},agents:[],docs:["workflow-reference.md#13-deploy-optional"]}];
+
+var STORES_DATA=[{id:"postgres",name:"Postgres",color:"store-pg"},{id:"github",name:"GitHub",color:"store-gh"},{id:"files",name:"Files",color:"store-files"}];
+
+var FAILURE_ROUTES=[{from:"review",to:"build",label:"FAIL",alwaysVisible:!0},{from:"qa",to:"build",label:"FAIL",alwaysVisible:!0},{from:"debate",to:"brainstorm",label:"Rethink",alwaysVisible:!1},{from:"purple",to:"architect",label:"2x FAIL",alwaysVisible:!1}];
+
+/* ── Layout constants ────────────────────────────────────────────────── */
+var NODE_W=110,NODE_H=52,DIAMOND_S=76,GAP=28,ROW_Y=60,STORE_Y=240;
+
+function calcPositions(){
+  var p={},x=20;
+  STEPS.forEach(function(s){
+    var w=s.shape==="diamond"?DIAMOND_S:NODE_W;
+    var h=s.shape==="diamond"?DIAMOND_S:NODE_H;
+    p[s.id]={x:x,y:ROW_Y,w:w,h:h,cx:x+w/2,cy:ROW_Y+h/2};
+    x+=w+GAP;
+  });
+  var totalW=x-GAP,storeGap=100,sx=totalW/2-storeGap;
+  STORES_DATA.forEach(function(s,i){
+    p[s.id]={x:sx+i*storeGap-36,y:STORE_Y,w:72,h:64,cx:sx+i*storeGap,cy:STORE_Y+32};
+  });
+  return p;
+}
+
+var pos=calcPositions(),selectedStep=null;
+
+/* ── Safe DOM helpers ────────────────────────────────────────────────── */
+function el(tag,attrs,children){
+  var e=document.createElement(tag);
+  if(attrs)Object.keys(attrs).forEach(function(k){
+    if(k==="className")e.className=attrs[k];
+    else if(k.indexOf("data")===0)e.setAttribute(k.replace(/([A-Z])/g,"-$1").toLowerCase(),attrs[k]);
+    else e.setAttribute(k,attrs[k]);
+  });
+  if(typeof children==="string")e.textContent=children;
+  else if(Array.isArray(children))children.forEach(function(c){if(c)e.appendChild(c);});
+  return e;
+}
+
+function svgEl(tag,attrs){
+  var e=document.createElementNS("http://www.w3.org/2000/svg",tag);
+  if(attrs)Object.keys(attrs).forEach(function(k){e.setAttribute(k,attrs[k]);});
+  return e;
+}
+
+/* ── Render diagram (desktop) ────────────────────────────────────────── */
+function renderDiagram(){
+  var container=document.getElementById("nodeContainer");
+  var svg=document.getElementById("arrowSvg");
+  var last=pos[STEPS[STEPS.length-1].id];
+  var dW=last.x+last.w+20,dH=STORE_Y+80;
+  var diagram=document.getElementById("diagram");
+  diagram.style.minWidth=dW+"px";
+  diagram.style.minHeight=dH+"px";
+  svg.setAttribute("viewBox","0 0 "+dW+" "+dH);
+  svg.setAttribute("width",dW);
+  svg.setAttribute("height",dH);
+
+  container.textContent="";
+  STEPS.forEach(function(step){
+    var p=pos[step.id];
+    var cls="node "+(step.shape==="diamond"?"diamond":step.shape==="pill"?"pill":"rect");
+    if(!step.required)cls+=" optional";
+    var ariaLabel="Step "+step.number+": "+step.name+". "+(step.required?"Required":"Optional")+". "+step.shortDesc+".";
+    if(step.onFail)ariaLabel+=" On failure, routes to "+step.onFail+".";
+    ariaLabel+=" Press Enter for details.";
+    var node=el("div",{className:cls,id:"node-"+step.id,tabindex:"0",role:"listitem","aria-label":ariaLabel,"aria-expanded":"false","data-step":step.id});
+    node.style.cssText="left:"+p.x+"px;top:"+p.y+"px;width:"+p.w+"px;height:"+p.h+"px;";
+    var inner=el("div",{className:"node-inner"},[el("span",{className:"node-num"},String(step.number)),el("span",{className:"node-label"},step.name)]);
+    node.appendChild(inner);
+    container.appendChild(node);
+  });
+
+  STORES_DATA.forEach(function(store){
+    var p=pos[store.id];
+    var node=el("div",{className:"node cylinder",role:"listitem","aria-label":"Data store: "+store.name});
+    node.style.cssText="left:"+p.x+"px;top:"+p.y+"px;width:"+p.w+"px;height:"+p.h+"px;border-color:var(--"+store.color+");";
+    node.appendChild(el("div",{className:"node-inner"},[el("span",{className:"node-label",style:"font-size:11px"},store.name)]));
+    container.appendChild(node);
+  });
+
+  // SVG arrows
+  while(svg.firstChild)svg.removeChild(svg.firstChild);
+  var defs=svgEl("defs");
+  var m1=svgEl("marker",{id:"ah",markerWidth:"8",markerHeight:"6",refX:"8",refY:"3",orient:"auto"});
+  m1.appendChild(svgEl("polygon",{points:"0 0, 8 3, 0 6",fill:"var(--success-path)"}));
+  var m2=svgEl("marker",{id:"ahf",markerWidth:"8",markerHeight:"6",refX:"8",refY:"3",orient:"auto"});
+  m2.appendChild(svgEl("polygon",{points:"0 0, 8 3, 0 6",fill:"var(--fail-path)"}));
+  defs.appendChild(m1);defs.appendChild(m2);svg.appendChild(defs);
+
+  for(var i=0;i<STEPS.length-1;i++){
+    var f=pos[STEPS[i].id],t=pos[STEPS[i+1].id];
+    svg.appendChild(svgEl("line",{x1:String(f.x+f.w),y1:String(f.cy),x2:String(t.x),y2:String(t.cy),stroke:"var(--success-path)","stroke-width":"2","marker-end":"url(#ah)",class:"arrow-success"}));
+  }
+
+  FAILURE_ROUTES.forEach(function(route){
+    var f=pos[route.from],t=pos[route.to];
+    var op=route.alwaysVisible?"0.6":"0";
+    var curveY=f.cy+70+(route.from==="purple"?30:0)+(route.from==="qa"?15:0);
+    var path=svgEl("path",{d:"M"+f.cx+","+(f.y+f.h)+" C"+f.cx+","+curveY+" "+t.cx+","+curveY+" "+t.cx+","+(t.y+t.h),stroke:"var(--fail-path)","stroke-width":"1.5","stroke-dasharray":"5,3",fill:"none","marker-end":"url(#ahf)",opacity:op,class:"arrow-fail","data-from":route.from,"data-to":route.to});
+    svg.appendChild(path);
+    var lx=(f.cx+t.cx)/2,ly=curveY+4;
+    var label=svgEl("text",{x:String(lx),y:String(ly),"text-anchor":"middle",fill:"var(--fail-path)","font-size":"10","font-family":"var(--sans)","font-weight":"600",opacity:op,class:"arrow-fail-label","data-from":route.from});
+    label.textContent=route.label;
+    svg.appendChild(label);
+  });
+}
+
+/* ── Render mobile list ──────────────────────────────────────────────── */
+function renderMobileList(){
+  var container=document.getElementById("mobile-steps");
+  container.textContent="";
+  STEPS.forEach(function(step){
+    var card=el("div",{className:"mobile-card"+(step.required?"":" optional"),tabindex:"0",role:"listitem","data-step":step.id,"aria-label":"Step "+step.number+": "+step.name+". "+step.shortDesc+". Press Enter for details."});
+    var header=el("div",{className:"mobile-card-header"},[
+      el("span",{className:"mobile-card-num"},String(step.number)),
+      el("span",{className:"mobile-card-name"},step.name),
+      step.required?null:el("span",{className:"badge badge-optional"},"Optional")
+    ]);
+    card.appendChild(header);
+    card.appendChild(el("div",{className:"mobile-card-cmd"},step.command));
+    card.appendChild(el("div",{className:"mobile-card-desc"},step.shortDesc));
+    if(step.onFail){
+      var failEl=el("div",{className:"mobile-card-fail"});
+      failEl.textContent="\u2937 On fail \u2192 "+step.onFail;
+      card.appendChild(failEl);
+    }
+    if(step.loopback){
+      var lbEl=el("div",{className:"mobile-card-fail"});
+      lbEl.textContent="\u21BA "+step.loopback.label+" \u2192 "+step.loopback.target;
+      card.appendChild(lbEl);
+    }
+    container.appendChild(card);
+    if(step.next){
+      var arrow=el("div",{className:"mobile-arrow","aria-hidden":"true"});
+      arrow.textContent="\u25BC";
+      container.appendChild(arrow);
+    }
+  });
+}
+
+/* ── Detail panel ────────────────────────────────────────────────────── */
+function openPanel(stepId){
+  var step=STEPS.find(function(s){return s.id===stepId;});
+  if(!step)return;
+  selectedStep=stepId;
+
+  document.querySelectorAll(".node[data-step]").forEach(function(n){
+    n.classList.toggle("selected",n.getAttribute("data-step")===stepId);
+    n.classList.toggle("dimmed",n.getAttribute("data-step")!==stepId);
+    n.setAttribute("aria-expanded",n.getAttribute("data-step")===stepId?"true":"false");
+  });
+
+  document.querySelectorAll(".arrow-fail, .arrow-fail-label").forEach(function(e){
+    var from=e.getAttribute("data-from");
+    var route=FAILURE_ROUTES.find(function(r){return r.from===from;});
+    if(route){
+      var show=route.alwaysVisible||from===stepId||route.to===stepId;
+      e.setAttribute("opacity",show?"0.85":(route.alwaysVisible?"0.6":"0"));
+    }
+  });
+
+  document.getElementById("panelTitle").textContent=step.number+". "+step.name;
+  var body=document.getElementById("panelBody");
+  body.textContent="";
+
+  // Description
+  var sec1=el("div",{className:"detail-section"},[el("p",{className:"detail-desc"},step.description)]);
+  body.appendChild(sec1);
+
+  // Properties table
+  var sec2=el("div",{className:"detail-section"});
+  sec2.appendChild(el("h3",null,"Properties"));
+  var tbl=el("table",{className:"detail-table"});
+  var rows=[
+    ["Command",step.command,!0],
+    ["Required",step.required?"Required":"Optional",!1],
+    ["Inputs",step.inputs.join(", "),!0],
+    ["Outputs",step.outputs.join(", "),!0],
+    ["Next",step.next||"terminal",!1],
+    ["Orchestrator",step.orchestrator,!0]
+  ];
+  rows.forEach(function(r){
+    var tr=el("tr");
+    tr.appendChild(el("td",null,r[0]));
+    var td=el("td");
+    if(r[2]){td.appendChild(el("code",null,r[1]));}
+    else{
+      if(r[0]==="Required"){
+        td.appendChild(el("span",{className:step.required?"badge badge-required":"badge badge-optional"},(step.required?"\u25A0 Required":"\u25B3 Optional")));
+      }else{td.textContent=r[1];}
+    }
+    tr.appendChild(td);
+    tbl.appendChild(tr);
+  });
+  sec2.appendChild(tbl);
+  body.appendChild(sec2);
+
+  // Failure routing
+  if(step.onFail||step.loopback){
+    var sec3=el("div",{className:"detail-section"});
+    sec3.appendChild(el("h3",null,"Failure Routing"));
+    if(step.onFail){
+      var fr=el("div",{className:"fail-route"});
+      fr.appendChild(el("span",{className:"badge badge-fail"},"\u25A0 FAIL"));
+      var arrow=document.createTextNode(" \u2192 ");
+      fr.appendChild(arrow);
+      fr.appendChild(el("strong",null,step.onFail));
+      fr.appendChild(document.createTextNode(" \u2014 "+step.onFailLabel));
+      sec3.appendChild(fr);
+    }
+    if(step.loopback){
+      var lb=el("div",{className:"fail-route"});
+      lb.appendChild(el("span",{className:"badge badge-fail"},"\u25A0 "+step.loopback.label));
+      lb.appendChild(document.createTextNode(" \u2192 "));
+      lb.appendChild(el("strong",null,step.loopback.target));
+      lb.appendChild(document.createTextNode(" \u2014 Re-examine the standard"));
+      sec3.appendChild(lb);
+    }
+    body.appendChild(sec3);
+  }
+
+  // Stores
+  var hasStores=step.stores.postgres||step.stores.github||step.stores.files;
+  if(hasStores){
+    var sec4=el("div",{className:"detail-section"});
+    sec4.appendChild(el("h3",null,"Store Interactions"));
+    ["postgres","github","files"].forEach(function(k){
+      if(step.stores[k]){
+        var cls="store-tag store-"+k.substring(0,k==="postgres"?2:k==="github"?2:5).replace("po","pg").replace("gi","gh").replace("files","files");
+        // Fix class names
+        if(k==="postgres")cls="store-tag store-pg "+step.stores[k];
+        if(k==="github")cls="store-tag store-gh "+step.stores[k];
+        if(k==="files")cls="store-tag store-files "+step.stores[k];
+        var div=el("div");
+        div.appendChild(el("span",{className:cls},k.charAt(0).toUpperCase()+k.slice(1)+": "+step.stores[k]));
+        if(step.storeDetail[k])div.appendChild(document.createTextNode(" "+step.storeDetail[k]));
+        sec4.appendChild(div);
+      }
+    });
+    body.appendChild(sec4);
+  }
+
+  // Agents
+  if(step.agents.length>0){
+    var sec5=el("div",{className:"detail-section"});
+    sec5.appendChild(el("h3",null,"Agents Dispatched"));
+    var ul=el("ul",{className:"agent-list"});
+    step.agents.forEach(function(a){
+      ul.appendChild(el("li",null,[el("span",null,a.name),el("span",{className:"agent-tier"},a.tier+" / "+a.mode)]));
+    });
+    sec5.appendChild(ul);
+    body.appendChild(sec5);
+  }
+
+  // Doc links
+  var sec6=el("div",{className:"detail-section"});
+  sec6.appendChild(el("h3",null,"Documentation"));
+  var links=el("div",{className:"doc-links"});
+  step.docs.forEach(function(d){
+    links.appendChild(el("a",{href:d},d.split("/").pop().split("#")[0]));
+  });
+  sec6.appendChild(links);
+  body.appendChild(sec6);
+
+  document.getElementById("detailPanel").classList.add("open");
+  document.getElementById("diagramArea").classList.add("panel-open");
+}
+
+function closePanel(){
+  selectedStep=null;
+  document.getElementById("detailPanel").classList.remove("open");
+  document.getElementById("diagramArea").classList.remove("panel-open");
+  document.querySelectorAll(".node[data-step]").forEach(function(n){
+    n.classList.remove("selected","dimmed");
+    n.setAttribute("aria-expanded","false");
+  });
+  document.querySelectorAll(".arrow-fail, .arrow-fail-label").forEach(function(e){
+    var route=FAILURE_ROUTES.find(function(r){return r.from===e.getAttribute("data-from");});
+    if(route)e.setAttribute("opacity",route.alwaysVisible?"0.6":"0");
+  });
+}
+
+/* ── Tooltip ─────────────────────────────────────────────────────────── */
+var tooltipEl=document.getElementById("tooltip");
+function showTooltip(ev,text){
+  tooltipEl.textContent=text;
+  tooltipEl.classList.add("visible");
+  tooltipEl.style.left=(ev.clientX+12)+"px";
+  tooltipEl.style.top=(ev.clientY-8)+"px";
+}
+function hideTooltip(){tooltipEl.classList.remove("visible");}
+
+/* ── Theme ───────────────────────────────────────────────────────────── */
+var themeBtn=document.getElementById("themeToggle");
+var hcBtn=document.getElementById("hcToggle");
+var themes=["auto","light","dark"];
+var themeIdx=0,hcOn=false;
+function applyTheme(){
+  var html=document.documentElement;
+  html.classList.remove("dark","high-contrast");
+  var t=themes[themeIdx];
+  if(t==="auto"){if(window.matchMedia("(prefers-color-scheme:dark)").matches)html.classList.add("dark");}
+  else if(t==="dark")html.classList.add("dark");
+  if(hcOn)html.classList.add("high-contrast");
+  themeBtn.textContent=t.charAt(0).toUpperCase()+t.slice(1);
+  try{localStorage.setItem("pipeline-diagram-theme",t);localStorage.setItem("pipeline-diagram-hc",hcOn?"1":"0");}catch(e){}
+}
+themeBtn.addEventListener("click",function(){themeIdx=(themeIdx+1)%3;applyTheme();});
+hcBtn.addEventListener("click",function(){hcOn=!hcOn;applyTheme();hcBtn.textContent=hcOn?"Standard":"High Contrast";});
+try{
+  var st=localStorage.getItem("pipeline-diagram-theme");
+  if(st){themeIdx=themes.indexOf(st);if(themeIdx<0)themeIdx=0;}
+  hcOn=localStorage.getItem("pipeline-diagram-hc")==="1";
+  if(hcOn)hcBtn.textContent="Standard";
+}catch(e){}
+applyTheme();
+
+/* ── Events ──────────────────────────────────────────────────────────── */
+document.addEventListener("click",function(e){
+  var node=e.target.closest("[data-step]");
+  if(node){var id=node.getAttribute("data-step");if(selectedStep===id)closePanel();else openPanel(id);return;}
+  if(!e.target.closest(".detail-panel")&&!e.target.closest("[data-step]")&&selectedStep)closePanel();
+});
+document.addEventListener("keydown",function(e){
+  if(e.key==="Escape"&&selectedStep){closePanel();return;}
+  if(e.key==="Enter"||e.key===" "){
+    var node=document.activeElement&&document.activeElement.closest?document.activeElement.closest("[data-step]"):null;
+    if(node){e.preventDefault();var id=node.getAttribute("data-step");if(selectedStep===id)closePanel();else openPanel(id);}
+  }
+  if(e.key==="ArrowRight"||e.key==="ArrowLeft"){
+    var cur=document.activeElement&&document.activeElement.closest?document.activeElement.closest("[data-step]"):null;
+    if(cur){
+      var idx=-1;STEPS.forEach(function(s,i){if(s.id===cur.getAttribute("data-step"))idx=i;});
+      if(idx>=0){
+        var nxt=e.key==="ArrowRight"?idx+1:idx-1;
+        if(nxt>=0&&nxt<STEPS.length){e.preventDefault();var target=document.getElementById("node-"+STEPS[nxt].id);if(target)target.focus();}
+      }
+    }
+  }
+});
+document.addEventListener("mouseover",function(e){
+  var node=e.target.closest("[data-step]");
+  if(node){var step=STEPS.find(function(s){return s.id===node.getAttribute("data-step");});if(step)showTooltip(e,step.shortDesc);}
+});
+document.addEventListener("mouseout",function(e){if(e.target.closest("[data-step]"))hideTooltip();});
+document.addEventListener("mousemove",function(e){
+  if(tooltipEl.classList.contains("visible")){tooltipEl.style.left=(e.clientX+12)+"px";tooltipEl.style.top=(e.clientY-8)+"px";}
+});
+document.getElementById("panelClose").addEventListener("click",closePanel);
+
+/* ── Init ────────────────────────────────────────────────────────────── */
+renderDiagram();
+renderMobileList();
+</script>
+</body>
+</html>
