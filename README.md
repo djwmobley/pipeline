@@ -104,6 +104,14 @@ This is compliance preparation — not a compliance assessment. Every output car
 
 For a full explanation of the security workflow, see [Security Overview](docs/security.md).
 
+### The dashboard
+
+`/pipeline:dashboard` generates a live snapshot of where you are — phase progress, task completion, open findings, security lifecycle, and AI-powered recommendations. All data embedded at generation time, zero outbound calls.
+
+<p align="center">
+  <img src="docs/assets/dashboard.png" alt="Pipeline dashboard showing project status, phase progress, findings, and recommendations" width="900">
+</p>
+
 ## Install
 
 ```bash
@@ -268,7 +276,7 @@ Tracked items for future development. Checked items are shipped.
 ### Open
 
 - [ ] **Full lifecycle visual diagram** — The pipeline flow crosses multiple context windows: PM → UX → orchestrator → engineer → QA → red team → orchestrator → engineer → QA → purple team → engineer → git. Needs a visual representation showing all agents, decision gates, loop-back points, and state handoffs.
-- [ ] **Dashboard screenshot in README** — Visual proof of what the dashboard looks like.
+- [x] **Dashboard screenshot in README** — Visual proof of what the dashboard looks like.
 - [ ] **Workflow chaining** — Chain commands together for fire-and-forget execution. Example: `/pipeline:brainstorm` → `/pipeline:plan` → `/pipeline:build` → `/pipeline:review` → `/pipeline:commit` as a single invocation.
 - [ ] **Alpha and beta testing and feedback loops** — Structured process for collecting user feedback during pre-release phases, graduating from alpha to beta to stable release.
 
