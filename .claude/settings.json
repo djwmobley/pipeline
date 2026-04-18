@@ -1,5 +1,11 @@
 {
   "enabledPlugins": {
     "pipeline@pipeline": true
+  },
+  "permissions": {
+    "deny": [
+      "Agent(pr-review-toolkit:*)",
+      "Skill(pr-review-toolkit:*)"
+    ]
   }
 }
