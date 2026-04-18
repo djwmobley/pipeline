@@ -47,6 +47,40 @@ For MEDIUM changes, the debate is offered but optional. For TINY changes, skip i
 
 The workflow is: **brainstorm → debate (LARGE+) → plan → build.**
 
+## Working Directory Discipline
+
+**The Bash tool's shell persists `cwd` across calls.** A `cd` in one call silently changes
+the working directory for every subsequent call until another `cd` replaces it. This
+creates invisible drift: a `git` or `node scripts/platform.js` call several messages later
+may run against the wrong branch, worktree, or repo state with no indication anything is
+off.
+
+**Rules:**
+
+1. **Never leave the shell in a changed `cwd`.** If you need to run a command from a
+   different directory, chain it in a single Bash call with `cd [absolute_path] && [cmd]`,
+   or use absolute paths for every argument.
+2. **Prefer absolute paths over `cd`.** For reads and writes, Read/Edit/Write accept
+   absolute paths directly — no `cd` needed. For `git` invocations against a specific
+   worktree, use `git -C [absolute_path] [subcommand]`.
+3. **Before any branch-sensitive or worktree-sensitive operation** (`git`, `node scripts/*`,
+   `npm test` in a multi-worktree layout) — verify orientation in the same Bash call:
+   `pwd && git branch --show-current && git rev-parse --short HEAD && [cmd]`. Treat a
+   mismatch with the intended branch/path as a hard stop.
+4. **When working across worktrees, assume drift.** If a previous call `cd`'d anywhere,
+   re-anchor explicitly in the next call rather than hoping the shell is where you think.
+
+### Rationalization prevention
+
+| Thought | Reality |
+|---------|---------|
+| "It's only one `cd`, I'll switch back in the next call" | The next call forgot. Chain it now or use absolute paths. |
+| "I ran `pwd` earlier, I know where I am" | Earlier. The shell persists — one intervening `cd` invalidates every assumption downstream. |
+| "`git` commands don't care about cwd" | They do. `git status`, `git log`, and friends all operate on the current repo. In a worktree layout, cwd selects which worktree. |
+| "Edit/Write with a relative path is fine — only Bash has the cwd problem" | Edit/Write resolve relative paths against cwd too. If cwd drifted, the wrong file gets written. Use absolute paths for Edit/Write. |
+| "The command worked, so the location must be right" | Commands succeed on the wrong branch all the time — they just operate on the wrong data. |
+| "Adding `pwd` everywhere is verbose" | Verbosity is the point. The cost of one extra line is nothing; the cost of silently operating on the wrong branch is a polluted history and lost work. |
+
 ## Shell Safety
 
 All shell arguments containing user-derived or report-derived content must use single-quoted strings or heredocs to prevent command injection via `$()`, backticks, or double-quote breakout. Never use double-quoted strings for values that originate from:

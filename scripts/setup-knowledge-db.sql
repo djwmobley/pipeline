@@ -32,6 +32,21 @@ CREATE TABLE IF NOT EXISTS sessions (
   project TEXT
 );
 
+-- Add vector column for semantic search if pgvector is available (idempotent)
+DO $$ BEGIN
+  ALTER TABLE sessions ADD COLUMN IF NOT EXISTS embedding vector(1024);
+EXCEPTION WHEN undefined_object THEN
+  RAISE NOTICE 'Skipping vector column on sessions — pgvector not installed.';
+END $$;
+
+-- FTS on summary
+-- NOTE: ADD COLUMN on a STORED generated column rewrites every existing row
+-- under an ACCESS EXCLUSIVE lock. Acceptable at Pipeline's current scale
+-- (kilobytes). Schedule a migration window on user DBs with large histories.
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS fts_vec TSVECTOR
+  GENERATED ALWAYS AS (to_tsvector('english', coalesce(summary, ''))) STORED;
+CREATE INDEX IF NOT EXISTS sessions_fts_idx ON sessions USING gin(fts_vec);
+
 -- Tasks — features, bugs, investigations
 CREATE TABLE IF NOT EXISTS tasks (
   id SERIAL PRIMARY KEY,
@@ -60,6 +75,20 @@ CREATE TABLE IF NOT EXISTS decisions (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Add vector column for semantic search if pgvector is available (idempotent)
+DO $$ BEGIN
+  ALTER TABLE decisions ADD COLUMN IF NOT EXISTS embedding vector(1024);
+EXCEPTION WHEN undefined_object THEN
+  RAISE NOTICE 'Skipping vector column on decisions — pgvector not installed.';
+END $$;
+
+-- FTS on topic + decision + reason
+ALTER TABLE decisions ADD COLUMN IF NOT EXISTS fts_vec TSVECTOR
+  GENERATED ALWAYS AS (
+    to_tsvector('english', coalesce(topic, '') || ' ' || coalesce(decision, '') || ' ' || coalesce(reason, ''))
+  ) STORED;
+CREATE INDEX IF NOT EXISTS decisions_fts_idx ON decisions USING gin(fts_vec);
+
 -- Gotchas — critical constraints ("never do this")
 CREATE TABLE IF NOT EXISTS gotchas (
   id SERIAL PRIMARY KEY,
@@ -68,6 +97,20 @@ CREATE TABLE IF NOT EXISTS gotchas (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   active BOOLEAN DEFAULT TRUE
 );
+
+-- Add vector column for semantic search if pgvector is available (idempotent)
+DO $$ BEGIN
+  ALTER TABLE gotchas ADD COLUMN IF NOT EXISTS embedding vector(1024);
+EXCEPTION WHEN undefined_object THEN
+  RAISE NOTICE 'Skipping vector column on gotchas — pgvector not installed.';
+END $$;
+
+-- FTS on issue + rule
+ALTER TABLE gotchas ADD COLUMN IF NOT EXISTS fts_vec TSVECTOR
+  GENERATED ALWAYS AS (
+    to_tsvector('english', coalesce(issue, '') || ' ' || coalesce(rule, ''))
+  ) STORED;
+CREATE INDEX IF NOT EXISTS gotchas_fts_idx ON gotchas USING gin(fts_vec);
 
 -- Research — detailed notes linked to tasks
 CREATE TABLE IF NOT EXISTS research (
@@ -106,7 +149,7 @@ CREATE TABLE IF NOT EXISTS findings (
 -- Add vector column for semantic search if pgvector is available
 DO $$ BEGIN
   ALTER TABLE findings ADD COLUMN IF NOT EXISTS embedding vector(1024);
-EXCEPTION WHEN OTHERS THEN
+EXCEPTION WHEN undefined_object THEN
   RAISE NOTICE 'Skipping vector column on findings — pgvector not installed.';
 END $$;
 
@@ -136,7 +179,7 @@ CREATE INDEX IF NOT EXISTS code_index_fts_idx ON code_index USING gin(fts_vec);
 -- Add vector column if pgvector is available (idempotent)
 DO $$ BEGIN
   ALTER TABLE code_index ADD COLUMN IF NOT EXISTS embedding vector(1024);
-EXCEPTION WHEN OTHERS THEN
+EXCEPTION WHEN undefined_object THEN
   RAISE NOTICE 'Skipping vector column — pgvector not installed. FTS search still works.';
 END $$;
 

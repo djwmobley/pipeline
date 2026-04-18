@@ -7,6 +7,19 @@ description: Branch completion workflow — verify tests, present options, execu
 
 Guide completion of development work by presenting clear options and handling the chosen workflow.
 
+### Preflight — Orientation check
+
+<!-- checkpoint:MUST orientation -->
+
+Before any other step — including reading any skill file — locate the
+orientation skill (read `$PIPELINE_DIR/skills/orientation/SKILL.md` if
+`$PIPELINE_DIR` is set, otherwise Glob `**/pipeline/skills/orientation/SKILL.md`)
+and execute its preflight. State the six context values (cwd, repo root, branch,
+HEAD, worktree, dirty count) in prose and confirm they match this command's
+intent. Do not continue until done.
+
+---
+
 ### Step 1 — Load config and verify tests
 
 Read `.claude/pipeline.yml` for `commands.test`, `project.branch`, `integrations.github.enabled`, `integrations.github.issue_tracking`, `project.repo`, `docs.plans_dir`, and `dashboard.enabled`.

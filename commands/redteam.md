@@ -11,6 +11,19 @@ Security assessment with parallel domain specialists. Probes your codebase from 
 
 ---
 
+### Preflight — Orientation check
+
+<!-- checkpoint:MUST orientation -->
+
+Before any other step — including reading any skill file — locate the
+orientation skill (read `$PIPELINE_DIR/skills/orientation/SKILL.md` if
+`$PIPELINE_DIR` is set, otherwise Glob `**/pipeline/skills/orientation/SKILL.md`)
+and execute its preflight. State the six context values (cwd, repo root, branch,
+HEAD, worktree, dirty count) in prose and confirm they match this command's
+intent. Do not continue until done.
+
+---
+
 ### Step 0 — Load config + knowledge context
 
 Read `.claude/pipeline.yml` from the project root. Extract:

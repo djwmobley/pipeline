@@ -68,6 +68,36 @@ const TABLES = [
     snippet: (r) => r.gap || r.to_be || r.agent_name || '',
     ftsCol: 'fts_vec',
   },
+  {
+    name: 'decisions',
+    idCol: 'id',
+    textFn: (r) => `${r.topic || ''} ${r.decision || ''} ${r.reason || ''}`,
+    selectCols: 'id, topic, decision, reason',
+    updateSql: 'UPDATE decisions SET embedding = $1 WHERE id = $2',
+    label: (r) => `decision: ${r.topic || '?'}`,
+    snippet: (r) => r.decision || r.reason || '',
+    ftsCol: 'fts_vec',
+  },
+  {
+    name: 'sessions',
+    idCol: 'num',
+    textFn: (r) => r.summary || '',
+    selectCols: 'num, summary',
+    updateSql: 'UPDATE sessions SET embedding = $1 WHERE num = $2',
+    label: (r) => `session #${r.num}`,
+    snippet: (r) => r.summary || '',
+    ftsCol: 'fts_vec',
+  },
+  {
+    name: 'gotchas',
+    idCol: 'id',
+    textFn: (r) => `${r.issue || ''} ${r.rule || ''}`,
+    selectCols: 'id, issue, rule',
+    updateSql: 'UPDATE gotchas SET embedding = $1 WHERE id = $2',
+    label: (r) => `gotcha: ${r.issue || '?'}`,
+    snippet: (r) => r.rule || r.issue || '',
+    ftsCol: 'fts_vec',
+  },
 ];
 
 // ─── INTROSPECTION HELPERS ──────────────────────────────────────────────────
