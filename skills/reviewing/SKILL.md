@@ -199,7 +199,7 @@ The Big 4 dimensions are **always-on** — they apply to every review regardless
 
 - **Functionality** — correctness, spec compliance, branch/boundary completeness. **Always applies.** This is the core of every review. Includes: does the code do what it claims? Are all conditional branches handled? Do edge cases (null, undefined, empty, first-run) work?
 - **Usability** — user-facing clarity, error messages, accessibility. Applies when the change touches UI, CLI output, API responses, or documentation that users read.
-- **Performance** — scalability, resource usage, query efficiency. Applies when the change touches data processing, loops, I/O, or network calls.
+- **Performance** — scalability, resource usage, query efficiency. Applies when the change touches data processing, loops, I/O, or network calls. **For schema/migration changes** (ALTER TABLE, index creation, GENERATED STORED columns, long-running UPDATEs): flag the lock profile and backfill cost. `ADD COLUMN` on a STORED generated column rewrites every row under ACCESS EXCLUSIVE; `CREATE INDEX` without `CONCURRENTLY` blocks writes; bulk `UPDATE` on a hot table can fragment indexes. Acceptable at small scale, dangerous at user scale — require an explanatory comment or a scheduled migration note on any DDL that scales with row count.
 - **Security** — input validation, injection, access control. Already enforced via SAST and non-negotiables, but also applies to manual review when SAST is unavailable.
 
 The config's `review.criteria[]` (e.g., `dead-code`, `simplicity`, `SOLID`) are checked *in addition to* the Big 4. They are never a substitute.
@@ -258,6 +258,38 @@ For every operation that can fail, verify the failure path is documented:
 2. **Shell command validation** — every shell command that uses externally-sourced values (commit SHAs from issue comments, project names from directories, finding IDs from triage) must have a validation instruction. Check: is the value validated before it reaches a shell command? If not, 🔴 HIGH.
 
 3. **Disabled-service paths** — if issue tracking can be disabled, trace every platform CLI command to confirm it has a guard. If Postgres can be unavailable, trace every `pipeline-db.js` / `pipeline-context.js` call to confirm it has a fallback. Unguarded commands are 🔴 HIGH.
+
+4. **Swallowed-error audit** — grep the diff for error-suppressing patterns and verify each one is intentional and documented: `catch (_) {}`, `catch (_) { return null }`, `|| true` on a pipe, `2>/dev/null` on a command whose failure matters, `.catch(() => undefined)`, `try { ... } catch {}` (bare). Each one is a silent failure by construction. If the comment above doesn't explain *why* the error is being swallowed and what the degraded behavior looks like to the caller, that's 🟡 MEDIUM at minimum — 🔴 HIGH when the suppressed operation is in a write path (embeddings, metrics, audit logs). Intended silent failures (best-effort operations like `tryEmbed`) must have a comment naming the degradation.
+
+## Platform Portability
+
+Pipeline runs on Windows (Git Bash + Claude Code Bash tool), macOS (bash/zsh), and Linux (bash).
+Commands and scripts must work on all three without a per-platform branch unless the difference
+is explicitly documented. Scan shell snippets and script code for portability traps:
+
+1. **GNU-specific flags** — `sed -i` (BSD sed requires `sed -i ''`), `date -d` (BSD uses `-j`),
+   `readlink -f` (not on macOS), `stat --format` (BSD uses `-f`). Either use a POSIX-common
+   subset or document the requirement (e.g., "requires GNU sed, install via `brew install gnu-sed`").
+
+2. **Tool assumptions** — `wc`, `head`, `tail`, `grep`, `awk` are present on every Claude Code
+   target (Windows uses Git Bash which ships them). But `jq`, `yq`, `semgrep`, `pnpm`, `docker`,
+   `gh`, `az` are NOT guaranteed. For each tool reference, confirm it's probed first
+   (`command -v tool` or equivalent) or listed as a documented requirement.
+
+3. **Path separators** — scripts must handle both `/` and `\`. Node/JS code handles this via `path.sep`.
+   Shell snippets should avoid hard-coded Windows-only paths (`C:\\...`) and Unix-only paths
+   (`/usr/...`) unless guarded by an OS check.
+
+4. **Line endings** — generated files should use LF, not CRLF. Any script that writes a
+   shell-executable file should explicitly write LF. Verify `.gitattributes` covers the extensions.
+
+5. **`/dev/stdin` and `/dev/null`** — `/dev/null` is available on all three via Git Bash emulation;
+   `/dev/stdin` is unreliable on Windows Node (`Error: no such file or directory, open 'C:\dev\stdin'`).
+   Piping to `node -e 'require("fs").readFileSync("/dev/stdin")'` fails on Windows — use
+   `process.stdin` streams or a temp file instead.
+
+Portability failures that block a command on any of the three platforms are 🔴 HIGH. Portability
+warnings (works but emits noise) are 🟡 MEDIUM.
 
 ## Branch and Boundary Condition Analysis
 

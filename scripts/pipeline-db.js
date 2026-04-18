@@ -166,6 +166,7 @@ async function cmdUpdate(args) {
         [parseInt(num), summary, parseInt(tests), CONFIG.project]
       );
       console.log(c.green(`Session #${num} saved (${tests} tests).`));
+      await tryEmbed(client, 'sessions', 'num', parseInt(num), summary, CONFIG);
 
     } else if (entity === 'task') {
       const [idOrNew, ...taskRest] = rest;
@@ -248,8 +249,12 @@ async function cmdUpdate(args) {
         console.error('Usage: update gotcha new "<issue>" "<rule>"');
         process.exit(1);
       }
-      await client.query('INSERT INTO gotchas (issue, rule) VALUES ($1, $2)', [issue, rule]);
+      const gRes = await client.query(
+        'INSERT INTO gotchas (issue, rule) VALUES ($1, $2) RETURNING id',
+        [issue, rule]
+      );
       console.log(c.green(`Gotcha "${issue}" saved.`));
+      await tryEmbed(client, 'gotchas', 'id', gRes.rows[0].id, `${issue} ${rule}`, CONFIG);
 
     } else if (entity === 'decision') {
       const [topic, decision, reason] = rest;
@@ -257,8 +262,13 @@ async function cmdUpdate(args) {
         console.error('Usage: update decision "<topic>" "<decision>" "<reason>"');
         process.exit(1);
       }
-      await client.query('INSERT INTO decisions (topic, decision, reason) VALUES ($1, $2, $3)', [topic, decision, reason]);
+      const dRes = await client.query(
+        'INSERT INTO decisions (topic, decision, reason) VALUES ($1, $2, $3) RETURNING id',
+        [topic, decision, reason]
+      );
       console.log(c.green(`Decision "${topic}" saved.`));
+      await tryEmbed(client, 'decisions', 'id', dRes.rows[0].id,
+        `${topic} ${decision} ${reason}`, CONFIG);
 
     } else if (entity === 'finding') {
       const [idOrNew, ...findingRest] = rest;
@@ -513,10 +523,11 @@ async function cmdImport(args) {
       // Skip duplicates by checking issue text
       const existing = await client.query('SELECT 1 FROM gotchas WHERE issue = $1', [g.issue]);
       if (existing.rows.length === 0) {
-        await client.query(
-          'INSERT INTO gotchas (issue, rule, active) VALUES ($1, $2, $3)',
+        const r = await client.query(
+          'INSERT INTO gotchas (issue, rule, active) VALUES ($1, $2, $3) RETURNING id',
           [g.issue, g.rule, g.active !== false]
         );
+        await tryEmbed(client, 'gotchas', 'id', r.rows[0].id, `${g.issue} ${g.rule}`, CONFIG);
         gotchaCount++;
       }
     }
@@ -525,10 +536,12 @@ async function cmdImport(args) {
     for (const d of importData.decisions) {
       const existing = await client.query('SELECT 1 FROM decisions WHERE topic = $1 AND decision = $2', [d.topic, d.decision]);
       if (existing.rows.length === 0) {
-        await client.query(
-          'INSERT INTO decisions (topic, decision, reason) VALUES ($1, $2, $3)',
+        const r = await client.query(
+          'INSERT INTO decisions (topic, decision, reason) VALUES ($1, $2, $3) RETURNING id',
           [d.topic, d.decision, d.reason]
         );
+        await tryEmbed(client, 'decisions', 'id', r.rows[0].id,
+          `${d.topic} ${d.decision} ${d.reason || ''}`, CONFIG);
         decisionCount++;
       }
     }

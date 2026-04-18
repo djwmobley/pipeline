@@ -118,12 +118,18 @@ All subsequent commands in this worktree must include the full path or be combin
 Read `project.pkg_manager` from `.claude/pipeline.yml` (defaults to `npm`). Auto-detect and run:
 ```bash
 [ -f package.json ] && [pkg_manager] install
+[ -f scripts/package.json ] && (cd scripts && [pkg_manager] install)
 [ -f Cargo.toml ] && cargo build
 [ -f requirements.txt ] && pip install -r requirements.txt
 [ -f pyproject.toml ] && (poetry install || pip install -e .)
 [ -f go.mod ] && go mod download
 ```
 Replace `[pkg_manager]` with the actual value (`pnpm`, `npm`, `yarn`, or `bun`).
+
+The `scripts/package.json` install covers projects (like the Pipeline plugin itself) that
+ship a sibling scripts directory with its own dependencies. Without this, `scripts/*.js`
+calls in new worktrees fail with missing-module errors and fall back to the main workspace —
+invisible drift that breaks dogfooding.
 
 ---
 

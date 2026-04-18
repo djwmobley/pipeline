@@ -7,6 +7,19 @@ description: Full codebase review — Phase 0 grep + parallel sector agents + sy
 
 Full codebase review with parallel sector agents. This is READ-ONLY — no code is modified.
 
+### Preflight — Orientation check
+
+<!-- checkpoint:MUST orientation -->
+
+Before any other step — including reading any skill file — locate the
+orientation skill (read `$PIPELINE_DIR/skills/orientation/SKILL.md` if
+`$PIPELINE_DIR` is set, otherwise Glob `**/pipeline/skills/orientation/SKILL.md`)
+and execute its preflight. State the six context values (cwd, repo root, branch,
+HEAD, worktree, dirty count) in prose and confirm they match this command's
+intent. Do not continue until done.
+
+---
+
 Locate and read the auditing skill file:
 1. If `$PIPELINE_DIR` is set: read `$PIPELINE_DIR/skills/auditing/SKILL.md`
 2. Otherwise: use Glob `**/pipeline/skills/auditing/SKILL.md` to find it

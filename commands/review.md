@@ -18,6 +18,19 @@ The reviewing skill includes an adversarial review mandate. Follow it exactly �
 | "I already reviewed this mentally" | Mental reviews miss things. The skill mandates structured findings with confidence levels. |
 | "The changes are too small to have issues" | Small changes in the wrong place cause large outages. Review anyway. |
 
+### Preflight — Orientation check
+
+<!-- checkpoint:MUST orientation -->
+
+Before any other step — including reading any skill file — locate the
+orientation skill (read `$PIPELINE_DIR/skills/orientation/SKILL.md` if
+`$PIPELINE_DIR` is set, otherwise Glob `**/pipeline/skills/orientation/SKILL.md`)
+and execute its preflight. State the six context values (cwd, repo root, branch,
+HEAD, worktree, dirty count) in prose and confirm they match this command's
+intent. Do not continue until done.
+
+---
+
 Locate and read the reviewing skill file:
 1. If `$PIPELINE_DIR` is set: read `$PIPELINE_DIR/skills/reviewing/SKILL.md`
 2. Otherwise: use Glob `**/pipeline/skills/reviewing/SKILL.md` to find it
@@ -140,11 +153,12 @@ For each file in the diff, read it completely for full context.
 Follow the reviewing skill's process. Two layers, both required:
 
 1. **Always-on checks** (cannot be disabled via config):
-   - Big 4 dimensions (Functionality, Usability, Performance, Security) — apply those relevant to the changed files. Functionality always applies.
+   - Big 4 dimensions (Functionality, Usability, Performance, Security) — apply those relevant to the changed files. Functionality always applies. Performance now explicitly covers schema/migration cost profiles.
    - Branch and Boundary Condition Analysis — enumerate conditionals, check for unhandled states
    - Intra-File Contract Verification — check that comments/JSDoc match code behavior
    - Cross-File Contract Verification — trace contracts across file boundaries
-   - Fallback Symmetry — verify failure paths for operations that can fail
+   - Fallback Symmetry — verify failure paths, including the swallowed-error audit (grep for `catch (_)`, `|| true`, `2>/dev/null`)
+   - Platform Portability — scan shell and script changes for GNU-vs-BSD flags, unprobed tool assumptions, path-separator issues, `/dev/stdin`/`/dev/null` traps on Windows
 
 2. **Config criteria** from `review.criteria[]` — apply each configured criterion (e.g., dead-code, simplicity, SOLID) as additional checks on top of the always-on layer.
 

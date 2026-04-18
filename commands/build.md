@@ -5,6 +5,28 @@ description: Subagent-driven plan execution — fresh agent per task with post-t
 
 ## Pipeline Build
 
+### Preflight — Orientation check
+
+<!-- checkpoint:MUST orientation -->
+
+Before any other step — including reading any skill file — locate the
+orientation skill (read `$PIPELINE_DIR/skills/orientation/SKILL.md` if
+`$PIPELINE_DIR` is set, otherwise Glob `**/pipeline/skills/orientation/SKILL.md`)
+and execute its preflight. State the six context values (cwd, repo root, branch,
+HEAD, worktree, dirty count) in prose and confirm they match this command's
+intent. Do not continue until done.
+
+**Caller-specific guard:** this command commits source code. Read
+`project.branch` from `.claude/pipeline.yml` (default `main`) and assert the
+current branch is NOT the base branch:
+```bash
+BASE=$(grep -E '^[[:space:]]*branch:' .claude/pipeline.yml | head -1 | sed 's/.*branch:[[:space:]]*"\?\([^"]*\)"\?.*/\1/')
+[ "$(git branch --show-current)" = "${BASE:-main}" ] && echo 'STOP: on base branch — build requires a feature branch'
+```
+If that echoes the STOP message, stop and ask the user to create a feature branch. Do not `exit 1` — that would kill the persistent Bash shell.
+
+---
+
 Locate and read the building skill file:
 1. If `$PIPELINE_DIR` is set: read `$PIPELINE_DIR/skills/building/SKILL.md`
 2. Otherwise: use Glob `**/pipeline/skills/building/SKILL.md` to find it

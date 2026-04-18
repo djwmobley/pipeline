@@ -83,6 +83,7 @@ When a user declines a MAY checkpoint (or accepts the default skip), no logging 
 
 | ID | Command | Description | Tier | Rationale |
 |----|---------|-------------|------|-----------|
+| `orientation` | all phase skills | Assert cwd, branch, HEAD, worktree, dirty flag before Step 0 | MUST | Bash tool persists cwd across calls; invisible drift corrupts history |
 | `finish-tests-pass` | finish | Tests must pass before merge options | MUST | Merging with failing tests breaks the main branch |
 | `finish-merge-verify` | finish | Re-run tests after merge | MUST | Merge can introduce conflicts that break tests |
 | `finish-discard-confirm` | finish | Type "discard" to delete branch | MUST | Permanent data loss — branch and all commits deleted |
