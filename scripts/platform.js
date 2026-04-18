@@ -212,9 +212,12 @@ const github = {
     const args = ['issue', 'create', '--repo', repo, '--title', title];
     if (body) args.push('--body', body);
     if (labels) args.push('--label', labels);
-    args.push('--json', 'number', '-q', '.number');
 
-    const ref = await withRetry(() => run('gh', args));
+    // gh issue create prints the issue URL on stdout; --json is not supported here.
+    const url = await withRetry(() => run('gh', args));
+    const m = url.match(/\/issues\/(\d+)/);
+    if (!m) throw new Error(`Could not parse issue number from gh output: ${url}`);
+    const ref = m[1];
     // Verify it was created
     await run('gh', ['issue', 'view', ref, '--repo', repo, '--json', 'number', '-q', '.number']);
     return ref;
@@ -280,9 +283,12 @@ const github = {
     const args = ['pr', 'create', '--repo', repo, '--title', title, '--head', source];
     if (target) args.push('--base', target);
     if (body) args.push('--body', body);
-    args.push('--json', 'number', '-q', '.number');
 
-    const ref = await withRetry(() => run('gh', args));
+    // gh pr create prints the PR URL on stdout; --json is not supported here.
+    const url = await withRetry(() => run('gh', args));
+    const m = url.match(/\/pull\/(\d+)/);
+    if (!m) throw new Error(`Could not parse PR number from gh output: ${url}`);
+    const ref = m[1];
     await run('gh', ['pr', 'view', ref, '--repo', repo, '--json', 'number', '-q', '.number']);
     return ref;
   },
