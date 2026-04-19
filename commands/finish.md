@@ -100,7 +100,10 @@ If a PR exists:
 ```bash
 node '[SCRIPTS_DIR]/platform.js' pr merge [PR_NUMBER] --squash --delete-branch
 git checkout [base-branch]
-git pull
+# `--prune` drops the stale remote-tracking ref left behind by `--delete-branch`.
+# Without it, `refs/remotes/origin/[feature-branch]` persists as an orphan
+# pointing at a commit no longer on the remote. Default git does not prune.
+git pull --prune
 # Clean up the local ref. `--delete-branch` above removes only the remote;
 # the local ref persists. `git branch -d` refuses after a squash merge
 # because the squashed commit on base has no ancestral link to the
@@ -114,9 +117,10 @@ If the command fails, notify the user with the error and ask for guidance.
 
 | Rationalization | Reality |
 |---|---|
-| "`--delete-branch` deleted the branch, so we're done" | It deleted the remote ref only. `gh` has no knowledge of the local checkout — the local ref persists. |
+| "`--delete-branch` deleted the branch, so we're done" | It deleted the remote ref only. `gh` has no knowledge of the local checkout — the local ref persists, and so does the remote-tracking ref unless `--prune` is passed to fetch/pull. |
 | "I'll use `git branch -d` to be safe" | `-d` refuses after a squash merge (no ancestral link to the new squashed commit). You'll be left with the stale ref. `-D` is required and correct here. |
 | "Force-deleting is dangerous" | Not in this flow. The PR is verified MERGED via the gh API and the squash commit is in local base. No commits are at risk. |
+| "`git pull` will clean up remote-tracking refs" | It won't — default git does not prune. Set `fetch.prune = true` globally OR pass `--prune` explicitly. We pass it explicitly to avoid relying on user git config. |
 
 If NO PR exists, fall back to local merge:
 ```bash
