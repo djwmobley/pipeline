@@ -101,9 +101,22 @@ If a PR exists:
 node '[SCRIPTS_DIR]/platform.js' pr merge [PR_NUMBER] --squash --delete-branch
 git checkout [base-branch]
 git pull
+# Clean up the local ref. `--delete-branch` above removes only the remote;
+# the local ref persists. `git branch -d` refuses after a squash merge
+# because the squashed commit on base has no ancestral link to the
+# feature-branch commits — git sees them as "not fully merged". `-D` is
+# safe here: `platform.js pr merge` only exits 0 when GitHub confirms
+# the merge, and `git pull` above brought the squash commit into base.
+git branch -D [feature-branch]
 ```
 
 If the command fails, notify the user with the error and ask for guidance.
+
+| Rationalization | Reality |
+|---|---|
+| "`--delete-branch` deleted the branch, so we're done" | It deleted the remote ref only. `gh` has no knowledge of the local checkout — the local ref persists. |
+| "I'll use `git branch -d` to be safe" | `-d` refuses after a squash merge (no ancestral link to the new squashed commit). You'll be left with the stale ref. `-D` is required and correct here. |
+| "Force-deleting is dangerous" | Not in this flow. The PR is verified MERGED via the gh API and the squash commit is in local base. No commits are at risk. |
 
 If NO PR exists, fall back to local merge:
 ```bash
