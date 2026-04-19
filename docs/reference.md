@@ -676,6 +676,8 @@ Interactive project setup. Detects your environment, asks questions, generates `
 **Arguments:**
 - `--quick` or `quick` — Auto-detect everything, make all decisions automatically, auto-install dependencies (Playwright, Postgres, Ollama embedding model). Zero user interaction. Prints a decision log at the end. Use `/pipeline:update` to adjust anything afterward.
 
+**Environment detection** runs via two Node scripts (`scripts/pipeline-init-detect.js` and `scripts/pipeline-init-integrations.js`). These spawn subprocesses via argv array (no shell), probe TCP ports via `net.createConnection` (no `/dev/tcp`), and resolve Windows Postgres install paths via `process.env.ProgramFiles` (no hardcoded `/c/Program Files` literals). Runs cleanly on native Windows (`cmd.exe`, PowerShell) and under Git Bash regardless of install path spaces.
+
 See the [configuration guide](guide.md) for what gets generated.
 
 ---
