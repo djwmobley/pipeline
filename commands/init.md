@@ -90,58 +90,24 @@ Every question in the remaining steps has three variants. Use the engagement sty
 
 ### Step 1 — Detect project type and tools
 
-Run this single detection script (all commands are wrapped to always exit 0, avoiding parallel-cancel issues on Windows):
+Run the detection probe:
 
 ```bash
-echo "=== PROJECT FILES ==="
-for f in package.json Cargo.toml go.mod pyproject.toml setup.py pom.xml build.gradle requirements.txt; do
-  test -f "$f" && echo "FOUND: $f"
-done
-
-echo "=== GIT ==="
-echo "remote: $(git remote get-url origin 2>/dev/null || echo 'none')"
-echo "branch: $(git branch --show-current 2>/dev/null || echo 'unknown')"
-
-echo "=== DEPS ==="
-if test -f package.json; then
-  echo "--- package.json deps ---"
-  grep -E '"(vitest|jest|mocha|ava|eslint|biome|oxlint|typescript|react-native|expo|next|nuxt|svelte|remix|react|vue|angular|express|fastify|koa|hono|capacitor)"' package.json 2>/dev/null || echo "no key deps found"
-  echo "--- package.json bin ---"
-  grep -E '"bin"' package.json 2>/dev/null || echo "no bin field"
-  echo "--- package.json main/exports ---"
-  grep -E '"(main|exports)"' package.json 2>/dev/null || echo "no main/exports"
-fi
-test -f Cargo.toml && grep -E '^\[\[bin\]\]|axum|actix|clap|rocket' Cargo.toml 2>/dev/null || true
-test -f go.mod && cat go.mod 2>/dev/null || true
-
-echo "=== SOURCE DIRS ==="
-for d in src lib app pkg cmd internal ios android server prisma drizzle; do
-  test -d "$d" && echo "DIR: $d/"
-done
-
-echo "=== CONFIG FILES ==="
-for f in next.config.js next.config.ts next.config.mjs nuxt.config.ts nuxt.config.js svelte.config.js remix.config.js capacitor.config.ts capacitor.config.json vite.config.ts vite.config.js webpack.config.js; do
-  test -f "$f" && echo "CONFIG: $f"
-done
-
-echo "=== PACKAGE MANAGER ==="
-if test -f pnpm-lock.yaml; then echo "PKG_MGR: pnpm"
-elif test -f bun.lockb || test -f bun.lock; then echo "PKG_MGR: bun"
-elif test -f yarn.lock; then echo "PKG_MGR: yarn"
-elif test -f package-lock.json; then echo "PKG_MGR: npm"
-elif test -f package.json; then
-  # No lockfile — check what's available
-  command -v pnpm >/dev/null 2>&1 && echo "PKG_MGR: pnpm (detected, no lockfile)" || echo "PKG_MGR: npm (default)"
-else echo "PKG_MGR: none"
-fi
-
-echo "=== SOURCE FILE COUNT ==="
-find src/ lib/ app/ -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" -o -name "*.rs" -o -name "*.go" -o -name "*.py" 2>/dev/null | wc -l || echo "0"
-
-echo "=== DONE ==="
+node '[SCRIPTS_DIR]/pipeline-init-detect.js'
 ```
 
-**Greenfield detection:** If no source directories exist OR total source files < 5, this is a **greenfield project**. Flag it — this affects profile recommendations (Step 2) and sector setup (Step 5).
+The probe emits a single JSON object on stdout with all detection fields. State the detected values in prose so Step 1b (gap-fill), Step 2 (profile inference), Step 4 (knowledge tier), and Step 5 (config generation) can consume them downstream:
+
+- **project_files**: presence check for `package.json`, `Cargo.toml`, `go.mod`, `pyproject.toml`, `setup.py`, `pom.xml`, `build.gradle`, `requirements.txt`.
+- **git**: `{remote, branch}` if a git remote exists; otherwise `null`.
+- **deps**: framework markers from `package.json` (`vitest`, `next`, `react-native`, etc.), `Cargo.toml` markers (`[[bin]]`, `axum`, `actix`, `clap`, `rocket`), and `go_mod_present`. Plus `package_json_bin` / `package_json_main_or_exports` for CLI-vs-library shape signals.
+- **source_dirs**: which of `src`, `lib`, `app`, `pkg`, `cmd`, `internal`, `ios`, `android`, `server`, `prisma`, `drizzle` exist as directories.
+- **config_files**: framework configs detected (`next.config.*`, `vite.config.*`, etc.).
+- **pkg_manager**: `{name, detection_source}` where `name` is `pnpm` | `bun` | `yarn` | `npm` | `none` and `detection_source` names the lockfile or fallback used.
+- **source_file_count**: `.ts` / `.tsx` / `.js` / `.jsx` / `.rs` / `.go` / `.py` file count under `src` / `lib` / `app` (skips `node_modules` and hidden directories).
+- **greenfield**: `true` if `source_dirs` is empty OR `source_file_count < 5`. Flag it — this affects profile recommendations (Step 2) and sector setup (Step 5).
+
+The probe spawns `git` via `execFileSync` with an argv array (no shell interpretation) and passes `cwd` explicitly. On any probe failure it exits non-zero with a one-line stderr naming which step failed — stop and surface the error rather than guessing detection.
 
 ---
 
@@ -465,72 +431,27 @@ Set `security.policy` to `every-feature`, `milestone`, or `on-demand`.
 
 ### Step 3 — Detect integrations
 
-Run this single integration probe script:
+Run the integration probe:
 
 ```bash
-echo "=== ENV VARS ==="
-echo "SENTRY_AUTH_TOKEN=${SENTRY_AUTH_TOKEN:+SET}"
-echo "POSTHOG_API_KEY=${POSTHOG_API_KEY:+SET}"
-echo "GAMMA_API_KEY=${GAMMA_API_KEY:+SET}"
-echo "GITHUB_TOKEN=${GITHUB_TOKEN:+SET}"
-
-echo "=== POSTGRES DETECTION ==="
-# Step 1: Find pg_isready — check PATH, then common install locations
-PG_READY=""
-if command -v pg_isready >/dev/null 2>&1; then
-  PG_READY="pg_isready"
-  echo "pg_isready: on PATH"
-else
-  # Common install paths (Windows, Linux, macOS)
-  for d in \
-    "/c/Program Files/PostgreSQL"/*/bin \
-    "/c/Program Files (x86)/PostgreSQL"/*/bin \
-    "/usr/lib/postgresql"/*/bin \
-    "/opt/homebrew/bin" \
-    "/usr/local/bin"; do
-    if test -f "$d/pg_isready" || test -f "$d/pg_isready.exe"; then
-      PG_READY="$d/pg_isready"
-      echo "pg_isready: found at $d (not on PATH)"
-      break
-    fi
-  done
-  test -z "$PG_READY" && echo "pg_isready: not found"
-fi
-
-# Step 2: Check if Postgres install exists even without pg_isready
-echo "pg_install: searching..."
-for d in \
-  "/c/Program Files/PostgreSQL"/* \
-  "/c/Program Files (x86)/PostgreSQL"/* \
-  "/usr/lib/postgresql"/* \
-  "/opt/homebrew/opt/postgresql"*; do
-  if test -d "$d" 2>/dev/null; then
-    echo "pg_install: $d"
-  fi
-done
-
-# Step 3: Try default port 5432
-if test -n "$PG_READY"; then
-  "$PG_READY" -h localhost -p 5432 2>/dev/null && echo "postgres_5432: accepting connections" || echo "postgres_5432: not responding"
-else
-  (echo > /dev/tcp/localhost/5432) 2>/dev/null && echo "postgres_5432: port open" || echo "postgres_5432: closed"
-fi
-
-# Step 4: Quick scan of common alternate ports
-for port in 5433 5434 54320; do
-  (echo > /dev/tcp/localhost/$port) 2>/dev/null && echo "postgres_alt_port: $port open" || true
-done
-
-echo "=== OTHER SERVICES ==="
-curl -s --connect-timeout 2 http://localhost:11434/api/tags 2>&1 | head -1 || echo "ollama: no"
-curl -s --connect-timeout 2 http://localhost:9222/json/version 2>&1 | head -1 || echo "chrome: no"
-
-echo "=== CLI TOOLS ==="
-npx playwright --version 2>/dev/null || echo "playwright: no"
-gh --version 2>/dev/null || echo "gh: no"
-
-echo "=== DONE ==="
+node '[SCRIPTS_DIR]/pipeline-init-integrations.js'
 ```
+
+The probe emits a single JSON object on stdout. State the detected values so the "Interpret Postgres results" table and integration decision matrix below can drive the decisions:
+
+- **env_vars**: presence flags only (not values) for `SENTRY_AUTH_TOKEN`, `POSTHOG_API_KEY`, `GAMMA_API_KEY`, `GITHUB_TOKEN`.
+- **postgres.pg_isready**: `"on_path"` | `{"path": "..."}` | `null` — which `pg_isready` binary is reachable.
+- **postgres.installs_found**: array of Postgres install directory paths (Windows `Program Files\PostgreSQL\*`, Linux `/usr/lib/postgresql/*`, macOS Homebrew `postgresql*`).
+- **postgres.port_5432**: `"accepting"` (TCP open AND `pg_isready` confirms) | `"port_open"` (TCP open, `pg_isready` unavailable to confirm) | `"not_responding"` (TCP open but `pg_isready` says no) | `"closed"`.
+- **postgres.alt_ports_open**: non-default ports open among 5433, 5434, 54320.
+- **ollama.responding**: `true` if `http://localhost:11434/api/tags` returns.
+- **chrome.responding**: `true` if `http://localhost:9222/json/version` returns (the remote-debugging port).
+- **playwright.installed** / **version_if_known**: from `npx playwright --version`.
+- **gh.installed** / **version_if_known**: from `gh --version`.
+
+The probe spawns subprocesses via argv array (no shell interpretation), probes TCP ports via Node's `net.createConnection` (no `/dev/tcp`), probes HTTP via `http.request` (no `curl`), and resolves Windows Postgres paths via `process.env.ProgramFiles` / `process.env['ProgramFiles(x86)']` (no hardcoded `/c/Program Files/...` literals). On probe failure it exits non-zero with a one-line stderr.
+
+Consume `postgres` against the "Interpret Postgres results" table below, and the other fields against the integration decision matrix further down.
 
 **Design tool detection (non-script — MCP tool availability is known to you, not bash):**
 
