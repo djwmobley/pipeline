@@ -15,16 +15,30 @@ Every phase command's first instruction is to execute this preflight. No excepti
 
 <!-- checkpoint:MUST orientation -->
 
-## Step 1 — Assert context in a single Bash call
+## Step 1 — Run the preflight probe
 
 ```bash
-pwd && \
-  git rev-parse --show-toplevel && \
-  git branch --show-current && \
-  git rev-parse --short HEAD && \
-  { [ "$(git rev-parse --git-dir)" != "$(git rev-parse --git-common-dir)" ] && echo 'WORKTREE' || echo 'MAIN'; } && \
-  git status --porcelain | wc -l
+node scripts/preflight-probe.js
 ```
+
+The probe emits a single JSON object on stdout with the six mechanical context
+values. Example output:
+
+```json
+{
+  "cwd": "/c/Users/user/dev/pipeline",
+  "repo_root": "/c/Users/user/dev/pipeline",
+  "branch": "main",
+  "head": "abc1234",
+  "worktree": "MAIN",
+  "dirty_count": 0
+}
+```
+
+The probe spawns git subprocesses via an argv-array API (no shell interpretation)
+and passes `cwd` explicitly to each invocation. On any probe failure it exits
+non-zero with a one-line stderr message naming which step failed — if that
+happens, stop and surface the error instead of guessing context.
 
 The worktree detector uses the only authoritative git signal: `--git-dir` and
 `--git-common-dir` return the same path in the main working tree and different
