@@ -4,6 +4,10 @@ All notable changes to Pipeline are documented here. Format follows [Keep a Chan
 
 ## [Unreleased]
 
+### Fixed
+
+- **Orientation preflight Windows safety** — `skills/orientation/SKILL.md` Step 1 chained-Bash block (`pwd && git rev-parse ... | wc -l`) replaced with `scripts/preflight-probe.js`, a Node script using `execFileSync` with argv arrays. Same six-field JSON output (cwd, repo_root, branch, head, worktree, dirty_count), no POSIX dependency. Eliminates silent breakage on `cmd.exe` and PowerShell; removes Git Bash fragility under install paths with spaces. All 8 phase commands delegate to SKILL.md via the caller-contract abstraction — byte-for-byte sync verified across `commands/{audit,build,commit,qa,redteam,review,remediate,finish}.md`. (#92, #93)
+
 ## [0.2.0-alpha] — 2026-03-26
 
 V2 agent rewrite — code-based orchestrator, store-read pattern, and review circuit quality.
