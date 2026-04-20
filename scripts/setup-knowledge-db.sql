@@ -342,3 +342,32 @@ CREATE OR REPLACE VIEW open_findings AS
   ORDER BY
     CASE severity WHEN 'CRITICAL' THEN 0 WHEN 'HIGH' THEN 1 WHEN 'MEDIUM' THEN 2 WHEN 'LOW' THEN 3 ELSE 4 END,
     created_at;
+
+-- Per-feature token usage — mined from Claude Code transcripts.
+-- One row per feature (branch + pr_number). Populated at commit time via
+-- `scripts/pipeline-cost.js record`. Enables relative-cost comparison across
+-- features, cache-hit analysis, and tool-use pattern inspection.
+-- No USD cost stored — Claude Max is flat-rate; the signal is relative volume.
+CREATE TABLE IF NOT EXISTS feature_token_usage (
+  id SERIAL PRIMARY KEY,
+  branch TEXT NOT NULL,
+  pr_number INTEGER,
+  github_issue INTEGER,
+  started_at TIMESTAMPTZ NOT NULL,
+  completed_at TIMESTAMPTZ,
+  model TEXT NOT NULL,
+  assistant_msgs INTEGER NOT NULL,
+  input_tokens BIGINT NOT NULL DEFAULT 0,
+  output_tokens BIGINT NOT NULL DEFAULT 0,
+  cache_creation_5m_tokens BIGINT NOT NULL DEFAULT 0,
+  cache_creation_1h_tokens BIGINT NOT NULL DEFAULT 0,
+  cache_read_tokens BIGINT NOT NULL DEFAULT 0,
+  cache_hit_pct NUMERIC(5,2),
+  tool_calls JSONB NOT NULL DEFAULT '{}'::jsonb,
+  session_ids TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
+  notes TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS feature_token_usage_branch_idx ON feature_token_usage (branch);
+CREATE INDEX IF NOT EXISTS feature_token_usage_pr_idx ON feature_token_usage (pr_number);
+CREATE INDEX IF NOT EXISTS feature_token_usage_created_idx ON feature_token_usage (created_at DESC);

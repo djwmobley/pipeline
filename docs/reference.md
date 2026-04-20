@@ -771,6 +771,61 @@ Every state-changing command automatically persists its outputs to the configure
 
 **If neither tier is configured**, the persistence block is a no-op. Commands still write their reports to `docs/findings/` as normal.
 
+## Per-Feature Token Tracking
+
+Pipeline mines Claude Code session transcripts (`~/.claude/projects/<encoded-cwd>/<session-uuid>.jsonl`) for per-feature token usage and tool-call patterns. Useful for identifying cache-inefficient features, tool-heavy flows, and relative token spend across directives.
+
+**Data source:** every assistant message in a Claude Code transcript carries `timestamp`, `gitBranch`, `sessionId`, `model`, a full `usage` object (`input_tokens`, `output_tokens`, `cache_read_input_tokens`, `cache_creation.ephemeral_5m_input_tokens`, `cache_creation.ephemeral_1h_input_tokens`), and a `content[]` array where `tool_use` blocks encode each tool call. Filtering by `gitBranch` yields per-feature aggregates.
+
+**No USD cost is stored** — Claude Max is flat-rate; the signal is relative volume, cache-hit ratio, and tool-call distribution.
+
+### Helper script: `scripts/pipeline-cost.js`
+
+| Subcommand | Purpose |
+|---|---|
+| `session-total` | Aggregate current session (most recently modified transcript) |
+| `feature-total --branch <name> [--since ISO] [--until ISO]` | Per-branch JSON aggregate |
+| `trailer --branch <name>` | Emit 5-line commit trailer (Tokens, Cache, Tools, Model, Msgs) |
+| `record --branch <name> [--pr N] [--issue M] [--notes <text>]` | Insert DB row + emit trailer |
+
+### Commit trailer format
+
+Append to feature-merge commits:
+
+```
+Tokens: 28.7M-read 174.8k-cw1h 166.5k-out
+Cache: 99.4%
+Tools: Bash=31 Edit=9 Write=3 TaskUpdate=2 Grep=1 Read=1
+Model: claude-opus-4-7
+Msgs: 96
+```
+
+- `Tokens`: cache-read, cache-write (1h or 5m — whichever has values), output. Input tokens (uncached) are usually negligible and omitted.
+- `Cache`: hit % = `cache_read / (input + cache_read + cache_creation)`. High is good.
+- `Tools`: top 6 tool names with invocation counts, separated by spaces.
+
+### Postgres table: `feature_token_usage`
+
+```sql
+id SERIAL, branch TEXT, pr_number INT, github_issue INT,
+started_at TIMESTAMPTZ, completed_at TIMESTAMPTZ,
+model TEXT, assistant_msgs INT,
+input_tokens BIGINT, output_tokens BIGINT,
+cache_creation_5m_tokens BIGINT, cache_creation_1h_tokens BIGINT, cache_read_tokens BIGINT,
+cache_hit_pct NUMERIC(5,2), tool_calls JSONB, session_ids TEXT[], notes TEXT,
+created_at TIMESTAMPTZ
+```
+
+Indexed on `branch`, `pr_number`, and `created_at DESC`. Query with `SELECT branch, assistant_msgs, cache_read_tokens, cache_hit_pct, tool_calls FROM feature_token_usage ORDER BY created_at DESC`.
+
+### Optimization signals
+
+- **Low cache-hit %** (<95%) on a feature branch → cache is being invalidated frequently. Check for repeated large Reads, or sessions that `/clear` mid-feature.
+- **High Bash count with low Read count** → orchestration-heavy work. Consider batching DB queries into scripts.
+- **High Read count** → exploratory reading before edits. A `docs/ARCHITECTURE.md` file reduces future reads on the same surface area.
+- **`main` branch with large output** → ceremony overhead (`/pipeline:finish`, Judge fetches, branch verifications). Bounded by what's fundamentally orchestration, not optimizable below a floor.
+
+
 ## State Synchronization
 
 Pipeline maintains three tracking stores with a clear hierarchy:
