@@ -537,23 +537,32 @@ Set `integrations.stitch.device_type` to the corresponding enum value (e.g., `DE
 
 ### Step 4 — Knowledge tier decision
 
-**If quick mode and Postgres is detected+running (accepting connections):**
-1. Choose `postgres` tier automatically.
-2. Locate the pipeline plugin's `scripts/` directory (same resolution as interactive mode below).
-3. Auto-install dependencies: `cd <scripts_path> && pnpm install`. **If install fails:** fall back to `files` tier, log the error, continue.
-4. Generate project-scoped DB name, run `pipeline-db.js setup`, verify with `pipeline-db.js status`. **If setup fails:** fall back to `files` tier, log the error, continue.
-5. If Ollama is available, use `mxbai-embed-large` as the embedding model. Auto-pull if not present: `ollama pull mxbai-embed-large`. **If pull fails or times out:** skip embedding model, log "Ollama pull failed — FTS keyword search only. Pull manually later: `ollama pull mxbai-embed-large`". Continue with Postgres tier (FTS still works without embeddings).
-6. Set `knowledge.tier: "postgres"` with `database`, `host`, `port`, `user`, `embedding_model` (if pulled successfully).
-7. Add `"node $SCRIPTS_DIR/pipeline-embed.js index"` to `commit.post_commit_hooks` (keeps embeddings current after each commit). Skip this if no embedding model was configured.
-8. Log everything: tier chosen, DB name, deps installed, embedding model (or "none — FTS only").
+Orchestration is delegated to `scripts/pipeline-init-knowledge.js` (two subcommands: `setup-postgres`, `setup-files`). It handles pnpm install, db setup + verify, Ollama pull, and directory creation. Engagement-variant prompts below stay inline — they are LLM cognition. Script is Windows-safe: `execFileSync` argv arrays, no shell strings.
 
-**If quick mode and Postgres is NOT running:**
-1. Choose `files` tier.
-2. Create directories: `mkdir -p docs/sessions docs/specs docs/plans`
-3. Log: "Postgres not detected — using files tier. Run `/pipeline:update knowledge` to switch later."
-4. Skip to Step 5.
+**Result interpretation (applies to every `setup-postgres` call below):**
 
-Present options based on engagement style and what was detected:
+- `already_set_up: true` → DB exists with `sessions` table; script short-circuited. Log "Postgres DB `[db_name]` already configured — reusing."
+- Non-zero exit → pnpm install or db setup failed. Fall back to `setup-files`, log the stderr, continue.
+- `ollama_pull_result: "failed"` or `"skipped"` → Postgres tier still works (FTS keyword search). Log "Ollama pull [status] — FTS only. Pull manually later."
+- Config wiring: set `knowledge.tier: "postgres"`, `knowledge.database: [db_name]`, `host`/`port`/`user` from detection. Set `knowledge.embedding_model: [embedding_model]` and append `[post_commit_hook]` to `commit.post_commit_hooks` only when `ollama_pull_result == "ok"`.
+
+**Quick mode, Postgres detected + accepting connections:**
+
+```bash
+node '[SCRIPTS_DIR]/pipeline-init-knowledge.js' setup-postgres --project-name '[project_name]' --embedding-model mxbai-embed-large
+```
+
+**Quick mode, Postgres NOT running:**
+
+```bash
+node '[SCRIPTS_DIR]/pipeline-init-knowledge.js' setup-files
+```
+
+Set `knowledge.tier: "files"`. Log: "Postgres not detected — using files tier. Run `/pipeline:update knowledge` to switch later." Skip to Step 5.
+
+---
+
+**Interactive mode** — ask tier choice scaled by engagement style:
 
 **Expert:**
 > "Knowledge tier? (files / postgres) [Postgres detected: [yes/no], Ollama: [yes/no]]"
@@ -576,9 +585,7 @@ Present options based on engagement style and what was detected:
 >
 > [If Postgres not detected: "Postgres is not running on this machine. You can install it later and switch with `/pipeline:update knowledge`."]"
 
-If Postgres chosen and available:
-
-The pipeline scripts need the `pg` Node.js package to talk to Postgres. The plugin's scripts use pnpm (they have a `pnpm-lock.yaml`) — always use `pnpm install` here, regardless of the project's own package manager. Ask before installing:
+**If Postgres chosen** — the pipeline scripts need the `pg` package. Ask before running `pnpm install` in the plugin's `scripts/` directory:
 
 **Expert:**
 > "Install pipeline DB deps? (pnpm install in plugin scripts dir) (y/n)"
@@ -589,28 +596,26 @@ The pipeline scripts need the `pg` Node.js package to talk to Postgres. The plug
 **Full guidance:**
 > "To connect to Postgres, Pipeline needs the `pg` Node.js driver. This installs in the pipeline plugin's own scripts directory — it does NOT affect your project's dependencies or package.json. OK to install? (I'll run `pnpm install` in the pipeline scripts directory)"
 
-If yes:
-1. Locate the pipeline plugin's `scripts/` directory using the same resolution as `/pipeline:knowledge` Step 0: check `$PIPELINE_DIR/scripts/`, then `${HOME:-$USERPROFILE}/dev/pipeline/scripts/`, then search `${HOME:-$USERPROFILE}/.claude/` for `pipeline-db.js`. Store the resolved absolute path — use this literal path (not a variable) in all subsequent Bash calls.
-2. Install dependencies: `cd <scripts_path> && pnpm install`
-3. **Generate project-scoped DB name:** `pipeline_<project_name>` — lowercase the project name, replace non-alphanumeric characters with underscores, collapse consecutive underscores, strip leading/trailing underscores, prefix with `pipeline_`. Each project gets its own database — no context leaks between projects.
-4. Run setup: `PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-db.js setup` (creates the project-specific database and tables)
-5. Verify: `PROJECT_ROOT=$(pwd) node $SCRIPTS_DIR/pipeline-db.js status`
-6. Set `knowledge.tier: "postgres"` in config with:
-   - `database: "pipeline_<sanitized_project_name>"` (the generated name)
-   - `host`, `port` from detection (use detected port if non-default)
-7. If Ollama is available, ask about embedding model. **Expert:** "Embedding model? (mxbai-embed-large / nomic-embed-text / other)" **Guided:** "Ollama is running. Which embedding model? `mxbai-embed-large` (1024-dim, good quality) or `nomic-embed-text` (768-dim, smaller/faster)?" **Full guidance:** "Ollama is running, which means Pipeline can use semantic search — finding related work even when the terminology differs (e.g., searching for 'auth' finds results about 'login' and 'session management'). Which embedding model? `mxbai-embed-large` (1024-dim, best quality, uses ~300MB VRAM) or `nomic-embed-text` (768-dim, smaller and faster). Or type any model name from https://ollama.com/search?c=embedding." Set `knowledge.embedding_model` to their choice. If the model isn't pulled yet, run `ollama pull <model>`.
-8. Add to config's `commit.post_commit_hooks`:
-   `"node $SCRIPTS_DIR/pipeline-embed.js index"` (keeps embeddings current after each commit)
-9. If user has an existing project they want to bring context from, mention:
-   > "If you have gotchas or decisions from another project you'd like to carry over, use `/pipeline:knowledge import <source_db_or_file>` after setup."
+If yes and Ollama is running, ask about embedding model:
 
-If declined: "No problem. Run these yourself when you're ready:
-1. `cd [scripts_dir] && pnpm install`
-2. `/pipeline:knowledge setup`"
+**Expert:** "Embedding model? (mxbai-embed-large / nomic-embed-text / other)"
 
-If files chosen (default):
-1. Create directories: `mkdir -p docs/sessions docs/specs docs/plans`
-2. Set `knowledge.tier: "files"` in config
+**Guided:** "Ollama is running. Which embedding model? `mxbai-embed-large` (1024-dim, good quality) or `nomic-embed-text` (768-dim, smaller/faster)?"
+
+**Full guidance:** "Ollama is running, which means Pipeline can use semantic search — finding related work even when the terminology differs (e.g., searching for 'auth' finds results about 'login' and 'session management'). Which embedding model? `mxbai-embed-large` (1024-dim, best quality, uses ~300MB VRAM) or `nomic-embed-text` (768-dim, smaller and faster). Or type any model name from https://ollama.com/search?c=embedding."
+
+Then invoke (use `--skip-pnpm-install` if declined, `--skip-ollama-pull` if Ollama unavailable or declined):
+
+```bash
+node '[SCRIPTS_DIR]/pipeline-init-knowledge.js' setup-postgres --project-name '[project_name]' --embedding-model '[chosen_model]'
+```
+
+Apply the interpretation rules above. If the user mentioned an existing project with gotchas/decisions to bring over:
+> "Use `/pipeline:knowledge import <source_db_or_file>` after setup."
+
+If pnpm-install declined, offer: "Run these yourself when ready: `cd [scripts_dir] && pnpm install`, then `/pipeline:knowledge setup`."
+
+**If files chosen:** `node '[SCRIPTS_DIR]/pipeline-init-knowledge.js' setup-files`. Set `knowledge.tier: "files"`.
 
 ---
 
