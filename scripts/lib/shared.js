@@ -189,6 +189,90 @@ async function tryEmbed(client, table, idCol, idVal, text, config) {
   }
 }
 
+// ─── WINDOWS BINARY INVOCATION ──────────────────────────────────────────────
+//
+// Invokes a binary that may be distributed as .cmd or .bat on Windows (pnpm, npx,
+// az, yarn, etc.). Handles two Windows subprocess hazards:
+//
+//   1. PATHEXT resolution. `execFileSync(bin, ...)` with `shell: false` does not
+//      resolve PATHEXT, so bare names like `pnpm` fail with ENOENT when the
+//      installed file is `pnpm.cmd` or `pnpm.exe`. Caller passes an explicit
+//      candidate list and we iterate on ENOENT.
+//
+//   2. CVE-2024-27980 / "BatBadBut" hardening. Node 22+ refuses to invoke .cmd
+//      and .bat files via execFile with `shell: false`, returning EINVAL with
+//      "spawnSync <file> EINVAL". Fix: for .cmd/.bat, spawn cmd.exe /d /s /c
+//      explicitly with args concatenated into cmd.exe's command-line grammar,
+//      with values that contain whitespace or cmd.exe metacharacters quoted.
+//
+// The helper returns the same shape as execFileSync: stdout string on success,
+// throws with stdout / stderr / status / signal on non-zero exit or timeout.
+// Caller can catch and inspect as with execFileSync.
+
+function quoteForCmd(arg) {
+  const s = typeof arg === 'string' ? arg : String(arg);
+  if (s.length === 0) return '""';
+  if (!/[\s"&<>|^%()]/.test(s)) return s;
+  // cmd.exe convention: wrap in double quotes, escape embedded double quotes by
+  // doubling. This covers the common cases — ADO project names with spaces,
+  // URLs, paths. It does NOT attempt to defend against variable-expansion
+  // injection via `%VAR%` sequences; callers must treat their own args as
+  // trusted input (we only use this for CLI flag values we construct ourselves).
+  return '"' + s.replace(/"/g, '""') + '"';
+}
+
+// cmd.exe's not-found signal: when the command-name after /c doesn't resolve,
+// cmd.exe returns exit=1 with stderr starting "'<cmd>' is not recognized as an
+// internal or external command". This is indistinguishable from real exit=1
+// errors by exit code alone — we match on the stderr string to fall through
+// candidates as if ENOENT had been thrown at the Node level.
+const CMD_NOT_FOUND_RE = /is not recognized as an internal or external command/;
+
+function runWinBin(candidates, args, opts = {}) {
+  const { execFileSync } = require('child_process');
+  const isWindows = process.platform === 'win32';
+  const effectiveCandidates = isWindows ? candidates : [candidates[candidates.length - 1]];
+  let lastErr;
+
+  for (const bin of effectiveCandidates) {
+    const isShellExt = isWindows && /\.(cmd|bat)$/i.test(bin);
+
+    if (!isShellExt) {
+      try {
+        return execFileSync(bin, args, opts);
+      } catch (e) {
+        lastErr = e;
+        if (e.code === 'ENOENT') continue; // try next candidate
+        throw e; // real error: invocation failure, non-zero exit, timeout
+      }
+      continue;
+    }
+
+    // .cmd/.bat path: invoke via cmd.exe /d /s /c <bin> <quoted-args...>.
+    //   /d — skip AutoRun commands from registry
+    //   /s — modify how /c handles quoting (strip outermost quotes if the full
+    //        line is quoted; combined with our own quoting, behaves as expected)
+    //   /c — execute the command and exit
+    const cmdArgs = ['/d', '/s', '/c', bin, ...args.map(quoteForCmd)];
+    try {
+      return execFileSync('cmd.exe', cmdArgs, opts);
+    } catch (e) {
+      lastErr = e;
+      if (e.code === 'ENOENT') continue; // cmd.exe not on PATH (should never happen)
+      // Inspect stderr for cmd.exe's "not recognized" signal — fall through as if
+      // the binary had been absent.
+      const stderr = e.stderr ? e.stderr.toString('utf8') : '';
+      if (CMD_NOT_FOUND_RE.test(stderr)) continue;
+      throw e;
+    }
+  }
+
+  throw lastErr;
+}
+
 // ─── EXPORTS ────────────────────────────────────────────────────────────────
 
-module.exports = { findProjectRoot, loadConfig, connect, c, ollamaDefaults, projectToDbName, ollamaEmbed, tryEmbed };
+module.exports = {
+  findProjectRoot, loadConfig, connect, c, ollamaDefaults, projectToDbName,
+  ollamaEmbed, tryEmbed, runWinBin, quoteForCmd,
+};

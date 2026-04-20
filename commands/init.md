@@ -185,60 +185,22 @@ platform:
 
 **If azure-devops detected:**
 
-1. Extract org and project from remote URL:
-   - `https://dev.azure.com/{org}/{project}/_git/{repo}` → org, project
-   - `https://{org}.visualstudio.com/{project}/_git/{repo}` → org, project
+Dispatch the `init-azure-devops` subagent via the `Task` tool. The subagent reads `$PIPELINE_DIR/skills/init-azure-devops/SKILL.md` for the dispatch contract and error-interpretation table, invokes `scripts/pipeline-init-azure-devops.js`, interprets `az` CLI errors, and returns a structured JSON verification result. This separates LLM-cognitive error interpretation (subagent) from mechanical `az` invocations (helper script).
 
-2. Verify `az devops` CLI extension is available:
-```bash
-az extension show --name azure-devops --query version --output tsv 2>/dev/null
+Invocation:
+
 ```
-If not installed: "Azure CLI DevOps extension required. Install with: `az extension add --name azure-devops`"
-
-3. Verify authentication:
-```bash
-az account show --query name --output tsv 2>/dev/null
-```
-If not authenticated: "Azure authentication required. Run: `az login` or set `AZURE_DEVOPS_EXT_PAT` environment variable"
-
-4. Verify project access:
-```bash
-az devops project show --project '{project}' --org 'https://dev.azure.com/{org}' --query name --output tsv 2>/dev/null
-```
-If fails: "Azure DevOps access denied. Verify your PAT has Work Items (Read & Write) and Code (Read & Write) scopes."
-
-5. Detect process template:
-```bash
-az devops project show --project '{project}' --org 'https://dev.azure.com/{org}' --query 'capabilities.processTemplate.templateName' --output tsv
+Task({
+  subagent_type: "general-purpose",
+  description: "Azure DevOps verification",
+  prompt: "Follow the dispatch contract in [PIPELINE_DIR]/skills/init-azure-devops/SKILL.md. Inputs: remote_url='[git_remote_url]', quick_mode=[true|false]. Emit a single fenced json code block as your final message matching the SKILL's output schema."
+})
 ```
 
-6. Resolve state names from process template:
+Parse the last fenced `json` block from the subagent's reply. On `verified: true`, write `platform_config` fields into pipeline.yml under `platform.azure_devops.*` with `platform.code_host: "azure-devops"` and `platform.issue_tracker: "azure-devops"`. On `verified: false`:
 
-| Process Template | done_state | active_state |
-|-----------------|------------|-------------|
-| Basic | Done | Doing |
-| Agile | Closed | Active |
-| Scrum | Done | Committed |
-| CMMI | Closed | Active |
-
-7. Set defaults:
-```bash
-az devops configure --defaults organization='https://dev.azure.com/{org}' project='{project}'
-```
-
-8. Set in pipeline.yml:
-```yaml
-platform:
-  code_host: "azure-devops"
-  issue_tracker: "azure-devops"
-  azure_devops:
-    organization: "{org}"
-    project: "{project}"
-    process_template: "{detected}"
-    work_item_type: "Task"
-    done_state: "{resolved}"
-    active_state: "{resolved}"
-```
+- **If quick mode:** log `errors[0].user_action`, set `platform.code_host: "azure-devops"`, `platform.issue_tracker: "none"` (partial enablement — git remote works, issue workflows disabled), continue to Step 2.
+- **If interactive:** surface each `errors[].user_action` to the user with the matching `install_command` if present, then ask whether to retry, skip (same partial enablement as quick mode), or abort.
 
 **If no remote or unrecognized host:**
 

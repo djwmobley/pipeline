@@ -17,7 +17,7 @@ const net = require('net');
 const http = require('http');
 const { execFileSync } = require('child_process');
 const { Client } = require('pg');
-const { projectToDbName } = require('./lib/shared');
+const { projectToDbName, runWinBin } = require('./lib/shared');
 
 const SCRIPTS_DIR = __dirname;
 const CALLER_CWD = process.cwd();
@@ -39,26 +39,6 @@ function parseFlags(argv) {
     }
   }
   return flags;
-}
-
-// ─── PNPM INVOCATION ───────────────────────────────────────────────────────
-// On Windows, pnpm is typically a .cmd shim (npm-installed) or .exe (standalone).
-// Node's execFileSync with shell:false does not resolve PATHEXT, so the bare name
-// fails with ENOENT. Try .cmd first (common case on Windows), fall back to .exe,
-// fall back to bare name. On non-Windows, bare name works.
-function runPnpm(args, opts) {
-  const isWindows = process.platform === 'win32';
-  const candidates = isWindows ? ['pnpm.cmd', 'pnpm.exe', 'pnpm'] : ['pnpm'];
-  let lastErr;
-  for (const bin of candidates) {
-    try {
-      return execFileSync(bin, args, opts);
-    } catch (e) {
-      lastErr = e;
-      if (e.code !== 'ENOENT') throw e;
-    }
-  }
-  throw lastErr;
 }
 
 // ─── OLLAMA REACHABILITY ───────────────────────────────────────────────────
@@ -174,7 +154,7 @@ async function setupPostgres(flags) {
   if (!flags['skip-pnpm-install']) {
     const start = Date.now();
     try {
-      runPnpm(['install'], { cwd: SCRIPTS_DIR, stdio: ['ignore', 'pipe', 'pipe'] });
+      runWinBin(['pnpm.cmd', 'pnpm.exe', 'pnpm'], ['install'], { cwd: SCRIPTS_DIR, stdio: ['ignore', 'pipe', 'pipe'] });
       depsInstalled = true;
       log.push({ step: 'pnpm-install', status: 'ok', duration_ms: Date.now() - start });
     } catch (e) {
