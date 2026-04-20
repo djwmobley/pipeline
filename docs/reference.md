@@ -678,6 +678,8 @@ Interactive project setup. Detects your environment, asks questions, generates `
 
 **Environment detection** runs via two Node scripts (`scripts/pipeline-init-detect.js` and `scripts/pipeline-init-integrations.js`). These spawn subprocesses via argv array (no shell), probe TCP ports via `net.createConnection` (no `/dev/tcp`), and resolve Windows Postgres install paths via `process.env.ProgramFiles` (no hardcoded `/c/Program Files` literals). Runs cleanly on native Windows (`cmd.exe`, PowerShell) and under Git Bash regardless of install path spaces.
 
+**Knowledge-tier setup** (Step 4) runs via `scripts/pipeline-init-knowledge.js` with two subcommands: `setup-postgres` (pnpm install + `pipeline-db.js setup` + verify + optional `ollama pull`) and `setup-files` (creates `docs/sessions`, `docs/specs`, `docs/plans`). Same argv-discipline as the detection scripts; resolves `pnpm` via `pnpm.cmd`/`pnpm.exe`/`pnpm` on Windows. Setup is idempotent — an early probe against the admin `postgres` DB short-circuits if the project DB already has the `sessions` table, so re-running `/pipeline:init` on a configured project is a no-op.
+
 See the [configuration guide](guide.md) for what gets generated.
 
 ---
