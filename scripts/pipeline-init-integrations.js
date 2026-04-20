@@ -11,6 +11,7 @@ const path = require('path');
 const http = require('http');
 const net = require('net');
 const { execFileSync } = require('child_process');
+const { runWinBin } = require('./lib/shared');
 
 // Env var presence flags only — never log the values themselves.
 const env_vars = {
@@ -62,6 +63,24 @@ function commandVersion(cmd, versionArgs = ['--version']) {
     const out = execFileSync(cmd, versionArgs, {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
+      timeout: 5000,
+    });
+    const first = out.trim().split('\n')[0];
+    return first || null;
+  } catch {
+    return null;
+  }
+}
+
+// Windows-aware variant for CLIs that ship as .cmd shims (npx, pnpm, yarn on
+// npm-install paths, az from MSI). runWinBin handles PATHEXT resolution and the
+// CVE-2024-27980 hardening that makes execFileSync refuse .cmd/.bat with
+// shell:false on Node ≥22. Returns first stdout line or null on any failure.
+function commandVersionWin(candidates, versionArgs = ['--version']) {
+  try {
+    const out = runWinBin(candidates, versionArgs, {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
       timeout: 5000,
     });
     const first = out.trim().split('\n')[0];
@@ -180,8 +199,10 @@ async function main() {
   const chromeProbe = await step('chrome', () => probeHttp(9222, '/json/version'));
   const chrome = { responding: chromeProbe.responding, port: 9222 };
 
+  // npx is a .cmd shim on Windows (npm-installed) — use the Windows-aware variant
+  // so detection works under Node ≥22 (CVE-2024-27980 refuses bare .cmd invocation).
   const playwrightVersion = await step('playwright', () =>
-    commandVersion('npx', ['playwright', '--version'])
+    commandVersionWin(['npx.cmd', 'npx.exe', 'npx'], ['playwright', '--version'])
   );
   const playwright = {
     installed: playwrightVersion !== null,
