@@ -312,6 +312,9 @@ Tracked items for future development. Checked items are shipped.
 - [x] Three-store A2A reporting — agents write to Postgres + GitHub + build-state; downstream agents read from stores
 - [x] V2 agent rewrite (23/23 agents) — store-read pattern, ANTI-RATIONALIZATION blocks, reporting contracts, engagement style, compliance awareness
 - [x] System reference + interactive diagram — all 29 commands documented with dual-view diagram (capability map + orchestrator flow)
+- [x] Windows safety hardening — `execFileSync` argv arrays, `.cmd` shim resolution, Node.js CVE-2024-27980 EINVAL fix across init, orientation, and finish workflows (0.3.0-alpha)
+- [x] Per-feature token tracking — Claude Code transcript mining via `scripts/pipeline-cost.js`, `feature_token_usage` Postgres table, commit trailers showing relative volume / cache-hit ratio / tool-call distribution per feature (0.3.0-alpha)
+- [x] Inter-session memory schema — six new memory tables (`memory_entries`, `session_chunks`, `policy_sections`, `checklist_items`, `incidents`, `corpus_files`) wired into hybrid semantic search, plus retroactive restoration of `decisions` / `sessions` / `gotchas` embedding columns and a `knowledge.num_ctx` config knob to prevent Ollama input pre-truncation (0.3.0-alpha)
 - [ ] Prompt caching — API-based dispatch for token savings — `/pipeline:debate` dispatches Advocate, Skeptic, and Practitioner agents to stress-test specs before planning. Produces structured verdicts consumed by `/pipeline:plan`.
 
 ## What's Original to Pipeline
@@ -329,6 +332,7 @@ These features don't trace to any prior work:
 - **Parallel sector audit** — codebase split into configured sectors, each reviewed by a parallel agent, then synthesized by a cross-sector agent that traces crash paths and finds dead exports.
 - **Severity tiers with confidence requirements** — 🔴 HIGH / 🟡 MEDIUM / 🔵 LOW findings where HIGH requires verified-in-code evidence, preventing false alarms from blocking commits.
 - **Knowledge tiers** — files (zero setup, markdown) or Postgres (semantic search, structured queries, cross-project transfer).
+- **Inter-session memory subsystem** — Postgres-backed mirror of Claude Code's file-based auto-memory, with chunked transcripts, addressable policy sections, process checklists, post-incident notes, and an arbitrary file corpus all reachable via a single hybrid (FTS + pgvector cosine) search interface. Local-only via Ollama — no API keys, no cloud. Schema designed for additive loader sync, so the embedder never changes when the loader ships. See [docs/memory.md](docs/memory.md) for the full subsystem reference.
 - **Security lifecycle** — red team → remediate → purple team as a structured loop with per-finding state tracking and verification.
 - **Integration detection** — runtime probing for available tools (Postgres, Ollama, GitHub CLI, Chrome DevTools, Sentry) with graceful fallbacks and no silent installs.
 - **Cross-domain destructive operation guards** — hard stop before any data-destroying action across git (rebase, force-push, reset), databases (DROP TABLE, bulk deletes, TRUNCATE), and files (rm -rf, multi-file deletion). The agent must name the action, state intent, state what will be permanently lost, and get explicit confirmation. Other frameworks guard specific operations (branch deletion, internal state files). Pipeline applies a single consistent gate to everything the agent can destroy, with a rationalization prevention table because LLMs will talk themselves into "this is just cleanup" without it.

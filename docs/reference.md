@@ -703,9 +703,78 @@ Modify config after initial setup.
 
 ### `/pipeline:knowledge`
 
-Session tracking, decisions, gotchas, and search.
+Session tracking, decisions, gotchas, search, and the full Postgres knowledge tier.
 
-See the [configuration guide](guide.md#knowledge-tiers) for setup and all subcommands.
+**Subcommands (both tiers):**
+
+| Command | What It Does |
+|---------|-------------|
+| `/pipeline:knowledge status` | Recent sessions, open tasks, gotchas |
+| `/pipeline:knowledge session N T "desc"` | Record session N with T tests passing |
+| `/pipeline:knowledge gotcha "issue" "rule"` | Add a critical constraint |
+| `/pipeline:knowledge decision "topic" "choice" "reason"` | Record a decision |
+
+**Postgres-only subcommands:**
+
+| Command | What It Does |
+|---------|-------------|
+| `/pipeline:knowledge setup` | Create database + tables (idempotent) |
+| `/pipeline:knowledge task new "title"` | Create a task |
+| `/pipeline:knowledge task ID status` | Update task status |
+| `/pipeline:knowledge search "query"` | Keyword search |
+| `/pipeline:knowledge hybrid "query"` | Keyword + vector hybrid search |
+| `/pipeline:knowledge index` | Update embeddings for unembedded rows |
+| `/pipeline:knowledge query "SQL"` | Run raw SQL |
+| `/pipeline:knowledge task ID issue_ref N` | Link task to issue/work-item |
+| `/pipeline:knowledge task ID readme_label "text"` | Set README roadmap display label |
+| `/pipeline:knowledge task ID category value` | Set category: roadmap, build, finding, internal |
+| `/pipeline:knowledge export` | Export gotchas + decisions to JSON |
+| `/pipeline:knowledge import <source> --all` | Import from file or another project DB |
+
+The embedded knowledge surface spans 12 tables — decisions, sessions, gotchas, code_index, workflow_discovery, agent_rewrites, and six inter-session memory tables added in 0.3.0-alpha. See [docs/memory.md](memory.md) for the full embedded-tables reference and embedding pipeline documentation.
+
+For connection settings, `embedding_model`, and `num_ctx` configuration, see the [configuration guide](guide.md#knowledge-tiers).
+
+---
+
+### `scripts/pipeline-embed.js` — Embedding CLI
+
+Direct CLI for the embedding index and semantic search. `/pipeline:knowledge` delegates to this for `index`, `search`, `hybrid`, and `add` operations. Use the script directly when you want lower-level control or need to check coverage via `stats`.
+
+```bash
+node scripts/pipeline-embed.js <subcommand> [args]
+```
+
+**Subcommands:**
+
+```bash
+# Embed all unembedded rows across all 12 tables
+node scripts/pipeline-embed.js index
+
+# Re-embed everything (use only after changing embedding_model or num_ctx)
+node scripts/pipeline-embed.js index --all
+
+# Pure vector similarity search
+node scripts/pipeline-embed.js search "authentication token expiry"
+
+# FTS + vector hybrid search — recommended default
+node scripts/pipeline-embed.js hybrid "database migration strategy"
+
+# Register or update a file in code_index
+node scripts/pipeline-embed.js add src/auth/token.ts "JWT validation and refresh logic"
+
+# Show embedding coverage per table (embedded/total rows)
+node scripts/pipeline-embed.js stats
+```
+
+**Behavior:**
+- Reads `knowledge.*` from `.claude/pipeline.yml` — host, port, database, user, `embedding_model`, `num_ctx`
+- Calls Ollama `/api/embed` at `localhost:11434`; set `knowledge.num_ctx: 8192` in `pipeline.yml` to prevent Ollama from pre-truncating long inputs before they reach the model
+- Tables that do not exist or are empty are silently skipped — safe to run on any schema version
+- `index` processes rows in batches of 32; resumes from where it left off on error (re-run to continue)
+- `hybrid` weights: 30% FTS (`ts_rank`) + 70% vector (cosine similarity); falls back to FTS-only or vector-only when one signal is absent for a given table
+
+See [docs/memory.md](memory.md) for the full embedded-tables reference, `num_ctx` tuning guidance, and hybrid search semantics.
 
 ---
 
