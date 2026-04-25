@@ -20,6 +20,7 @@ Every documentation file, its content scope, and what triggers updates. When a f
 | `docs/workflow-reference.md` | Pipeline System Reference — all 29 commands (13-step orchestrator + standalone tools + meta + utilities), routing, three-store contracts | Contributors, architects, anyone understanding the full system |
 | `docs/workflow-diagram.html` | Interactive dual-view diagram — capability map (all 29 commands) and orchestrator flow (13-step linear) | Anyone wanting a visual overview |
 | `docs/troubleshooting.md` | Plugin install, cache sync, and common issues | Users and contributors diagnosing plugin problems |
+| `docs/memory.md` | Inter-session memory subsystem — embedded surface (12 tables), `pipeline-embed.js` CLI, `num_ctx` tuning, hybrid search semantics, operational guides for fresh setup and post-pgvector migration | Users operating the knowledge tier; contributors changing the embedder or schema |
 | `docs/MANIFEST.md` | This file — docs inventory and change triggers | Contributors maintaining docs |
 
 ---
@@ -93,6 +94,16 @@ When you ship a feature, check which docs are affected.
 | `README.md` | Add to "What's Original to Pipeline" section |
 | `docs/index.html` | Update if it changes user-facing messaging or feature highlights |
 | `docs/attribution.md` | Add to "What Pipeline Contributed Originally" section |
+
+### Changing Knowledge Tier or Memory Subsystem
+
+| Doc | What to Update |
+|-----|---------------|
+| `docs/memory.md` | Primary — update embedded-tables reference, CLI subcommands, `num_ctx` guidance, hybrid search semantics, operational guides |
+| `docs/guide.md` | Update `knowledge.*` config section — connection settings, `embedding_model`, `num_ctx`, embedded-tables reference table |
+| `docs/reference.md` | Update `/pipeline:knowledge` subcommand list and `scripts/pipeline-embed.js` CLI reference if subcommands change |
+| `scripts/setup-knowledge-db.sql` | Source of truth for schema — table definitions, embedding columns, FTS, indexes |
+| `scripts/pipeline-embed.js` | Source of truth for embedder — TABLES array defines the embedded surface |
 
 ### Shipping a Roadmap Item
 
