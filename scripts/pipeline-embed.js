@@ -89,6 +89,16 @@ const TABLES = [
     ftsCol: 'fts_vec',
   },
   {
+    name: 'session_chunks',
+    idCol: 'id',
+    textFn: (r) => `Session ${r.session_num} ${r.chunk_kind || ''}: ${r.content || ''}`,
+    selectCols: 'id, session_num, chunk_idx, chunk_kind, content',
+    updateSql: 'UPDATE session_chunks SET embedding = $1 WHERE id = $2',
+    label: (r) => `session #${r.session_num} — ${r.chunk_kind || 'chunk ' + r.chunk_idx}`,
+    snippet: (r) => (r.content || '').substring(0, 120),
+    ftsCol: 'fts_vec',
+  },
+  {
     name: 'gotchas',
     idCol: 'id',
     textFn: (r) => `${r.issue || ''} ${r.rule || ''}`,
@@ -96,6 +106,56 @@ const TABLES = [
     updateSql: 'UPDATE gotchas SET embedding = $1 WHERE id = $2',
     label: (r) => `gotcha: ${r.issue || '?'}`,
     snippet: (r) => r.rule || r.issue || '',
+    ftsCol: 'fts_vec',
+  },
+  {
+    name: 'memory_entries',
+    idCol: 'id',
+    textFn: (r) => `Memory: ${r.name}\n${r.description || ''}\n\n${(r.body || '').substring(0, 5000)}`,
+    selectCols: 'id, name, description, mem_type, body',
+    updateSql: 'UPDATE memory_entries SET embedding = $1 WHERE id = $2',
+    label: (r) => `memory: ${r.name || '?'}`,
+    snippet: (r) => r.description || (r.body || '').substring(0, 120),
+    ftsCol: 'fts_vec',
+  },
+  {
+    name: 'policy_sections',
+    idCol: 'id',
+    textFn: (r) => `Policy: ${r.doc_id} ${r.section_num || ''}: ${r.section_title || ''}\n\n${(r.content || '')}`,
+    selectCols: 'id, doc_id, section_num, section_title, content',
+    updateSql: 'UPDATE policy_sections SET embedding = $1 WHERE id = $2',
+    label: (r) => `policy: ${r.doc_id} ${r.section_num || ''}: ${r.section_title || ''}`,
+    snippet: (r) => (r.content || '').substring(0, 120),
+    ftsCol: 'fts_vec',
+  },
+  {
+    name: 'checklist_items',
+    idCol: 'id',
+    textFn: (r) => `Checklist: ${r.checklist_name || ''} [${r.cadence || ''}]: ${r.title || ''}\n${r.description || ''}\n${r.verification_step || ''}`,
+    selectCols: 'id, checklist_name, cadence, title, description, verification_step',
+    updateSql: 'UPDATE checklist_items SET embedding = $1 WHERE id = $2',
+    label: (r) => `checklist: ${r.checklist_name || '?'} [${r.cadence || '?'}]: ${r.title || '?'}`,
+    snippet: (r) => r.description || r.title || '',
+    ftsCol: 'fts_vec',
+  },
+  {
+    name: 'incidents',
+    idCol: 'id',
+    textFn: (r) => `Incident: ${r.incident_code || ''}: ${r.title || ''}\nWhat happened: ${r.what_happened || ''}\nWhat we did: ${r.what_we_did || ''}\nWatch for: ${r.watch_for || ''}`,
+    selectCols: 'id, incident_code, title, what_happened, what_we_did, watch_for',
+    updateSql: 'UPDATE incidents SET embedding = $1 WHERE id = $2',
+    label: (r) => `incident: ${r.incident_code || '?'}: ${r.title || '?'}`,
+    snippet: (r) => r.what_happened || r.title || '',
+    ftsCol: 'fts_vec',
+  },
+  {
+    name: 'corpus_files',
+    idCol: 'id',
+    textFn: (r) => `File: ${r.path || ''}\nDomain: ${r.source_domain || ''}\n\n${r.summary || ''}`,
+    selectCols: 'id, path, file_type, source_domain, summary',
+    updateSql: 'UPDATE corpus_files SET embedding = $1 WHERE id = $2',
+    label: (r) => `corpus: ${r.path || '?'}`,
+    snippet: (r) => r.summary || `[binary: ${r.file_type || '?'}]`,
     ftsCol: 'fts_vec',
   },
 ];
@@ -239,6 +299,11 @@ async function cmdSearch(query) {
     let resultNum = 0;
 
     for (const tbl of TABLES) {
+      if (!(await tableExists(client, tbl.name))) continue;
+
+      const { rows: [{ count }] } = await client.query(`SELECT COUNT(*) FROM ${tbl.name}`);
+      if (parseInt(count) === 0) continue;
+
       if (!(await hasAnyEmbeddings(client, tbl.name))) continue;
 
       const { rows } = await client.query(
@@ -281,6 +346,9 @@ async function cmdHybrid(query) {
 
     for (const tbl of TABLES) {
       if (!(await tableExists(client, tbl.name))) continue;
+
+      const { rows: [{ count }] } = await client.query(`SELECT COUNT(*) FROM ${tbl.name}`);
+      if (parseInt(count) === 0) continue;
 
       const hasEmb = await hasAnyEmbeddings(client, tbl.name);
       const hasFts = await columnExists(client, tbl.name, 'fts_vec');
