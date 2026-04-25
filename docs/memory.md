@@ -55,16 +55,16 @@ The following tables have `embedding vector(1024)` and `fts_vec TSVECTOR` column
 
 ### Inter-session memory tables
 
-These six tables were added in 0.3.0-alpha. The schema and embedder are fully wired. The **loader** — the file-to-row synchronization layer that reads `~/.claude/projects/<encoded-cwd>/memory/*.md`, session JSONL transcripts, and policy documents and populates rows — was developed in a parallel workspace and is actively populating its own DB (43 memory entries, 327 session chunks, 853 policy sections, 417 checklist items, 369 corpus files at the time of this writing). Porting that loader into the Pipeline plugin's own `scripts/` directory is a future workstream tracked under epic #109; until then, the tables exist in every Postgres-tier project but remain empty unless populated by an external loader.
+These six tables were added in 0.3.0-alpha. The schema and embedder are fully wired. **No loader is shipped with the Pipeline plugin.** Whatever process populates these tables — for `memory_entries` it might be a script that mirrors `~/.claude/projects/<encoded-cwd>/memory/*.md`, for `session_chunks` it might be a transcript chunker, for `policy_sections` it might be a doc-section extractor — is the user's responsibility for now. Tables matching this schema exist in some external workspaces (with non-trivial row counts), but the populating mechanism is not part of this distribution and Pipeline does not assert what method any external loader uses. Whether to ship a loader inside Pipeline (and what shape it should take) is a design decision tracked under epic #109.
 
 | Table | Purpose | Primary text fields (embedding input) | Populator |
 |-------|---------|--------------------------------------|-----------|
-| `memory_entries` | Auto-memory entries — mirrors `~/.claude/projects/<encoded-cwd>/memory/*.md` | `"Memory: {name}\n{description}\n\n{body[0:5000]}"` | External loader (reference impl exists; in-plugin port pending — epic #109) |
-| `session_chunks` | Chunked Claude Code session transcripts for semantic recall | `"Session {session_num} {chunk_kind}: {content}"` | External loader (reference impl exists; in-plugin port pending — epic #109) |
-| `policy_sections` | Policy/standards docs (CLAUDE.md, etc.) broken into addressable sections | `"Policy: {doc_id} {section_num}: {section_title}\n\n{content}"` | External loader (reference impl exists; in-plugin port pending — epic #109) |
-| `checklist_items` | Process checklists at known cadences (pre-commit, release-prep, etc.) | `"Checklist: {checklist_name} [{cadence}]: {title}\n{description}\n{verification_step}"` | External loader (reference impl exists; in-plugin port pending — epic #109) |
-| `incidents` | Post-incident notes (`incident_code`, `what_happened`, `what_we_did`, `watch_for`) | `"Incident: {incident_code}: {title}\nWhat happened: {what_happened}\nWhat we did: {what_we_did}\nWatch for: {watch_for}"` | External loader (reference impl exists; in-plugin port pending — epic #109) |
-| `corpus_files` | Arbitrary file corpus (PDFs, docs, summaries) for grounded retrieval | `"File: {path}\nDomain: {source_domain}\n\n{summary}"` | External loader (reference impl exists; in-plugin port pending — epic #109) |
+| `memory_entries` | Auto-memory entries — mirrors `~/.claude/projects/<encoded-cwd>/memory/*.md` | `"Memory: {name}\n{description}\n\n{body[0:5000]}"` | User-provided loader (no in-plugin loader shipped — epic #109) |
+| `session_chunks` | Chunked Claude Code session transcripts for semantic recall | `"Session {session_num} {chunk_kind}: {content}"` | User-provided loader (no in-plugin loader shipped — epic #109) |
+| `policy_sections` | Policy/standards docs (CLAUDE.md, etc.) broken into addressable sections | `"Policy: {doc_id} {section_num}: {section_title}\n\n{content}"` | User-provided loader (no in-plugin loader shipped — epic #109) |
+| `checklist_items` | Process checklists at known cadences (pre-commit, release-prep, etc.) | `"Checklist: {checklist_name} [{cadence}]: {title}\n{description}\n{verification_step}"` | User-provided loader (no in-plugin loader shipped — epic #109) |
+| `incidents` | Post-incident notes (`incident_code`, `what_happened`, `what_we_did`, `watch_for`) | `"Incident: {incident_code}: {title}\nWhat happened: {what_happened}\nWhat we did: {what_we_did}\nWatch for: {watch_for}"` | User-provided loader (no in-plugin loader shipped — epic #109) |
+| `corpus_files` | Arbitrary file corpus (PDFs, docs, summaries) for grounded retrieval | `"File: {path}\nDomain: {source_domain}\n\n{summary}"` | User-provided loader (no in-plugin loader shipped — epic #109) |
 
 ---
 
@@ -245,13 +245,15 @@ node scripts/pipeline-embed.js hybrid "destructive operation guard"
 
 ### Loader status
 
-A reference implementation runs in the `claude_policy_framework` workspace and has been actively populating these tables since 2026-04-23. The loader is not yet ported into the Pipeline plugin's `scripts/` directory — that port is tracked under epic #109. Until the in-plugin port lands, the schema and embedder in this release are sufficient infrastructure for any external loader; the loader only needs to:
+**Pipeline does not ship a loader for these six tables.** What's shipped is the schema (the six `CREATE TABLE` blocks in `setup-knowledge-db.sql`) and the embedder support (the six rows in `pipeline-embed.js`'s `TABLES` array). Anything that populates the tables — files synced into rows, transcripts chunked, policy docs sectioned — is up to the user.
 
-1. Read files from `memory/`, session JSONL, policy docs, checklists, etc.
-2. Upsert rows into the six tables.
-3. Call `pipeline-embed.js index` (or embed inline) to populate vectors.
+A user-written loader would, broadly, need to:
 
-Tables remain empty in projects without a loader, and `cmdHybrid`'s defensive guards mean the unpopulated tables are silently skipped rather than warning or erroring.
+1. Read its sources (files from `memory/`, session JSONL, policy docs, checklists, etc.) — the exact protocol depends on the source.
+2. Upsert rows into the relevant tables — schema is at `scripts/setup-knowledge-db.sql`.
+3. Either embed inline (call Ollama directly) or rely on the next `pipeline-embed.js index` run.
+
+Whether to ship an opinionated loader inside Pipeline — and if so, what protocol it would follow — is tracked as a design question under epic #109, not a port-existing-code task. Tables remain empty in projects without a loader; `cmdHybrid`'s defensive guards mean the empty tables are silently skipped.
 
 ---
 
@@ -312,7 +314,7 @@ PROJECT_ROOT=$(pwd) node scripts/pipeline-embed.js index # embeds any newly elig
 
 ## 8. What Is Not Here
 
-- **In-plugin loader implementation** for the six inter-session memory tables (`memory_entries`, `session_chunks`, `policy_sections`, `checklist_items`, `incidents`, `corpus_files`). A reference loader runs in the `claude_policy_framework` workspace; porting it into the Pipeline plugin's `scripts/` directory is tracked under epic #109.
+- **A loader for the six inter-session memory tables** (`memory_entries`, `session_chunks`, `policy_sections`, `checklist_items`, `incidents`, `corpus_files`). Pipeline ships only the schema and embedder support; what populates the tables is a user-provided script. Whether Pipeline should ship an opinionated loader, and what protocol it would follow, is a design question tracked under epic #109.
 - **Postgres-vs-files tier choice** — covered in `docs/guide.md` under "Knowledge Tiers."
 - **`/pipeline:knowledge` subcommand reference** — covered in `docs/reference.md`.
 - **Session-recall query patterns** — will be documented when the loader ships.

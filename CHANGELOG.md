@@ -32,9 +32,9 @@ This release focuses on three areas: Windows safety hardening across the init, o
 
 ### Process
 
-PRs #92–#108 in this release were produced under the `pipeline_architect` Judge directive lifecycle, a `PENDING → IN_PROGRESS → CLOSED / CHALLENGED / REJECTED` state machine tracking whether each directive's scope was fully discharged. Directives #45 (orientation probe), #46 (init detection), #47 (knowledge-tier setup), and #48 (ADO verification subagent) all reached CLOSED with affirmative Judge rulings. Directives #41, #42, and #44 remain in CHALLENGED state and carry forward to a future sprint. The Judge workspace is out-of-tree (`C:\claudecode\judge\`, `pipeline_architect` Postgres database) and introduces no code changes in this repository, but is documented here for release-history continuity.
+PRs #92–#108 in this release were reviewed through a parallel `pipeline_architect` workspace — a separate Claude Code instance not part of this distribution. The relevant fact for this release is that those PRs went through external review before merge; the `pipeline_architect` workspace's operating method (its dispatch protocol, state vocabulary, and direct interaction with Gemini Pro as Consultant) lives outside this repository and is documented separately in that workspace.
 
-The inter-session memory schema and embedder hardening adopted in this release were designed by a parallel Claude Code session working from the `pipeline_pipeline` database and live transcript data. That session's loader — the file-to-row synchronization layer for `memory_entries`, `session_chunks`, `policy_sections`, `checklist_items`, `incidents`, and `corpus_files` — is out of scope for 0.3.0-alpha and will land in a separate future release under the #109 epic.
+Six new memory tables (`memory_entries`, `session_chunks`, `policy_sections`, `checklist_items`, `incidents`, `corpus_files`) are added to the schema in this release. Tables matching this schema are populated in some external workspaces by mechanisms outside this plugin; what those mechanisms are, and how they correspond to a loader Pipeline could ship, is a design question rather than a port-an-existing-thing question. Tracked under epic #109.
 
 ## [0.2.0-alpha] — 2026-03-26
 
