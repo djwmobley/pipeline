@@ -511,7 +511,34 @@ knowledge:
   database: "pipeline_my_app"
   user: "postgres"
   embedding_model: "mxbai-embed-large"  # Any Ollama embedding model — this is the default, change to your preference
+  num_ctx: 8192                          # Optional. Ollama context window for embed requests; prevents pre-truncation of long bodies.
 ```
+
+| Field | Required | Notes |
+|-------|----------|-------|
+| `tier` | yes | `"postgres"` or `"files"` |
+| `host`, `port`, `database`, `user` | yes (postgres) | Connection details. `database` defaults to `pipeline_<project_name>`. |
+| `embedding_model` | no | Any Ollama embedding model. Default `mxbai-embed-large` (1024 dims, 512 native context). Switching models requires re-running `pipeline-embed.js index --all`. |
+| `num_ctx` | no | Ollama `options.num_ctx` for `/api/embed`. Set ≥ the model's native context length to prevent Ollama from pre-truncating input. Long memory bodies and session summaries get truncated at the default if unset. Harmless if set higher than the model can use. Recommended: `8192`. |
+
+**Embedded knowledge tables** — every table in this list gets a `vector(1024)` embedding column and a TSVECTOR FTS column, supporting `pipeline:knowledge hybrid` semantic + keyword search:
+
+| Table | Content |
+|-------|---------|
+| `code_index` | One row per source file with description |
+| `workflow_discovery` | Findings, decisions, workflow steps from review sessions |
+| `agent_rewrites` | AS-IS/TO-BE agent transformation specs |
+| `decisions` | Architectural decisions with reason |
+| `sessions` | Session summary per working session |
+| `gotchas` | Critical "never do this" constraints |
+| `findings` | Unified finding records from all pipeline workflows |
+| `feature_token_usage` | Per-feature transcript-mined token totals |
+| `memory_entries` | Auto-memory entries (mirrors `~/.claude/projects/<encoded-cwd>/memory/*.md`) |
+| `session_chunks` | Chunked session transcripts for semantic recall |
+| `policy_sections` | Policy/standards docs broken into addressable sections |
+| `checklist_items` | Process checklists at known cadences |
+| `incidents` | Post-incident notes (what happened / what we did / watch for) |
+| `corpus_files` | Arbitrary file corpus (PDFs, docs, summaries) |
 
 **Knowledge subcommands (both tiers):**
 

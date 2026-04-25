@@ -371,3 +371,171 @@ CREATE TABLE IF NOT EXISTS feature_token_usage (
 CREATE INDEX IF NOT EXISTS feature_token_usage_branch_idx ON feature_token_usage (branch);
 CREATE INDEX IF NOT EXISTS feature_token_usage_pr_idx ON feature_token_usage (pr_number);
 CREATE INDEX IF NOT EXISTS feature_token_usage_created_idx ON feature_token_usage (created_at DESC);
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- INTER-SESSION MEMORY — auto-memory entries, chunked session transcripts,
+-- policy sections, checklists, incidents, file corpus. Mirrors files in
+-- ~/.claude/projects/<encoded-cwd>/memory/ and supports semantic recall across
+-- Claude Code sessions. Loader (file → row sync) lives outside this script.
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+-- Memory entries — one row per ~/.claude/projects/<encoded-cwd>/memory/<file>.md
+CREATE TABLE IF NOT EXISTS memory_entries (
+  id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL,                    -- frontmatter: name
+  description TEXT,                      -- frontmatter: description
+  mem_type TEXT,                         -- frontmatter: type (user, feedback, project, reference)
+  body TEXT NOT NULL,
+  source_file TEXT UNIQUE,               -- relative path to memory/<file>.md
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+DO $$ BEGIN
+  ALTER TABLE memory_entries ADD COLUMN IF NOT EXISTS embedding vector(1024);
+EXCEPTION WHEN undefined_object THEN
+  RAISE NOTICE 'Skipping vector column on memory_entries — pgvector not installed.';
+END $$;
+
+ALTER TABLE memory_entries ADD COLUMN IF NOT EXISTS fts_vec TSVECTOR
+  GENERATED ALWAYS AS (
+    to_tsvector('english',
+      coalesce(name, '') || ' ' ||
+      coalesce(description, '') || ' ' ||
+      coalesce(body, ''))
+  ) STORED;
+CREATE INDEX IF NOT EXISTS memory_entries_fts_idx ON memory_entries USING gin(fts_vec);
+CREATE INDEX IF NOT EXISTS memory_entries_type_idx ON memory_entries (mem_type);
+
+-- Session chunks — Claude Code transcripts chunked by message/tool boundary
+CREATE TABLE IF NOT EXISTS session_chunks (
+  id SERIAL PRIMARY KEY,
+  session_num INTEGER,                   -- references sessions.num if mapped
+  session_id TEXT,                       -- session UUID from JSONL filename
+  chunk_idx INTEGER NOT NULL,
+  chunk_kind TEXT,                       -- user, assistant, tool_use, tool_result, summary
+  content TEXT NOT NULL,
+  source_jsonl TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+DO $$ BEGIN
+  ALTER TABLE session_chunks ADD COLUMN IF NOT EXISTS embedding vector(1024);
+EXCEPTION WHEN undefined_object THEN
+  RAISE NOTICE 'Skipping vector column on session_chunks — pgvector not installed.';
+END $$;
+
+ALTER TABLE session_chunks ADD COLUMN IF NOT EXISTS fts_vec TSVECTOR
+  GENERATED ALWAYS AS (to_tsvector('english', coalesce(content, ''))) STORED;
+CREATE INDEX IF NOT EXISTS session_chunks_fts_idx ON session_chunks USING gin(fts_vec);
+CREATE INDEX IF NOT EXISTS session_chunks_session_idx ON session_chunks (session_num);
+CREATE INDEX IF NOT EXISTS session_chunks_kind_idx ON session_chunks (chunk_kind);
+
+-- Policy sections — CLAUDE.md and other policy docs broken into addressable sections
+CREATE TABLE IF NOT EXISTS policy_sections (
+  id SERIAL PRIMARY KEY,
+  doc_id TEXT NOT NULL,                  -- e.g. "CLAUDE.md", "security-policy"
+  section_num TEXT,                      -- hierarchical e.g. "1.2"
+  section_title TEXT,
+  content TEXT NOT NULL,
+  source_path TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+DO $$ BEGIN
+  ALTER TABLE policy_sections ADD COLUMN IF NOT EXISTS embedding vector(1024);
+EXCEPTION WHEN undefined_object THEN
+  RAISE NOTICE 'Skipping vector column on policy_sections — pgvector not installed.';
+END $$;
+
+ALTER TABLE policy_sections ADD COLUMN IF NOT EXISTS fts_vec TSVECTOR
+  GENERATED ALWAYS AS (
+    to_tsvector('english',
+      coalesce(section_title, '') || ' ' ||
+      coalesce(content, ''))
+  ) STORED;
+CREATE INDEX IF NOT EXISTS policy_sections_fts_idx ON policy_sections USING gin(fts_vec);
+CREATE INDEX IF NOT EXISTS policy_sections_doc_idx ON policy_sections (doc_id);
+
+-- Checklist items — process gates (pre-commit, release-prep, etc.)
+CREATE TABLE IF NOT EXISTS checklist_items (
+  id SERIAL PRIMARY KEY,
+  checklist_name TEXT NOT NULL,          -- e.g. "pre-commit", "release-prep"
+  cadence TEXT,                          -- e.g. "every-feature", "milestone", "on-demand"
+  title TEXT NOT NULL,
+  description TEXT,
+  verification_step TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+DO $$ BEGIN
+  ALTER TABLE checklist_items ADD COLUMN IF NOT EXISTS embedding vector(1024);
+EXCEPTION WHEN undefined_object THEN
+  RAISE NOTICE 'Skipping vector column on checklist_items — pgvector not installed.';
+END $$;
+
+ALTER TABLE checklist_items ADD COLUMN IF NOT EXISTS fts_vec TSVECTOR
+  GENERATED ALWAYS AS (
+    to_tsvector('english',
+      coalesce(title, '') || ' ' ||
+      coalesce(description, '') || ' ' ||
+      coalesce(verification_step, ''))
+  ) STORED;
+CREATE INDEX IF NOT EXISTS checklist_items_fts_idx ON checklist_items USING gin(fts_vec);
+CREATE INDEX IF NOT EXISTS checklist_items_name_idx ON checklist_items (checklist_name);
+
+-- Incidents — post-incident notes for organizational memory
+CREATE TABLE IF NOT EXISTS incidents (
+  id SERIAL PRIMARY KEY,
+  incident_code TEXT UNIQUE,             -- e.g. "INC-2026-04-25-pgvector"
+  title TEXT NOT NULL,
+  what_happened TEXT,
+  what_we_did TEXT,
+  watch_for TEXT,
+  occurred_at TIMESTAMPTZ DEFAULT NOW(),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+DO $$ BEGIN
+  ALTER TABLE incidents ADD COLUMN IF NOT EXISTS embedding vector(1024);
+EXCEPTION WHEN undefined_object THEN
+  RAISE NOTICE 'Skipping vector column on incidents — pgvector not installed.';
+END $$;
+
+ALTER TABLE incidents ADD COLUMN IF NOT EXISTS fts_vec TSVECTOR
+  GENERATED ALWAYS AS (
+    to_tsvector('english',
+      coalesce(title, '') || ' ' ||
+      coalesce(what_happened, '') || ' ' ||
+      coalesce(what_we_did, '') || ' ' ||
+      coalesce(watch_for, ''))
+  ) STORED;
+CREATE INDEX IF NOT EXISTS incidents_fts_idx ON incidents USING gin(fts_vec);
+
+-- Corpus files — arbitrary file corpus (PDFs, docs, summaries) for grounded retrieval
+CREATE TABLE IF NOT EXISTS corpus_files (
+  id SERIAL PRIMARY KEY,
+  path TEXT UNIQUE NOT NULL,
+  file_type TEXT,                        -- pdf, md, ts, json, etc.
+  source_domain TEXT,                    -- e.g. "claude-code-docs", "internal-runbooks"
+  summary TEXT,
+  bytes BIGINT,
+  ingested_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+DO $$ BEGIN
+  ALTER TABLE corpus_files ADD COLUMN IF NOT EXISTS embedding vector(1024);
+EXCEPTION WHEN undefined_object THEN
+  RAISE NOTICE 'Skipping vector column on corpus_files — pgvector not installed.';
+END $$;
+
+ALTER TABLE corpus_files ADD COLUMN IF NOT EXISTS fts_vec TSVECTOR
+  GENERATED ALWAYS AS (
+    to_tsvector('english',
+      coalesce(path, '') || ' ' ||
+      coalesce(source_domain, '') || ' ' ||
+      coalesce(summary, ''))
+  ) STORED;
+CREATE INDEX IF NOT EXISTS corpus_files_fts_idx ON corpus_files USING gin(fts_vec);
+CREATE INDEX IF NOT EXISTS corpus_files_domain_idx ON corpus_files (source_domain);
+CREATE INDEX IF NOT EXISTS corpus_files_type_idx ON corpus_files (file_type);

@@ -103,6 +103,7 @@ function loadConfig() {
     project: resolvedProjectName,
     tier: tier || 'files',
     embedding_model: getInSection('knowledge', 'embedding_model') || null,
+    num_ctx: getInSection('knowledge', 'num_ctx') || null,
     root,
   };
 }
@@ -133,9 +134,12 @@ function ollamaEmbed(texts, config) {
   const model = (config && config.embedding_model) || ollamaDefaults.model;
   const host = ollamaDefaults.host;
   const port = ollamaDefaults.port;
+  const numCtx = config && config.num_ctx ? parseInt(config.num_ctx) : null;
 
   return new Promise((resolve, reject) => {
-    const body = JSON.stringify({ model, input: texts });
+    const reqBody = { model, input: texts };
+    if (numCtx) reqBody.options = { num_ctx: numCtx };
+    const body = JSON.stringify(reqBody);
     const opts = {
       hostname: host, port, path: '/api/embed', method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
