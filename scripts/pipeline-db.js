@@ -552,6 +552,55 @@ async function cmdImport(args) {
   }
 }
 
+// ─── ROUTING VIOLATION ───────────────────────────────────────────────────────
+
+async function cmdRoutingViolation(args) {
+  const client = await connect(CONFIG);
+  try {
+    const record = JSON.parse(args[0] || '{}');
+    await client.query(
+      `INSERT INTO routing_violations (ts, type, tool, model, skill, operation_class, detail)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [
+        record.ts || new Date().toISOString(),
+        record.type || 'unknown',
+        record.tool || null,
+        record.model || null,
+        record.skill || 'unknown',
+        record.operation_class || null,
+        record.detail ? JSON.stringify(record.detail) : null,
+      ]
+    );
+    console.log('routing-violation recorded');
+  } finally {
+    await client.end();
+  }
+}
+
+// ─── ROUTING EVENT ───────────────────────────────────────────────────────────
+
+async function cmdRoutingEvent(args) {
+  const client = await connect(CONFIG);
+  try {
+    const record = JSON.parse(args[0] || '{}');
+    await client.query(
+      `INSERT INTO routing_events (ts, tool, model, skill, operation_class, prompt_bytes, violation)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [
+        record.ts || new Date().toISOString(),
+        record.tool || 'unknown',
+        record.model || null,
+        record.skill || 'conversation_mode',
+        record.operation_class || 'conversation_mode',
+        record.prompt_bytes || 0,
+        record.violation === true,
+      ]
+    );
+  } finally {
+    await client.end();
+  }
+}
+
 // ─── HELP ────────────────────────────────────────────────────────────────────
 
 function help() {
@@ -618,6 +667,12 @@ ${c.dim(`Database: ${CONFIG.database} @ ${CONFIG.host}:${CONFIG.port}`)}
   ${c.cyan('import')} <file.json | database_name> [--all]
       Preview import from file or another project's DB
       Add --all to actually import (duplicates are skipped)
+
+  ${c.cyan('routing-violation')} '<json>'
+      Record a routing violation (type, tool, model, skill, operation_class, detail)
+
+  ${c.cyan('routing-event')} '<json>'
+      Record a routing telemetry event (tool, model, skill, operation_class, prompt_bytes, violation)
 `);
 }
 
@@ -645,6 +700,10 @@ const [, , cmd, ...rest] = process.argv;
       await cmdExport(rest);
     } else if (cmd === 'import') {
       await cmdImport(rest);
+    } else if (cmd === 'routing-violation') {
+      await cmdRoutingViolation(rest);
+    } else if (cmd === 'routing-event') {
+      await cmdRoutingEvent(rest);
     } else {
       console.error(`Unknown command: ${cmd}`);
       help();

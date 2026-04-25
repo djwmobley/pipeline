@@ -373,6 +373,43 @@ CREATE INDEX IF NOT EXISTS feature_token_usage_pr_idx ON feature_token_usage (pr
 CREATE INDEX IF NOT EXISTS feature_token_usage_created_idx ON feature_token_usage (created_at DESC);
 
 -- ═══════════════════════════════════════════════════════════════════════════════
+-- ROUTING TELEMETRY — per-tool-call events + violation log
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+-- Routing telemetry (all tool calls)
+CREATE TABLE IF NOT EXISTS routing_events (
+  id              BIGSERIAL PRIMARY KEY,
+  ts              TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  tool            TEXT NOT NULL,
+  model           TEXT,
+  skill           TEXT NOT NULL,
+  operation_class TEXT NOT NULL,
+  prompt_bytes    INTEGER,
+  violation       BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS routing_events_ts_idx        ON routing_events (ts);
+CREATE INDEX IF NOT EXISTS routing_events_skill_idx     ON routing_events (skill);
+CREATE INDEX IF NOT EXISTS routing_events_violation_idx ON routing_events (violation) WHERE violation = TRUE;
+
+-- Routing violations (written at block time by PreToolUse hook)
+CREATE TABLE IF NOT EXISTS routing_violations (
+  id              BIGSERIAL PRIMARY KEY,
+  ts              TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  type            TEXT NOT NULL,
+  tool            TEXT,
+  model           TEXT,
+  skill           TEXT NOT NULL,
+  operation_class TEXT,
+  detail          JSONB,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS routing_violations_ts_idx   ON routing_violations (ts);
+CREATE INDEX IF NOT EXISTS routing_violations_type_idx ON routing_violations (type);
+
+-- ═══════════════════════════════════════════════════════════════════════════════
 -- INTER-SESSION MEMORY — auto-memory entries, chunked session transcripts,
 -- policy sections, checklists, incidents, file corpus. Mirrors files in
 -- ~/.claude/projects/<encoded-cwd>/memory/ and supports semantic recall across
