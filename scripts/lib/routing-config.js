@@ -116,7 +116,12 @@ function loadSkillFrontmatter(skillName) {
   }
 
   const content = fs.readFileSync(skillFile, 'utf8');
-  const fmMatch = content.match(/^---\n([\s\S]*?)\n---/);
+  // CRLF tolerant: Windows files have \r\n line endings; the linter in
+  // Task 1 already learned this lesson, but the spec for this module
+  // shipped with \n-only regex. Without \r? here, every SKILL.md on a
+  // Windows checkout falls through to the _malformed default and the
+  // hooks downstream silently treat every skill as conversation_mode.
+  const fmMatch = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
   if (!fmMatch) {
     const fm = { operation_class: 'conversation_mode', allowed_direct_write: false, _malformed: true };
     _fmCache[skillName] = fm;
