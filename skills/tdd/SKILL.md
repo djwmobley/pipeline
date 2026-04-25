@@ -1,6 +1,9 @@
 ---
 name: tdd
 description: Test-Driven Development — write the test first, watch it fail, write minimal code to pass
+operation_class: code_draft
+allowed_models: []
+allowed_direct_write: false
 ---
 
 # Test-Driven Development (TDD)

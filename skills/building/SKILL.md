@@ -1,6 +1,9 @@
 ---
 name: building
 description: Subagent-driven plan execution with post-task review
+operation_class: code_draft
+allowed_models: []
+allowed_direct_write: false
 ---
 
 # Subagent-Driven Development

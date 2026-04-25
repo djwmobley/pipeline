@@ -1,6 +1,9 @@
 ---
 name: dashboard-generation
 description: Generate static HTML project dashboard — reads state from config, DB/files, and git, substitutes into template, writes docs/dashboard.html
+operation_class: script_exec
+allowed_models: []
+allowed_direct_write: false
 ---
 
 # Dashboard Generation

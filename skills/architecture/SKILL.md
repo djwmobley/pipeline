@@ -1,6 +1,9 @@
 ---
 name: architecture
 description: "Engineering Architect — technology decisions via recon + domain analysis. Silent for MEDIUM, full orchestration for LARGE+."
+operation_class: sonnet_review
+allowed_models: [sonnet]
+allowed_direct_write: false
 ---
 
 # Engineering Architect

@@ -1,6 +1,9 @@
 ---
 name: debate
 description: Antagonistic design debate — stress-test a spec with advocate, skeptic, and practitioner agents before planning
+operation_class: sonnet_review
+allowed_models: [sonnet]
+allowed_direct_write: false
 ---
 
 # Design Debate

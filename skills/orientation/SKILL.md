@@ -1,6 +1,9 @@
 ---
 name: orientation
 description: Mandatory preflight for every phase command — assert cwd, branch, HEAD, worktree identity, and dirty flag before any other step. Prevents silent operation on the wrong branch.
+operation_class: script_exec
+allowed_models: []
+allowed_direct_write: false
 ---
 
 # Orientation Preflight

@@ -1,6 +1,9 @@
 ---
 name: qa
 description: "Lead QA — strategic test planning and verification. Inline QA section for MEDIUM, full test plan + parallel workers for LARGE+."
+operation_class: haiku_judgment
+allowed_models: []
+allowed_direct_write: false
 ---
 
 # Lead QA

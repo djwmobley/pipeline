@@ -1,6 +1,9 @@
 ---
 name: compliance
 description: Compliance framework mapping — map red team findings to regulatory controls and analyze coverage scope
+operation_class: haiku_judgment
+allowed_models: []
+allowed_direct_write: false
 ---
 
 # Compliance Framework Mapping

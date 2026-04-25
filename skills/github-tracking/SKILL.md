@@ -1,6 +1,9 @@
 ---
 name: github-tracking
 description: Mandatory issue tracking ceremony — every command that produces output must update the associated epic
+operation_class: script_exec
+allowed_models: []
+allowed_direct_write: false
 ---
 
 # Issue Tracking — Mandatory Ceremony

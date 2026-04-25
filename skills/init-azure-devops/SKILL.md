@@ -1,6 +1,9 @@
 ---
 name: init-azure-devops
 description: Verify Azure DevOps organization, project access, and process-template configuration during /pipeline:init Step 1c. Dispatched as a subagent via the Task tool when the git remote resolves to dev.azure.com or *.visualstudio.com. Runs scripts/pipeline-init-azure-devops.js, interprets az CLI errors via the error-interpretation table in this skill, and returns a structured verification result for init.md to apply to pipeline.yml's platform block.
+operation_class: code_draft
+allowed_models: [sonnet]
+allowed_direct_write: true
 ---
 
 ## Purpose
