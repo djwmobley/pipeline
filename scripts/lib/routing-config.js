@@ -62,16 +62,26 @@ function loadConfig() {
   const writeThreshold = parseInt(getInSection('routing', 'direct_write_line_threshold') || '10');
   const stopThreshold  = parseInt(getInSection('routing', 'stop_hook_threshold') || '150');
 
-  // Parse bash_block_patterns from universal_floor section
+  // Parse bash_block_patterns from universal_floor section.
+  // The spec shipped with `\\s` etc. in regex literals — that matches
+  // a literal backslash followed by `s`, not a whitespace metachar. In
+  // a JS regex *literal* you write the metachar with a single backslash
+  // (`\s`); the double-escape form is only correct when the pattern is
+  // a string passed to `new RegExp(...)`. Without this fix, every
+  // user-configured pattern was silently dropped and bashPatterns
+  // always defaulted to the hardcoded fallback.
   const floorSection = getNestedSection('routing', 'universal_floor');
   const bashPatterns = [];
-  const bpMatches = floorSection.matchAll(/^\\s*-\\s*"([^"]+)"/gm);
+  const bpMatches = floorSection.matchAll(/^\s*-\s*"([^"]+)"/gm);
   for (const m of bpMatches) bashPatterns.push(m[1]);
 
-  // Parse tier_map
+  // Parse tier_map — same regex-literal escaping fix. Without it,
+  // tierMap was always {} and the entire tier-mismatch enforcement path
+  // in routing-check.js was permanently dead because `tier_map[oc]`
+  // was always `undefined`.
   const tierMapSection = getNestedSection('routing', 'tier_map');
   const tierMap = {};
-  for (const m of tierMapSection.matchAll(/^\\s*(\\w+):\\s*(\\S+)/gm)) {
+  for (const m of tierMapSection.matchAll(/^\s*(\w+):\s*(\S+)/gm)) {
     tierMap[m[1]] = m[2];
   }
 
@@ -169,14 +179,24 @@ function writeViolation(record, config) {
   const line = JSON.stringify(full);
 
   if (cfg.knowledge.tier === 'postgres') {
-    // Write to Postgres via pipeline-db.js to avoid inline SQL
+    // Write to Postgres via pipeline-db.js to avoid inline SQL.
+    // stdio: ['ignore', 'pipe', 'ignore'] suppresses the child's
+    // stderr — without it, "Unknown command: routing-violation"
+    // (or any other pipeline-db error) leaks into the hook's
+    // own stderr stream, which Claude Code surfaces above the
+    // intentional block message. Hook output should only be the
+    // ROUTING BLOCK message.
     const { execFileSync } = require('child_process');
     try {
       execFileSync('node', [
         path.join(getPluginDir(), 'scripts', 'pipeline-db.js'),
         'routing-violation',
         JSON.stringify(full),
-      ], { cwd: cfg._root || getProjectRoot(), encoding: 'utf8' });
+      ], {
+        cwd: cfg._root || getProjectRoot(),
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+      });
     } catch (_) {
       // Fall through to JSONL on DB write failure
       appendJsonl(path.join(cfg._root || getProjectRoot(), 'logs', 'routing-violations.jsonl'), line);
