@@ -32,7 +32,7 @@ This release focuses on three areas: Windows safety hardening across the init, o
 
 ### Process
 
-PRs #92–#108 in this release were reviewed through a parallel `pipeline_architect` workspace — a separate Claude Code instance not part of this distribution. The relevant fact for this release is that those PRs went through external review before merge; the `pipeline_architect` workspace's operating method (its dispatch protocol, state vocabulary, and direct interaction with Gemini Pro as Consultant) lives outside this repository and is documented separately in that workspace.
+PRs #92–#108 in this release were reviewed through a parallel `pipeline_architect` workspace — a separate Claude Code instance not part of this distribution. The relevant fact for this release is that those PRs went through external review before merge; that workspace's operating method lives outside this repository and is documented separately there.
 
 Six new memory tables (`memory_entries`, `session_chunks`, `policy_sections`, `checklist_items`, `incidents`, `corpus_files`) are added to the schema in this release. Tables matching this schema are populated in some external workspaces by mechanisms outside this plugin; what those mechanisms are, and how they correspond to a loader Pipeline could ship, is a design question rather than a port-an-existing-thing question. Tracked under epic #109.
 
