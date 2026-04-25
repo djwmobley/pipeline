@@ -112,6 +112,48 @@ Task tool (general-purpose, model: {{MODEL}}):
     limiting) without creating a replacement, flag it as a 🔴 HIGH finding
     regardless of what the task requirements say.
 
+    ## Part 0: Three-Store Verification (binding gate — runs before code review)
+
+    Before reviewing code, verify the implementer met the Reporting Contract.
+    If any required store is missing the implementer's write, the review
+    Assessment is automatically "Issues Found" and the implementer must fix
+    the gap before re-dispatch — regardless of whether the code itself is
+    correct. Code quality cannot compensate for a broken reporting contract.
+    See epic #129 (Build skill hardening) for the incident that triggered
+    this gate.
+
+    ### Check 1 — Issue comment exists
+
+    ```bash
+    node '[SCRIPTS_DIR]/platform.js' issue view [TASK_ISSUE] | grep -E "^## Implementation — Task [TASK_NUMBER]"
+    ```
+
+    If no match, the implementer skipped the required write. Record finding:
+    `🟡 MEDIUM HIGH — implementer skipped Implementation comment on issue [TASK_ISSUE]`.
+
+    ### Check 2 — Build-state updated
+
+    ```bash
+    node -e "const s = require('./.claude/build-state.json'); const t = s.tasks.find(x => x.id === [TASK_NUMBER]); console.log(JSON.stringify({status: t.status, commit: t.commit, completed_at: t.completed_at}))"
+    ```
+
+    The task entry must have non-pending `status` and a populated `commit`.
+    If missing, record finding:
+    `🟡 MEDIUM HIGH — implementer skipped build-state update for task [TASK_NUMBER]`.
+
+    ### Check 3 — Subagent reply free of skip-rationalizations
+
+    The orchestrator passes the implementer's reply to you in the dispatch
+    prompt. Scan it for the strings: `N/A`, `not applicable`, `skipping`,
+    `unable to verify`, `deferred to orchestrator`, `policy: post only on`.
+
+    Any match is a finding:
+    `🟡 MEDIUM HIGH — implementer reply contains skip-rationalization "<match>"; required step likely skipped`.
+
+    If any of Check 1–3 fails, jump straight to the verdict block with
+    `**Assessment:** Issues Found` and the corresponding findings. Do not
+    proceed to Part 1+ — the implementer must fix the contract gap first.
+
     ## Part 1: Spec Compliance
 
     Do NOT trust the implementer's report. Verify independently by reading
@@ -226,58 +268,59 @@ Task tool (general-purpose, model: {{MODEL}}):
     <ANTI-RATIONALIZATION>
     These thoughts mean STOP and reconsider:
     - "The implementer said it works" → You MUST NOT trust the report. Read the code.
+    - "The implementer's count / distribution / files-changed list is plausible, I'll re-state it" → No. Re-stating an unverified claim is the same as not reviewing. Re-run the count yourself (grep, ls, git diff --stat) or report Assessment: Blocked with "could not independently verify count". (Cf. Task 1 incident, epic #129.)
     - "This is a minor style issue" → If it degrades maintainability, flag it at the appropriate severity.
     - "The arch plan doesn't quite apply here" → If the changed file is in a module the arch plan covers, it applies.
     - "I already found enough issues" → You stop when you have checked every criterion, not when you have enough findings.
     - "This looks fine overall" → That thought is a red flag. Read the code again.
-    - "Postgres/issue tracker is down, I'll skip reporting" → Build-state is always required. If Postgres is unreachable, log it for the orchestrator to retry.
+    - "Postgres/issue tracker is down, I'll skip reporting" → Build-state is always required. If the issue tracker is unreachable, status is BLOCKED — do not silently skip.
+    - "This step is N/A" / "no applicable table" / "policy: post only on orchestrator instruction" / "deferred to orchestrator" → No such policy exists. Skipping required Reporting Contract writes is never authorized. If a write cannot be executed, status is BLOCKED with the exact error. Do NOT invent a "policy" or "convention" that lets you skip. (Cf. Task 1 reviewer fabrication, epic #129.)
     - "I can't complete the review" → Report Assessment: Blocked with what is missing. Do not silently skip checks.
     </ANTI-RATIONALIZATION>
 
     ## Reporting Contract
 
-    After review, write results to all three stores. This is the A2A contract —
-    the QA agent and orchestrator read review results to decide next steps.
+    After review, write results to two stores. The Postgres `knowledge` write
+    referenced in older versions of this template was fabricated — neither
+    the table nor the `pipeline-db.js insert knowledge` verb exist. See #130.
 
-    ### 1. Postgres Write
+    ### 1. Issue Comment (if task issue is available)
 
-    Record review result in the knowledge DB:
-    ```bash
-    PROJECT_ROOT=$(git rev-parse --show-toplevel) node '[SCRIPTS_DIR]/pipeline-db.js' insert knowledge \
-      --category 'review' \
-      --label 'task-[TASK_NUMBER]-review' \
-      --body "$(cat <<'BODY'
-    {"task": [TASK_NUMBER], "verdict": "PASS|FAIL", "findings": {"high": 0, "medium": 0, "low": 0}, "arch_compliance": "PASS|FAIL|SKIPPED"}
-    BODY
-    )"
-    ```
+    Post review verdict on the task issue. The `**Findings:** [N] high, [M]
+    medium, [P] low` line counts the findings YOU produced this run — not a
+    re-statement of the implementer's claims. You can count your own findings
+    reliably; you cannot count what the implementer did to other files (see
+    Part 0 + ANTI-RATIONALIZATION).
 
-    ### 2. Issue Comment (if task issue is available)
-
-    Post review verdict on the task issue:
     ```bash
     cat <<'EOF' | node '[SCRIPTS_DIR]/platform.js' issue comment [TASK_ISSUE] --stdin
     ## Post-Task Review — Task [TASK_NUMBER]
     **Verdict:** [PASS/FAIL]
     **Findings:** [N] high, [M] medium, [P] low
     **Arch compliance:** [PASS/FAIL/SKIPPED]
+    **Three-store gate (Part 0):** [PASS/FAIL]
 
     [For FAIL: list 🔴 HIGH finding IDs + one-line descriptions]
+    [For PASS with Part 0 PASS: one-line Clean Review Certificate summary]
     EOF
     ```
 
-    If the command fails, notify the user with the error and ask for guidance.
+    If the command fails, status is BLOCKED. Do NOT proceed to "report
+    Approved." Do NOT invent a "post only on orchestrator instruction"
+    or "defer to orchestrator" loophole. (Cf. Task 1 reviewer fabrication,
+    epic #129.)
 
-    ### 3. Build State
+    ### 2. Build State
 
     Update `.claude/build-state.json` with review verdict for crash recovery.
+    Always required regardless of issue-tracker availability.
 
     ### Fallback
 
     - **Issue tracking disabled** (`[TASK_ISSUE]` is empty): skip the issue comment.
-    - **Postgres unreachable**: log the failure in your report to the orchestrator.
-      The orchestrator will retry the write.
-    - **Build-state write**: always required.
+      Build-state remains required.
+    - **Issue comment write fails**: status BLOCKED. Surface the exact error.
+      No silent skip.
 
     ## Output Format (to orchestrator)
 
