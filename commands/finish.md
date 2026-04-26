@@ -343,7 +343,7 @@ Shipped: [task title] (task #[id])
 
 If `true`:
 ```bash
-node scripts/pipeline-memory-loader.js all --quiet
+node '[SCRIPTS_DIR]/pipeline-memory-loader.js' all --quiet
 ```
 If the loader exits non-zero, print:
 ```
@@ -353,7 +353,7 @@ and continue.
 
 If `false` or absent, print:
 ```
-Run node scripts/pipeline-memory-loader.js all to embed this session.
+Run node '[SCRIPTS_DIR]/pipeline-memory-loader.js' all to embed this session.
 ```
 
 `$SCRIPTS_DIR` is already resolved in the "Persist to knowledge tier" section — use the same value here.
