@@ -3,6 +3,12 @@ allowed-tools: Bash(*), Read(*), Write(*), Edit(*), Glob(*), Grep(*), Task(*)
 description: Subagent-driven plan execution — fresh agent per task with post-task review
 ---
 
+```bash
+# Set active skill for routing enforcement
+node scripts/lib/active-skill.js write building
+```
+
+
 ## Pipeline Build
 
 ### Preflight — Orientation check
@@ -252,7 +258,7 @@ PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update task [task_id] defe
 2. Query for a parent roadmap task:
    ```bash
    PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js query "$(cat <<'SQL'
-   SELECT * FROM tasks WHERE issue_ref = [N] AND category = 'roadmap'
+   SELECT * FROM tasks WHERE github_issue = [N] AND category = 'roadmap'
    SQL
    )"
    ```

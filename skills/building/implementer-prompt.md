@@ -182,66 +182,69 @@ Task tool (general-purpose, model: {{MODEL}}):
     - "The existing code does it this way" → Existing patterns are not always correct. Check the spec.
     - "The arch plan doesn't apply here" → If you're touching code in a module the arch plan covers, it applies.
     - "I'll read the context later" → Read ALL context sources before writing any code.
-    - "Postgres/issue tracker is down, I'll skip reporting" → Build-state is always required. If Postgres is unreachable, log it for the orchestrator to retry. Issue comment is skippable only if issue tracking is disabled in config.
+    - "Postgres/issue tracker is down, I'll skip reporting" → Build-state is always required. If the issue tracker is unreachable, status is BLOCKED — do not silently continue. Issue comment is skippable only if issue tracking is disabled in config.
+    - "This step is N/A" / "no applicable table" / "no relevant command" / "skipping the X write" → No. If a required step cannot be executed (table missing, command not supported, network failure), report status BLOCKED with the exact error from the failed command. Do NOT silently skip and continue. Do NOT invent a "policy" or "convention" that lets you skip. (Cf. Task 1 incident, epic #129.)
+    - "I'll defer this to the orchestrator / next session / when X is available" → The build contract is "all required stores written before reporting DONE." There is no defer-to-later loophole. If a store cannot be written, status is BLOCKED, not DONE.
+    - "I should report a count / distribution / files-changed list" → No. Do not count, do not list. The orchestrator emits all counts and distributions from deterministic commands after you finish. Your report is status, commit SHA, concerns. Free text only — no numbers you generated yourself. (Cf. #133.)
     </ANTI-RATIONALIZATION>
 
     ## Reporting Contract
 
-    After implementation and self-review, write results to all three stores.
-    This is the A2A contract — the post-task reviewer and QA agents read
-    these results to understand what was built.
+    After implementation and self-review, write results to two stores. The
+    third store (Postgres `knowledge`) referenced in older versions of this
+    template was fabricated — neither the table nor the `pipeline-db.js
+    insert knowledge` verb exist. See #130.
 
-    ### 1. Postgres Write
+    ### 1. Issue Comment (if task issue is available)
 
-    Record implementation result in the knowledge DB:
-    ```bash
-    PROJECT_ROOT=$(git rev-parse --show-toplevel) node '[SCRIPTS_DIR]/pipeline-db.js' insert knowledge \
-      --category 'build' \
-      --label 'task-[TASK_NUMBER]-impl' \
-      --body "$(cat <<'BODY'
-    {"task": [TASK_NUMBER], "status": "DONE|DONE_WITH_CONCERNS|BLOCKED|NEEDS_CONTEXT", "commit_sha": "[SHA]", "files_changed": [N]}
-    BODY
-    )"
-    ```
+    Post implementation report on the task issue. Status, commit SHA, and
+    concerns only — NO counts, NO distributions, NO file lists. The
+    orchestrator emits all of those in a follow-up Verification comment after
+    running deterministic post-dispatch checks. See #133.
 
-    ### 2. Issue Comment (if task issue is available)
-
-    Post implementation report on the task issue:
     ```bash
     cat <<'EOF' | node '[SCRIPTS_DIR]/platform.js' issue comment [TASK_ISSUE] --stdin
     ## Implementation — Task [TASK_NUMBER]
     **Status:** [DONE/DONE_WITH_CONCERNS/BLOCKED/NEEDS_CONTEXT]
     **Commit:** [SHA]
-    **Files changed:** [list]
 
-    [For DONE_WITH_CONCERNS: list concerns]
+    [For DONE_WITH_CONCERNS: list concerns, free text]
     [For BLOCKED/NEEDS_CONTEXT: describe what's needed]
     EOF
     ```
 
-    If the command fails, notify the user with the error and ask for guidance.
+    If the command fails, status is BLOCKED. Do NOT proceed to "report DONE."
+    Do NOT invent a "defer to orchestrator" or "post later" loophole. The
+    issue comment is binding.
 
-    ### 3. Build State
+    ### 2. Build State
 
     Update `.claude/build-state.json` — set this task's status to `done` (or
-    `blocked`/`needs_context`) and record the commit SHA.
+    `blocked`/`needs_context`) and record the commit SHA. Always required
+    regardless of issue-tracker availability.
 
     ### Fallback
 
     - **Issue tracking disabled** (`[TASK_ISSUE]` is empty): skip the issue comment.
-    - **Postgres unreachable**: log the failure in your report to the orchestrator.
-      The orchestrator will retry the write. Build-state update is always required
-      regardless of Postgres availability.
-    - **Build-state write**: always required — this is the crash-recovery mechanism.
+      Build-state remains required.
+    - **Issue comment write fails**: status BLOCKED. Surface the exact error.
+      No silent skip.
 
     ## Report Format (to orchestrator)
 
+    Reply with:
+
     - **Status:** DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT
-    - **Confidence:** HIGH | MEDIUM | LOW (with reasoning)
-    - What you implemented (confidence: HIGH/MEDIUM/LOW)
-    - What you tested and results (confidence: HIGH/MEDIUM/LOW)
-    - Files changed
-    - Arch compliance check results
-    - Self-review findings (if any, with confidence per finding)
+    - **Confidence:** HIGH | MEDIUM | LOW (with one-line reason)
+    - What you implemented (free text, no counts)
+    - What you tested and results (free text, no counts)
+    - Commit SHA(s)
+    - Arch compliance check result (PASS / FAIL / SKIPPED — no per-rule list)
+    - Self-review findings (free text, if any)
     - Any concerns
+
+    Do NOT include: distribution counts, file-change lists with counts, line
+    counts, "X of Y skills updated" tallies. The orchestrator runs
+    deterministic count commands after you finish; your numbers cannot be
+    verified and have repeatedly been wrong. (Cf. Task 1 incident.)
 ```

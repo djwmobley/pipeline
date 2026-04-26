@@ -3,6 +3,12 @@ allowed-tools: Bash(*), Read(*), Write(*), Edit(*), Glob(*), Grep(*), Agent(*)
 description: "QA — test planning and verification. Two modes: 'plan' (pre-build) and 'verify' (post-build)"
 ---
 
+```bash
+# Set active skill for routing enforcement
+node scripts/lib/active-skill.js write qa
+```
+
+
 ## Pipeline QA
 
 Two modes:

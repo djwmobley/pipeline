@@ -1,6 +1,9 @@
 ---
 name: auditing
 description: Full codebase review with parallel sector agents — Phase 0 grep, N sectors, synthesis
+operation_class: sonnet_review
+allowed_models: [sonnet]
+allowed_direct_write: false
 ---
 
 # Full Codebase Audit

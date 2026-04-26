@@ -16,13 +16,83 @@ commands:
   test_verbose: "npx vitest run --reporter=verbose"
   security_audit: "npm audit --json"  # Dependency vulnerability scan; set by init from pkg_manager
 
-# Size routing
+# Size routing + convention routing
 routing:
+  # Size routing (unchanged)
   source_dirs: ["src/"]
   tiny_max_files: 1
   tiny_max_lines: 30
   medium_max_files: 3
-  review_gate_threshold: 3   # files changed >= this requires review
+  review_gate_threshold: 3
+
+  # Convention routing (Option D)
+  enabled: true                          # Set false to disable all routing enforcement
+  chain_dispatch_threshold: 2000         # Bytes; Agent prompt above this triggers chain-dispatch rule
+  direct_write_line_threshold: 100       # Edit/Write blocked above this count without allowed_direct_write (multi-paragraph LLM drafts)
+  stop_hook_threshold: 150               # Words of non-excluded prose in a Stop hook turn before violation
+
+  # Tier map: operation_class -> executor tier name
+  tier_map:
+    opus_orchestration: opus
+    sonnet_review: sonnet
+    haiku_judgment: haiku
+    code_draft: qwen_coder
+    short_draft: qwen_prose
+    bulk_classify: qwen_prose
+    script_exec: no_llm
+    conversation_mode: mixed
+
+  # Local model hosts — populated by /pipeline:init Step 3b
+  local_models:
+    prose:
+      name: "qwen2.5:14b"
+      host_type: "ollama"
+      endpoint: "http://localhost:11434"
+      api_protocol: "ollama_native"
+      context_window: 8192
+    coder:
+      name: "qwen2.5-coder:32b"
+      host_type: "ollama"
+      endpoint: "http://localhost:11434"
+      api_protocol: "ollama_native"
+      context_window: 16384
+
+  # Universal floor — blocked regardless of operation_class
+  universal_floor:
+    bash_block_patterns:
+      - "^psql\\s"
+      - "INSERT INTO\\s"
+      - "UPDATE\\s+\\w+\\s+SET\\s"
+      - "DROP TABLE\\s"
+      - "DELETE FROM\\s+\\w+\\s*$"
+
+  # conversation_mode — active when no /pipeline:* command is in flight
+  conversation_mode:
+    description: "Default when no pipeline skill is active"
+    tiers:
+      no_llm:
+        tools: [Glob, Grep, Read]
+        description: "File reads, search, deterministic lookups"
+      qwen_prose:
+        tools: [Agent, Task]
+        max_prompt_bytes: 500
+        description: "Short prose drafts"
+      qwen_coder:
+        tools: [Agent, Task]
+        max_prompt_bytes: 1000
+        description: "Code drafts, script generation"
+      haiku:
+        tools: [Agent, Task]
+        requires_explicit_dispatch: true
+        description: "Single-file judgment where local model quality is insufficient"
+      sonnet:
+        tools: [Agent, Task]
+        requires_explicit_dispatch: true
+        justification_required: true
+        description: "Explicit dispatch only"
+      opus:
+        role: "conversation_only"
+        description: "Read tool output, decide what to dispatch, scope prompts. NO deliverable drafting."
 
 # Build artifact declaration (optional — helps Pipeline scope review and report handoffs)
 # Set artifact to describe what the project produces beyond source code.

@@ -1,6 +1,9 @@
 ---
 name: redteam
 description: Security red team assessment — recon + parallel specialist agents + lead analyst synthesis
+operation_class: sonnet_review
+allowed_models: [sonnet]
+allowed_direct_write: false
 ---
 
 # Red Team Security Assessment

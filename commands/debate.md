@@ -3,6 +3,12 @@ allowed-tools: Bash(*), Read(*), Glob(*), Grep(*), Agent(*)
 description: Antagonistic design debate — stress-test a spec with advocate, skeptic, and practitioner agents before planning
 ---
 
+```bash
+# Set active skill for routing enforcement
+node scripts/lib/active-skill.js write debate
+```
+
+
 ## Pipeline Debate
 
 Locate and read the debate skill file:
@@ -226,33 +232,33 @@ Store the resolved absolute path and use it in the commands below.
 
 **If `knowledge.tier` is `"postgres"` AND `integrations.postgres.enabled`:**
 
-Record the debate session:
+Record the debate verdict as a decision:
 ```bash
-PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js record session "$(cat <<'TOPIC'
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update decision "$(cat <<'TOPIC'
 debate-[topic-slug]
 TOPIC
-)" "$(cat <<'SUMMARY'
+)" "$(cat <<'DECISION'
 [date]: Design debate for [spec title] — disposition: [disposition]
-SUMMARY
-)" "$(cat <<'DETAIL'
+DECISION
+)" "$(cat <<'REASON'
 Panelists: Advocate, Skeptic, Practitioner. Points of agreement: [count]. Contested: [count]. Risks: [count]. Verdict file: [path].
-DETAIL
+REASON
 )"
 ```
 
 **If `knowledge.tier` is `"files"`:**
 
-Record the debate session:
+Record the debate verdict as a decision:
 ```bash
-PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-files.js session "$(cat <<'TOPIC'
+PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-files.js decision "$(cat <<'TOPIC'
 debate-[topic-slug]
 TOPIC
-)" "$(cat <<'SUMMARY'
+)" "$(cat <<'DECISION'
 [date]: Design debate — disposition: [disposition]
-SUMMARY
-)" "$(cat <<'DETAIL'
+DECISION
+)" "$(cat <<'REASON'
 [spec title]. Agreement: [count], Contested: [count], Risks: [count]. Verdict: [path].
-DETAIL
+REASON
 )"
 ```
 

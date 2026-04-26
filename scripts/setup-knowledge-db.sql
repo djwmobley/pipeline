@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   status TEXT DEFAULT 'pending',     -- pending, in_progress, done, deferred
   phase TEXT DEFAULT 'backlog',
   priority TEXT DEFAULT 'medium',    -- low, medium, high, critical
-  issue_ref INTEGER,
+  github_issue INTEGER,
   readme_label TEXT,                 -- bold text shown in README roadmap (null = not a roadmap item)
   category TEXT DEFAULT 'internal',  -- roadmap, build, finding, internal
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -138,7 +138,7 @@ CREATE TABLE IF NOT EXISTS findings (
   effort TEXT NOT NULL,                   -- quick, medium, architectural, none
   verification_domain TEXT,               -- INJ, sector-api, changed-files, screenshot, manual
   status TEXT DEFAULT 'triaged',          -- triaged, in_progress, fixed, verified, wontfix
-  issue_ref INTEGER,                      -- Linked issue/work-item reference
+  github_issue INTEGER,                      -- Linked issue/work-item reference
   commit_sha TEXT,                        -- Fix commit SHA
   task_id INTEGER REFERENCES tasks(id),   -- Linked pipeline task
   report_path TEXT,                       -- Original report file path
@@ -307,7 +307,7 @@ CREATE TABLE IF NOT EXISTS file_cache (
 -- ═══════════════════════════════════════════════════════════════════════════════
 
 CREATE OR REPLACE VIEW open_tasks AS
-  SELECT id, title, phase, status, priority, issue_ref, created_at
+  SELECT id, title, phase, status, priority, github_issue, created_at
   FROM tasks
   WHERE status NOT IN ('done', 'deferred')
   ORDER BY
@@ -327,7 +327,7 @@ CREATE OR REPLACE VIEW active_gotchas AS
   ORDER BY created_at DESC;
 
 CREATE OR REPLACE VIEW roadmap_tasks AS
-  SELECT id, title, readme_label, status, issue_ref, category, updated_at
+  SELECT id, title, readme_label, status, github_issue, category, updated_at
   FROM tasks
   WHERE category = 'roadmap'
   ORDER BY
@@ -336,7 +336,7 @@ CREATE OR REPLACE VIEW roadmap_tasks AS
 
 CREATE OR REPLACE VIEW open_findings AS
   SELECT id, source, severity, confidence, location, category,
-         description, effort, status, issue_ref, commit_sha
+         description, effort, status, github_issue, commit_sha
   FROM findings
   WHERE status NOT IN ('verified', 'wontfix')
   ORDER BY
@@ -371,6 +371,43 @@ CREATE TABLE IF NOT EXISTS feature_token_usage (
 CREATE INDEX IF NOT EXISTS feature_token_usage_branch_idx ON feature_token_usage (branch);
 CREATE INDEX IF NOT EXISTS feature_token_usage_pr_idx ON feature_token_usage (pr_number);
 CREATE INDEX IF NOT EXISTS feature_token_usage_created_idx ON feature_token_usage (created_at DESC);
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- ROUTING TELEMETRY — per-tool-call events + violation log
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+-- Routing telemetry (all tool calls)
+CREATE TABLE IF NOT EXISTS routing_events (
+  id              BIGSERIAL PRIMARY KEY,
+  ts              TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  tool            TEXT NOT NULL,
+  model           TEXT,
+  skill           TEXT NOT NULL,
+  operation_class TEXT NOT NULL,
+  prompt_bytes    INTEGER,
+  violation       BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS routing_events_ts_idx        ON routing_events (ts);
+CREATE INDEX IF NOT EXISTS routing_events_skill_idx     ON routing_events (skill);
+CREATE INDEX IF NOT EXISTS routing_events_violation_idx ON routing_events (violation) WHERE violation = TRUE;
+
+-- Routing violations (written at block time by PreToolUse hook)
+CREATE TABLE IF NOT EXISTS routing_violations (
+  id              BIGSERIAL PRIMARY KEY,
+  ts              TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  type            TEXT NOT NULL,
+  tool            TEXT,
+  model           TEXT,
+  skill           TEXT NOT NULL,
+  operation_class TEXT,
+  detail          JSONB,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS routing_violations_ts_idx   ON routing_violations (ts);
+CREATE INDEX IF NOT EXISTS routing_violations_type_idx ON routing_violations (type);
 
 -- ═══════════════════════════════════════════════════════════════════════════════
 -- INTER-SESSION MEMORY — auto-memory entries, chunked session transcripts,

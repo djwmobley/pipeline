@@ -1,6 +1,9 @@
 ---
 name: checkpoints
 description: Human-in-the-loop checkpoint taxonomy — MUST/SHOULD/MAY classification for all pipeline decision points
+operation_class: script_exec
+allowed_models: []
+allowed_direct_write: false
 ---
 
 # Human-in-the-Loop Checkpoints

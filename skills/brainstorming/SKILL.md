@@ -1,6 +1,9 @@
 ---
 name: brainstorming
 description: "Design before LARGE changes. Explores user intent, requirements, and design before implementation."
+operation_class: haiku_judgment
+allowed_models: []
+allowed_direct_write: false
 ---
 
 # Brainstorming Ideas Into Designs

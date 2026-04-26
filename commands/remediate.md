@@ -3,6 +3,12 @@ allowed-tools: Bash(*), Read(*), Write(*), Edit(*), Glob(*), Grep(*), Agent(*)
 description: Multi-source remediation — parse findings, create tickets, batch fixes, verify
 ---
 
+```bash
+# Set active skill for routing enforcement
+node scripts/lib/active-skill.js write remediation
+```
+
+
 ## Pipeline Remediate
 
 Fix findings from any pipeline workflow. Parses reports from red team, audit, review, UI review, or external sources, creates tickets (issues / Postgres / files), dispatches stateless implementer/reviewer agents, and verifies fixes.
@@ -485,3 +491,19 @@ What next?
 ```
 
 **Default to the most complete option.** If the user says "finish it", "ship it", or similar — execute option 1 without further prompting.
+
+---
+
+### Orchestrator
+
+Record step completion after the report is presented and any user-selected follow-up has been initiated:
+
+```bash
+node '[SCRIPTS_DIR]/orchestrator.js' complete remediate PASS
+```
+
+If remediation failed (no findings could be parsed, baseline commit missing, all fixes failed verification, user abandoned mid-run):
+
+```bash
+node '[SCRIPTS_DIR]/orchestrator.js' complete remediate FAIL
+```

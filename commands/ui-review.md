@@ -3,6 +3,12 @@ allowed-tools: Bash(*), Read(*), Task(*), mcp__chrome__take_screenshot, mcp__chr
 description: Capture a screenshot and analyze the UI — layout, hit targets, text, visual issues
 ---
 
+```bash
+# Set active skill for routing enforcement
+node scripts/lib/active-skill.js write reviewing
+```
+
+
 ## Pipeline UI Review
 
 Capture a browser screenshot and dispatch an analysis agent.

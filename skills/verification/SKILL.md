@@ -1,6 +1,9 @@
 ---
 name: verification
 description: Evidence before claims — run verification commands and confirm output before making any success claims
+operation_class: haiku_judgment
+allowed_models: []
+allowed_direct_write: false
 ---
 
 # Verification Before Completion

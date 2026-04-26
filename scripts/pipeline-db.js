@@ -97,7 +97,7 @@ async function cmdStatus() {
   const client = await connect(CONFIG);
   try {
     const sessions = await client.query('SELECT num, date, summary, tests FROM sessions ORDER BY num DESC LIMIT 3');
-    const tasks = await client.query("SELECT id, title, status, issue_ref, phase FROM tasks WHERE status NOT IN ('done', 'deferred') ORDER BY id");
+    const tasks = await client.query("SELECT id, title, status, github_issue, phase FROM tasks WHERE status NOT IN ('done', 'deferred') ORDER BY id");
     const gotchas = await client.query('SELECT issue, rule FROM gotchas WHERE active = TRUE ORDER BY id');
 
     console.log('\n' + c.bold(`═══ ${CONFIG.project} — Session Context ═══`));
@@ -125,7 +125,7 @@ async function cmdStatus() {
       console.log(`  ${c.green('No open tasks.')}`);
     } else {
       tasks.rows.forEach(t => {
-        const issue = t.issue_ref ? c.dim(` #${t.issue_ref}`) : '';
+        const issue = t.github_issue ? c.dim(` #${t.github_issue}`) : '';
         console.log(`  ${statusIcon(t.status)} [${t.id}] ${t.title}${issue}`);
       });
     }
@@ -179,7 +179,7 @@ async function cmdUpdate(args) {
           process.exit(1);
         }
         const r = await client.query(
-          'INSERT INTO tasks (title, status, phase, issue_ref) VALUES ($1, $2, $3, $4) RETURNING id',
+          'INSERT INTO tasks (title, status, phase, github_issue) VALUES ($1, $2, $3, $4) RETURNING id',
           [title, 'pending', phase, issue]
         );
         console.log(c.green(`Task #${r.rows[0].id} "${title}" created.`));
@@ -193,7 +193,7 @@ async function cmdUpdate(args) {
           const value = parseInt(valueParts[0]);
           if (isNaN(value)) { console.error('Usage: update task <id> issue_ref <N>'); process.exit(1); }
           const r = await client.query(
-            'UPDATE tasks SET issue_ref=$1, updated_at=NOW() WHERE id=$2 RETURNING title',
+            'UPDATE tasks SET github_issue=$1, updated_at=NOW() WHERE id=$2 RETURNING title',
             [value, taskId]
           );
           if (r.rowCount === 0) { console.error(`Task #${taskId} not found.`); process.exit(1); }
@@ -328,7 +328,7 @@ async function cmdUpdate(args) {
 
         } else if (field === 'issue_ref') {
           const r = await client.query(
-            'UPDATE findings SET issue_ref=$1, updated_at=NOW() WHERE id=$2 RETURNING id',
+            'UPDATE findings SET github_issue=$1, updated_at=NOW() WHERE id=$2 RETURNING id',
             [parseInt(value), idOrNew]
           );
           if (r.rowCount === 0) { console.error(`Finding ${idOrNew} not found.`); process.exit(1); }
@@ -410,7 +410,7 @@ async function cmdQueryFindings(args) {
   if (filters.severity) { params.push(filters.severity.toUpperCase()); conditions.push(`severity = $${params.length}`); }
 
   const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-  const sql = `SELECT id, source, severity, confidence, location, category, description, effort, status, issue_ref, commit_sha
+  const sql = `SELECT id, source, severity, confidence, location, category, description, effort, status, github_issue, commit_sha
                FROM findings ${where}
                ORDER BY CASE severity WHEN 'CRITICAL' THEN 0 WHEN 'HIGH' THEN 1 WHEN 'MEDIUM' THEN 2 WHEN 'LOW' THEN 3 ELSE 4 END, created_at`;
 
@@ -552,6 +552,55 @@ async function cmdImport(args) {
   }
 }
 
+// ─── ROUTING VIOLATION ───────────────────────────────────────────────────────
+
+async function cmdRoutingViolation(args) {
+  const client = await connect(CONFIG);
+  try {
+    const record = JSON.parse(args[0] || '{}');
+    await client.query(
+      `INSERT INTO routing_violations (ts, type, tool, model, skill, operation_class, detail)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [
+        record.ts || new Date().toISOString(),
+        record.type || 'unknown',
+        record.tool || null,
+        record.model || null,
+        record.skill || 'unknown',
+        record.operation_class || null,
+        record.detail ? JSON.stringify(record.detail) : null,
+      ]
+    );
+    console.log('routing-violation recorded');
+  } finally {
+    await client.end();
+  }
+}
+
+// ─── ROUTING EVENT ───────────────────────────────────────────────────────────
+
+async function cmdRoutingEvent(args) {
+  const client = await connect(CONFIG);
+  try {
+    const record = JSON.parse(args[0] || '{}');
+    await client.query(
+      `INSERT INTO routing_events (ts, tool, model, skill, operation_class, prompt_bytes, violation)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [
+        record.ts || new Date().toISOString(),
+        record.tool || 'unknown',
+        record.model || null,
+        record.skill || 'conversation_mode',
+        record.operation_class || 'conversation_mode',
+        record.prompt_bytes || 0,
+        record.violation === true,
+      ]
+    );
+  } finally {
+    await client.end();
+  }
+}
+
 // ─── HELP ────────────────────────────────────────────────────────────────────
 
 function help() {
@@ -618,6 +667,12 @@ ${c.dim(`Database: ${CONFIG.database} @ ${CONFIG.host}:${CONFIG.port}`)}
   ${c.cyan('import')} <file.json | database_name> [--all]
       Preview import from file or another project's DB
       Add --all to actually import (duplicates are skipped)
+
+  ${c.cyan('routing-violation')} '<json>'
+      Record a routing violation (type, tool, model, skill, operation_class, detail)
+
+  ${c.cyan('routing-event')} '<json>'
+      Record a routing telemetry event (tool, model, skill, operation_class, prompt_bytes, violation)
 `);
 }
 
@@ -645,6 +700,10 @@ const [, , cmd, ...rest] = process.argv;
       await cmdExport(rest);
     } else if (cmd === 'import') {
       await cmdImport(rest);
+    } else if (cmd === 'routing-violation') {
+      await cmdRoutingViolation(rest);
+    } else if (cmd === 'routing-event') {
+      await cmdRoutingEvent(rest);
     } else {
       console.error(`Unknown command: ${cmd}`);
       help();

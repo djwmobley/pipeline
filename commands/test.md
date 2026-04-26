@@ -3,6 +3,12 @@ allowed-tools: Bash(*), Read(*), Glob(*)
 description: Run the project test suite and produce a structured pass/fail report
 ---
 
+```bash
+# Set active skill for routing enforcement
+node scripts/lib/active-skill.js write tdd
+```
+
+
 ## Pipeline Test
 
 Run the test suite and produce a structured report.

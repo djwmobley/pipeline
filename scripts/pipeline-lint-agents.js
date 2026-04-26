@@ -44,6 +44,18 @@ const SECTION_LEVEL_EXEMPTIONS = new Set([
   'MODEL', // Always exempt — model name
 ]);
 
+// Valid operation_class enum values for skills
+const VALID_OPERATION_CLASSES = new Set([
+  'opus_orchestration',
+  'sonnet_review',
+  'haiku_judgment',
+  'code_draft',
+  'short_draft',
+  'bulk_classify',
+  'script_exec',
+  'conversation_mode',
+]);
+
 // ─── FILE DISCOVERY ──────────────────────────────────────────────────────────
 
 function discoverTemplates(opts) {
@@ -407,14 +419,72 @@ function formatReport(allFindings, templateCount, jsonMode) {
   return lines.join('\n');
 }
 
+// ─── CHECK OPERATION_CLASS ──────────────────────────────────────────────────
+
+function checkOperationClass() {
+  const skillsDir = 'skills';
+  const skillDirs = fs.readdirSync(skillsDir).filter(d =>
+    fs.statSync(path.join(skillsDir, d)).isDirectory()
+  );
+
+  const errors = [];
+  const results = [];
+
+  for (const dir of skillDirs) {
+    const skillFile = path.join(skillsDir, dir, 'SKILL.md');
+    if (!fs.existsSync(skillFile)) {
+      errors.push({ skill: dir, error: 'SKILL.md not found' });
+      continue;
+    }
+    const content = fs.readFileSync(skillFile, 'utf8');
+    const fmMatch = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+    if (!fmMatch) {
+      errors.push({ skill: dir, error: 'No YAML frontmatter found' });
+      continue;
+    }
+    const fm = fmMatch[1];
+    const ocMatch = fm.match(/^operation_class:\s*(\S+)/m);
+    if (!ocMatch) {
+      errors.push({ skill: dir, error: 'Missing operation_class field' });
+      continue;
+    }
+    const oc = ocMatch[1];
+    if (!VALID_OPERATION_CLASSES.has(oc)) {
+      errors.push({ skill: dir, error: `Invalid operation_class: "${oc}"` });
+      continue;
+    }
+    results.push({ skill: dir, operation_class: oc });
+  }
+
+  // Print results
+  for (const r of results) {
+    console.log(c.green('  PASS') + `  ${r.skill} → ${r.operation_class}`);
+  }
+  for (const e of errors) {
+    console.log(c.red('  FAIL') + `  ${e.skill}: ${e.error}`);
+  }
+
+  if (errors.length > 0) {
+    console.log(c.bold(c.red(`\n${errors.length} skill(s) failed operation_class check.`)));
+    process.exit(1);
+  }
+  console.log(c.bold(c.green(`\nAll ${results.length} skills have valid operation_class.`)));
+}
+
 // ─── MAIN ────────────────────────────────────────────────────────────────────
 
 function main() {
   const args = process.argv.slice(2);
   const command = args[0];
 
+  if (command === 'check-operation-class') {
+    checkOperationClass();
+    return;
+  }
+
   if (command !== 'lint') {
     console.log(`Usage: node pipeline-lint-agents.js lint [--changed] [--json] [--files "f1 f2"] [--exclude "pattern1,pattern2"]`);
+    console.log(`       node pipeline-lint-agents.js check-operation-class`);
     process.exit(0);
   }
 

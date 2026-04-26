@@ -1,6 +1,9 @@
 ---
 name: remediation
 description: Multi-source remediation — parse findings from any pipeline workflow, create tickets, batch fixes through build/review/commit pipeline, verify with source-appropriate re-runs
+operation_class: code_draft
+allowed_models: [sonnet]
+allowed_direct_write: false
 ---
 
 # Remediation

@@ -1,5 +1,6 @@
 CLAUDE.local.md
 .claude/pipeline.yml
+.claude/build-state.json
 node_modules/
 scripts/node_modules/
 scripts/package-lock.json
@@ -11,5 +12,8 @@ secrets*
 .DS_Store
 Thumbs.db
 *.log
+logs/*.jsonl
 .worktrees/
 worktrees/
+.claude/.active-skill
+.claude/settings.json

@@ -1,6 +1,9 @@
 ---
 name: lint-agents
 description: Deterministic structural linting for agent prompt templates — 7 regex checks run via Node script, no LLM dispatch
+operation_class: script_exec
+allowed_models: []
+allowed_direct_write: false
 ---
 
 # Agent Template Lint

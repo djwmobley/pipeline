@@ -1,6 +1,9 @@
 ---
 name: building
 description: Subagent-driven plan execution with post-task review
+operation_class: code_draft
+allowed_models: []
+allowed_direct_write: false
 ---
 
 # Subagent-Driven Development
@@ -111,8 +114,13 @@ If no arch plan exists, skip compliance checks silently.
 
 ## Reporting Contract
 
-All three stores, every time. This is the A2A contract — the post-task reviewer
-reads implementation results to understand what was built and where to focus.
+Two stores, every time. The implementer writes the issue comment and updates
+build-state; the orchestrator (not the implementer) emits any verified counts
+or distributions in a follow-up addendum after running the post-dispatch
+verification protocol below.
+
+A `knowledge` Postgres table previously listed here was fabricated — neither
+the table nor a `pipeline-db.js insert knowledge` verb exist. See #130.
 
 **Runtime placeholders** (resolved by the build command before dispatching).
 Full substitution checklist is in the prompt template — these are the key placeholders:
@@ -124,42 +132,110 @@ Full substitution checklist is in the prompt template — these are the key plac
 - `[SCRIPTS_DIR]` — absolute path to the pipeline plugin's scripts/ directory.
 - `[DIRECTORY]` — working directory path.
 
-### 1. Postgres Write
+### 1. Issue Comment (if task issue is available)
 
-Record implementation result in the knowledge DB:
-```
-PROJECT_ROOT=$(git rev-parse --show-toplevel) node '[SCRIPTS_DIR]/pipeline-db.js' insert knowledge \
-  --category 'build' \
-  --label 'task-[TASK_NUMBER]-impl' \
-  --body "$(cat <<'BODY'
-{"task": [TASK_NUMBER], "status": "DONE|...", "commit_sha": "[SHA]", "files_changed": [N]}
-BODY
-)"
-```
+Post implementation report on the task issue. Status, commit SHA, and concerns
+only — no counts, no distributions, no file lists. Counts come from the
+orchestrator-emitted addendum after verification (see #133).
 
-### 2. Issue Comment (if task issue is available)
-
-Post implementation report on the task issue:
 ```
 cat <<'EOF' | node '[SCRIPTS_DIR]/platform.js' issue comment [TASK_ISSUE] --stdin
 ## Implementation — Task [TASK_NUMBER]
 **Status:** [DONE/DONE_WITH_CONCERNS/BLOCKED/NEEDS_CONTEXT]
 **Commit:** [SHA]
-**Files changed:** [list]
+
+[For DONE_WITH_CONCERNS: list concerns, free text]
+[For BLOCKED/NEEDS_CONTEXT: describe what's needed]
 EOF
 ```
 
-If the command fails, notify the user with the error and ask for guidance.
+If the command fails, do NOT proceed to "report DONE." Status is BLOCKED. The
+issue comment is binding. See ANTI-RATIONALIZATION in the prompt template.
 
-### 3. Build State
+### 2. Build State
 
-Update `.claude/build-state.json` with task status and commit SHA for crash recovery.
+Update `.claude/build-state.json` with task status and commit SHA for crash
+recovery. Always required regardless of issue-tracker availability.
 
 ### Fallback
 
-- **Issue tracking disabled**: skip the issue comment.
-- **Postgres unreachable**: agent logs the failure in its report. The orchestrator retries the write on next dispatch.
-- **Build-state write**: always required — crash-recovery mechanism.
+- **Issue tracking disabled** (`[TASK_ISSUE]` empty): skip the issue comment.
+  Build-state remains required.
+- **Issue comment write fails** (network error, auth, etc.): status BLOCKED.
+  Do not silently skip. Do not invent a "defer to orchestrator" loophole.
+
+## Post-Dispatch Verification (orchestrator-side, mandatory before next task)
+
+After the implementer or reviewer subagent returns, the orchestrator MUST run
+the following verification protocol before marking the task done in
+build-state.json or proceeding to the next task. This is the deterministic
+enforcement layer for the Reporting Contract — without it, subagents reason
+their way out of required steps (cf. epic #129, Task 1 incident).
+
+### 1. Issue comment exists
+
+```bash
+node '[SCRIPTS_DIR]/platform.js' issue view [TASK_ISSUE] | grep -E "^## (Implementation|Post-Task Review) — Task [TASK_NUMBER]"
+```
+
+If no match, the subagent skipped the required write. Re-dispatch with
+"you skipped the issue comment write — post it before reporting again"
+appended to the prompt. Do NOT mark the task done.
+
+### 2. Commit exists and matches expected subject
+
+The task spec (in the plan) provides the expected commit message. Verify:
+
+```bash
+git log --oneline | head -5 | grep -F "[expected commit subject]"
+```
+
+If no match, the implementation didn't actually commit, or the message drifted.
+Status is BLOCKED until the implementer fixes it.
+
+### 3. Files-changed match
+
+```bash
+git diff --name-only [BASELINE_OR_PRIOR_TASK_COMMIT]..HEAD
+```
+
+The diff list must intersect what the task spec listed under `Files:`.
+Unexpected files (e.g., a spurious `.claude/build-state.json` commit) flag
+a 🟡 MEDIUM concern that the orchestrator records on the issue.
+
+### 4. No "N/A" / "skipping" claims in the subagent reply
+
+Scan the subagent's reply for forbidden patterns:
+
+```
+N/A | not applicable | skipping the X write | unable to verify | deferred to orchestrator
+```
+
+Any match short-circuits acceptance. Re-dispatch the subagent with
+"the following pattern in your reply indicates a skipped step — escalate as
+BLOCKED instead of skipping" appended.
+
+### 5. Orchestrator-emitted addendum (counts and distributions)
+
+After verification passes, the orchestrator (not the subagent) posts a
+follow-up comment to the task issue with deterministic facts:
+
+```bash
+cat <<EOF | node '[SCRIPTS_DIR]/platform.js' issue comment [TASK_ISSUE] --stdin
+## Verification — Task [TASK_NUMBER]
+**Verified by orchestrator at [ISO 8601]**
+**Files changed (vs baseline):**
+$(git diff --stat [BASELINE]..HEAD)
+
+**[Any task-specific counts emitted by deterministic commands, e.g. linter
+output, distribution from grep, etc.]**
+
+**Three-store check:** ✓ issue comment present, ✓ build-state updated
+EOF
+```
+
+This addendum is the source of truth for any count the user or future agents
+will read. Subagent self-counting is not trusted. See #133.
 
 ## Prompt Templates
 

@@ -1,6 +1,9 @@
 ---
 name: debugging
 description: Systematic root-cause diagnosis — 4 mandatory phases, error class routing, no speculative fixes
+operation_class: haiku_judgment
+allowed_models: []
+allowed_direct_write: false
 ---
 
 # Systematic Debugging

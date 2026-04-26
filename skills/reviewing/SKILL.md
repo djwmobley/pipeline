@@ -1,6 +1,9 @@
 ---
 name: reviewing
 description: Per-change quality review process — config-driven criteria, severity tiers, non-negotiable filtering
+operation_class: sonnet_review
+allowed_models: [sonnet]
+allowed_direct_write: false
 ---
 
 # Code Review Process

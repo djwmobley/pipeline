@@ -33,6 +33,37 @@ scripts/                    — Setup scripts (e.g., Postgres knowledge DB)
 - Include red flags and rationalization prevention tables
 - Reference config values as `config.section.key` — never hardcode project-specific values
 
+### Routing Fields (Convention-not-reason)
+
+Skills declare three YAML frontmatter fields used by the PreToolUse routing hook (`scripts/hooks/routing-check.js`) to enforce model/tool routing per skill at dispatch time.
+
+#### `operation_class` (required)
+
+Closed enum — one of:
+
+| Value | Tier (default) | Description |
+|-------|---------------|-------------|
+| `opus_orchestration` | opus | Read tool output, decide what to dispatch, scope prompts. NO deliverable drafting. |
+| `sonnet_review` | sonnet | Code review, judgment-prose, plan/spec authorship |
+| `haiku_judgment` | haiku | Single-file judgment where local model quality is insufficient |
+| `code_draft` | qwen_coder (qwen2.5-coder:32b) | Scripts, SQL, YAML, regex |
+| `short_draft` | qwen_prose (qwen2.5:14b) | Memory entries, comments, short summaries |
+| `bulk_classify` | qwen_prose | Multi-file classification, frontmatter audits |
+| `script_exec` | no_llm | Pure script execution; no LLM in loop |
+| `conversation_mode` | mixed | Default when no pipeline skill is active |
+
+#### `allowed_models` (optional)
+
+Array of additional models to allow beyond the tier's default (e.g., `[sonnet]` to permit Sonnet for a `code_draft` skill that justifies it). Empty array `[]` means tier defaults only.
+
+#### `allowed_direct_write` (optional, default false)
+
+If `true`, the skill is exempt from the Edit/Write line-count threshold. Use for skills that legitimately produce large structural outputs (e.g., `planning` writes large plan documents). Default `false` for all other skills.
+
+#### Linter validation
+
+`scripts/pipeline-lint-agents.js check-operation-class` validates every `skills/*/SKILL.md` declares a valid `operation_class`. Run during CI / pre-commit.
+
 ## Writing Commands
 
 - Use YAML frontmatter: `allowed-tools`, `description`

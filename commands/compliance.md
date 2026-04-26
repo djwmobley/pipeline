@@ -3,6 +3,12 @@ allowed-tools: Bash(*), Read(*), Write(*), Edit(*), Glob(*), Grep(*), Agent(*)
 description: Compliance framework mapping — map red team findings to regulatory controls and analyze coverage scope
 ---
 
+```bash
+# Set active skill for routing enforcement
+node scripts/lib/active-skill.js write compliance
+```
+
+
 ## Pipeline Compliance
 
 Maps red team findings (with CWE IDs) to regulatory compliance controls and produces a coverage scope analysis. This is compliance preparation — not a compliance assessment. The output helps teams understand which controls their security testing addresses and which require organizational or procedural assessment.
@@ -30,7 +36,7 @@ If `compliance.enabled` is false or not present: "Compliance mapping is not enab
 If `knowledge.tier` is `"postgres"` AND `integrations.postgres.enabled`:
 
 ```bash
-node scripts/pipeline-db.js query "SELECT topic, decision, reason FROM decisions WHERE topic ILIKE '%compliance%' OR topic ILIKE '%audit%' OR topic ILIKE '%regulatory%' OR topic ILIKE '%framework%' ORDER BY created_at DESC LIMIT 10"
+PROJECT_ROOT=$(pwd) node scripts/pipeline-db.js query "SELECT topic, decision, reason FROM decisions WHERE topic ILIKE '%compliance%' OR topic ILIKE '%audit%' OR topic ILIKE '%regulatory%' OR topic ILIKE '%framework%' ORDER BY created_at DESC LIMIT 10"
 ```
 
 If `knowledge.tier` is `"files"`:

@@ -1,6 +1,9 @@
 ---
 name: purpleteam
 description: Aggregate security verification — verify remediation closed attack vectors, validate exploit chains broken, codify defensive rules
+operation_class: sonnet_review
+allowed_models: [sonnet]
+allowed_direct_write: false
 ---
 
 # Purple Team Security Verification

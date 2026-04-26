@@ -3,6 +3,12 @@ allowed-tools: Bash(*), Read(*), Write(*), Glob(*), Grep(*), Task(*), mcp__stitc
 description: Design before LARGE changes — explore context, clarify requirements, propose approaches, write spec
 ---
 
+```bash
+# Set active skill for routing enforcement
+node scripts/lib/active-skill.js write brainstorming
+```
+
+
 ## Pipeline Brainstorm
 
 Locate and read the brainstorming skill file:

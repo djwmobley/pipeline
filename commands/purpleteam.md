@@ -3,6 +3,12 @@ allowed-tools: Bash(*), Read(*), Write(*), Glob(*), Grep(*), Agent(*)
 description: Purple team verification — verify aggregate security posture after remediation, codify defensive rules
 ---
 
+```bash
+# Set active skill for routing enforcement
+node scripts/lib/active-skill.js write purpleteam
+```
+
+
 ## Pipeline Purple Team
 
 Aggregate security verification. Runs after a red team + remediation cycle to confirm that identified attack vectors are actually closed, exploit chains are broken, and verified fixes are codified into defensive rules for future development.
@@ -58,11 +64,11 @@ Read both files in full. Parse the remediation summary to build:
 If `knowledge.tier` is `"postgres"` AND `integrations.postgres.enabled`:
 
 ```bash
-node scripts/pipeline-db.js query "SELECT topic, decision, reason FROM decisions WHERE topic ILIKE '%security%' OR topic ILIKE '%auth%' OR topic ILIKE '%encrypt%' OR topic ILIKE '%token%' OR topic ILIKE '%session%' ORDER BY created_at DESC LIMIT 20"
+PROJECT_ROOT=$(pwd) node scripts/pipeline-db.js query "SELECT topic, decision, reason FROM decisions WHERE topic ILIKE '%security%' OR topic ILIKE '%auth%' OR topic ILIKE '%encrypt%' OR topic ILIKE '%token%' OR topic ILIKE '%session%' ORDER BY created_at DESC LIMIT 20"
 ```
 
 ```bash
-node scripts/pipeline-db.js query "SELECT issue, rule FROM gotchas WHERE issue ILIKE '%security%' OR issue ILIKE '%auth%' OR issue ILIKE '%vuln%' OR issue ILIKE '%inject%' OR issue ILIKE '%xss%' ORDER BY created_at DESC LIMIT 20"
+PROJECT_ROOT=$(pwd) node scripts/pipeline-db.js query "SELECT issue, rule FROM gotchas WHERE issue ILIKE '%security%' OR issue ILIKE '%auth%' OR issue ILIKE '%vuln%' OR issue ILIKE '%inject%' OR issue ILIKE '%xss%' ORDER BY created_at DESC LIMIT 20"
 ```
 
 If `knowledge.tier` is `"files"`:

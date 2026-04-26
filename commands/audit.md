@@ -3,6 +3,12 @@ allowed-tools: Read(*), Glob(*), Grep(*), Task(*), Bash(*)
 description: Full codebase review — Phase 0 grep + parallel sector agents + synthesis. READ-ONLY.
 ---
 
+```bash
+# Set active skill for routing enforcement
+node scripts/lib/active-skill.js write auditing
+```
+
+
 ## Pipeline Audit
 
 Full codebase review with parallel sector agents. This is READ-ONLY — no code is modified.

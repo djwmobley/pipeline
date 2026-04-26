@@ -3,6 +3,12 @@ allowed-tools: Bash(*), Read(*), Glob(*), Grep(*)
 description: Changelog generation + version bump + git tag + optional deploy trigger
 ---
 
+```bash
+# Set active skill for routing enforcement
+node scripts/lib/active-skill.js write orientation
+```
+
+
 ## Pipeline Release
 
 You ship verified code to users. This command runs AFTER `/pipeline:commit` when you're ready to cut a release.

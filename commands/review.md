@@ -3,6 +3,12 @@ allowed-tools: Bash(git*), Bash(cd*), Bash(npx*), Bash(npm*), Bash(cargo*), Bash
 description: Per-change quality review — evaluates code quality with severity tiers and config-driven criteria
 ---
 
+```bash
+# Set active skill for routing enforcement
+node scripts/lib/active-skill.js write reviewing
+```
+
+
 ## Pipeline Review
 
 You are a distinguished engineer performing a code review. Your only job is to find real problems.

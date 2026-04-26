@@ -3,6 +3,12 @@ allowed-tools: Bash(*), Read(*), Write(*), Glob(*), Grep(*)
 description: Project setup — detects tools, creates .claude/pipeline.yml (use --quick for zero interaction)
 ---
 
+```bash
+# Set active skill for routing enforcement
+node scripts/lib/active-skill.js write orientation
+```
+
+
 ## Pipeline Init
 
 You are the pipeline setup agent. Your job is to detect the project environment and generate a `.claude/pipeline.yml` config file.
@@ -494,6 +500,68 @@ Set `integrations.stitch.device_type` to the corresponding enum value (e.g., `DE
 **Key rule (interactive mode):** Always ask before installing anything. If the user declines, show the manual install command so they can do it later. Never silently install packages.
 
 **Key rule (quick mode):** Auto-install Playwright without asking. All other missing integrations are skipped (they require system-level setup like installing Postgres or configuring MCP servers, which can't be automated).
+
+---
+
+### Step 3b: Local Model Host Detection
+
+Run local model detection:
+
+```bash
+PROJECT_ROOT=$(pwd) node '[SCRIPTS_DIR]/pipeline-init-detect.js' detect-local-models
+```
+
+The script probes Ollama (`:11434`), LM Studio (`:1234`), vLLM (`:8000`), and llama.cpp (`:8080`).
+
+**If `routing.local_models` already exists in `.claude/pipeline.yml` with non-null values:**
+
+Display current config and ask:
+> "Existing local model config found:
+> - prose: [current prose model name] via [host_type] at [endpoint]
+> - coder: [current coder model name] via [host_type] at [endpoint]
+>
+> Keep existing local model config? (Y/n)"
+>
+> If Y: skip to Step 4.
+> If N: re-run detection.
+
+**Guided engagement (if no prior config):**
+
+Display detection results, then ask:
+> "Convention routing uses local models to run short drafts and code generation for free.
+>
+> Detected: [list hosts that responded with model counts, or 'none']
+>
+> Which local model server are you using?
+> 1. Ollama ([detected/not detected] — [N models])
+> 2. LM Studio (OpenAI-compatible, [detected/not detected])
+> 3. vLLM (OpenAI-compatible, [detected/not detected])
+> 4. llama.cpp server (OpenAI-compatible, [detected/not detected])
+> 5. Other OpenAI-compatible endpoint — enter URL
+> 6. None — Anthropic models only (Haiku will substitute for local tiers)"
+
+After host selection, list available models from the host and ask:
+> "Which model should serve **prose drafts** (memory entries, comments, short summaries)?
+> Which model should serve **code drafts** (scripts, SQL, YAML, regex)?"
+
+If no models are listed:
+> "No models found at [endpoint]. Pull models first (e.g., `ollama pull qwen2.5:14b`), then re-run `/pipeline:init` or `/pipeline:update routing`."
+
+**Expert engagement:**
+> "Local model host? (ollama / lmstudio / vllm / llamacpp / openai-compat [url] / none)"
+> Prose model name? Coder model name?
+
+**Quick mode:** Use first detected host. If Ollama already configured, use it. If nothing detected, set `none`.
+
+**What gets written to `.claude/pipeline.yml`:**
+- `routing.enabled: true`
+- `routing.local_models.prose`: name, host_type, endpoint, api_protocol, context_window: 8192
+- `routing.local_models.coder`: name, host_type, endpoint, api_protocol, context_window: 16384
+- Full `routing.tier_map` block (all eight operation classes)
+- Full `routing.universal_floor.bash_block_patterns` block
+
+**Hook entries added to `.claude/settings.json`:**
+The three hook entries (PreToolUse, PostToolUse, Stop) pointing to absolute paths under the plugin's `scripts/hooks/` directory.
 
 ---
 

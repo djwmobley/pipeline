@@ -1,6 +1,9 @@
 ---
 name: markdown-review
 description: Full markdown health check — file hygiene, information architecture, A2A protocol review with automated fixes
+operation_class: haiku_judgment
+allowed_models: []
+allowed_direct_write: false
 ---
 
 # Markdown Review

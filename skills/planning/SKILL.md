@@ -1,6 +1,9 @@
 ---
 name: planning
 description: Create implementation plans from specs — bite-sized tasks, file structure, build sequence, model routing
+operation_class: sonnet_review
+allowed_models: [sonnet]
+allowed_direct_write: true
 ---
 
 # Writing Implementation Plans

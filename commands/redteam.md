@@ -3,6 +3,12 @@ allowed-tools: Bash(*), Read(*), Write(*), Edit(*), Glob(*), Grep(*), Agent(*)
 description: Security red team assessment — recon + parallel specialist agents + lead analyst synthesis
 ---
 
+```bash
+# Set active skill for routing enforcement
+node scripts/lib/active-skill.js write redteam
+```
+
+
 ## Pipeline Red Team
 
 Security assessment with parallel domain specialists. Probes your codebase from an attacker's perspective — injection, auth bypass, XSS, data exposure, and more.
@@ -46,16 +52,16 @@ If no config exists: "No `.claude/pipeline.yml` found. Run `/pipeline:init` firs
 If `knowledge.tier` is `"postgres"` AND `integrations.postgres.enabled`:
 
 ```bash
-node scripts/pipeline-db.js query "SELECT topic, decision, reason FROM decisions WHERE topic ILIKE '%security%' OR topic ILIKE '%auth%' OR topic ILIKE '%encrypt%' OR topic ILIKE '%token%' OR topic ILIKE '%session%' ORDER BY created_at DESC LIMIT 20"
+PROJECT_ROOT=$(pwd) node scripts/pipeline-db.js query "SELECT topic, decision, reason FROM decisions WHERE topic ILIKE '%security%' OR topic ILIKE '%auth%' OR topic ILIKE '%encrypt%' OR topic ILIKE '%token%' OR topic ILIKE '%session%' ORDER BY created_at DESC LIMIT 20"
 ```
 
 ```bash
-node scripts/pipeline-db.js query "SELECT issue, rule FROM gotchas WHERE issue ILIKE '%security%' OR issue ILIKE '%auth%' OR issue ILIKE '%vuln%' OR issue ILIKE '%inject%' OR issue ILIKE '%xss%' ORDER BY created_at DESC LIMIT 20"
+PROJECT_ROOT=$(pwd) node scripts/pipeline-db.js query "SELECT issue, rule FROM gotchas WHERE issue ILIKE '%security%' OR issue ILIKE '%auth%' OR issue ILIKE '%vuln%' OR issue ILIKE '%inject%' OR issue ILIKE '%xss%' ORDER BY created_at DESC LIMIT 20"
 ```
 
 If `integrations.ollama.enabled`:
 ```bash
-node scripts/pipeline-embed.js hybrid "security vulnerabilities authentication authorization injection"
+PROJECT_ROOT=$(pwd) node scripts/pipeline-embed.js hybrid "security vulnerabilities authentication authorization injection"
 ```
 
 Store results as `KNOWLEDGE_CONTEXT` — feed to recon agent and specialists.
@@ -72,53 +78,55 @@ Before spending tokens, present the value proposition. First, determine the spec
 
 Run the framework detection script (same as `commands/update.md` Route: sectors, Step 1):
 
-```bash
-echo "=== FRAMEWORK DETECTION ==="
-for f in next.config.js next.config.ts next.config.mjs; do test -f "$f" && echo "FRAMEWORK: nextjs"; done
-for f in nuxt.config.ts nuxt.config.js; do test -f "$f" && echo "FRAMEWORK: nuxt"; done
-for f in svelte.config.js svelte.config.ts; do test -f "$f" && echo "FRAMEWORK: sveltekit"; done
-for f in remix.config.js remix.config.ts; do test -f "$f" && echo "FRAMEWORK: remix"; done
-for f in astro.config.mjs astro.config.ts; do test -f "$f" && echo "FRAMEWORK: astro"; done
-test -f angular.json && echo "FRAMEWORK: angular"
-test -f capacitor.config.ts -o -f capacitor.config.json && echo "FRAMEWORK: capacitor"
-test -f package.json && grep -q '"expo"' package.json 2>/dev/null && echo "FRAMEWORK: expo"
-test -f package.json && grep -q '"react-native"' package.json 2>/dev/null && echo "FRAMEWORK: react-native"
-test -f package.json && grep -q '"express"' package.json 2>/dev/null && echo "FRAMEWORK: express"
-test -f package.json && grep -q '"fastify"' package.json 2>/dev/null && echo "FRAMEWORK: fastify"
-test -f package.json && grep -q '"hono"' package.json 2>/dev/null && echo "FRAMEWORK: hono"
-test -f package.json && grep -q '"koa"' package.json 2>/dev/null && echo "FRAMEWORK: koa"
-test -f package.json && grep -q '"@ionic"' package.json 2>/dev/null && echo "FRAMEWORK: ionic"
-test -f ionic.config.json && echo "FRAMEWORK: ionic"
-# React + Vite (not a meta-framework)
-test -f package.json && grep -q '"react"' package.json 2>/dev/null && grep -q '"vite"' package.json 2>/dev/null && ! grep -q '"next"' package.json 2>/dev/null && ! grep -q '"remix"' package.json 2>/dev/null && ! grep -q '"astro"' package.json 2>/dev/null && echo "FRAMEWORK: react-vite"
-# Vue + Vite (not Nuxt)
-test -f package.json && grep -q '"vue"' package.json 2>/dev/null && grep -q '"vite"' package.json 2>/dev/null && ! grep -q '"nuxt"' package.json 2>/dev/null && echo "FRAMEWORK: vue-vite"
-test -f manage.py && echo "FRAMEWORK: django"
-test -f package.json 2>/dev/null || {
-  grep -q "fastapi" requirements.txt pyproject.toml 2>/dev/null && echo "FRAMEWORK: fastapi"
-  grep -q "flask" requirements.txt pyproject.toml 2>/dev/null && echo "FRAMEWORK: flask"
-}
-test -f artisan && echo "FRAMEWORK: laravel"
-test -f Gemfile && grep -q "rails" Gemfile 2>/dev/null && echo "FRAMEWORK: rails"
-test -f go.mod && {
-  grep -q "echo" go.mod 2>/dev/null && echo "FRAMEWORK: echo"
-  grep -q "gin" go.mod 2>/dev/null && echo "FRAMEWORK: gin"
-  grep -q "fiber" go.mod 2>/dev/null && echo "FRAMEWORK: fiber"
-  test -d cmd && echo "FRAMEWORK: go-cli"
-}
-test -f Cargo.toml && {
-  grep -q "axum" Cargo.toml 2>/dev/null && echo "FRAMEWORK: axum"
-  grep -q "actix" Cargo.toml 2>/dev/null && echo "FRAMEWORK: actix"
-  grep -q "clap" Cargo.toml 2>/dev/null && echo "FRAMEWORK: clap-cli"
-}
-test -f pom.xml && grep -q "spring" pom.xml 2>/dev/null && echo "FRAMEWORK: spring"
-test -f build.gradle && grep -q "spring" build.gradle 2>/dev/null && echo "FRAMEWORK: spring"
-test -f build.gradle.kts && grep -q "ktor" build.gradle.kts 2>/dev/null && echo "FRAMEWORK: ktor"
-test -f firebase.json && echo "FRAMEWORK: firebase"
-test -f package.json && grep -q '"firebase"' package.json 2>/dev/null && echo "FRAMEWORK: firebase"
-test -f pubspec.yaml && grep -q "flutter" pubspec.yaml 2>/dev/null && echo "FRAMEWORK: flutter"
-echo "=== DONE ==="
-```
+1. Use the Write tool to create `/tmp/pipeline-redteam-detect.sh` with this content:
+   ```sh
+   echo "=== FRAMEWORK DETECTION ==="
+   for f in next.config.js next.config.ts next.config.mjs; do test -f "$f" && echo "FRAMEWORK: nextjs"; done
+   for f in nuxt.config.ts nuxt.config.js; do test -f "$f" && echo "FRAMEWORK: nuxt"; done
+   for f in svelte.config.js svelte.config.ts; do test -f "$f" && echo "FRAMEWORK: sveltekit"; done
+   for f in remix.config.js remix.config.ts; do test -f "$f" && echo "FRAMEWORK: remix"; done
+   for f in astro.config.mjs astro.config.ts; do test -f "$f" && echo "FRAMEWORK: astro"; done
+   test -f angular.json && echo "FRAMEWORK: angular"
+   test -f capacitor.config.ts -o -f capacitor.config.json && echo "FRAMEWORK: capacitor"
+   test -f package.json && grep -q '"expo"' package.json 2>/dev/null && echo "FRAMEWORK: expo"
+   test -f package.json && grep -q '"react-native"' package.json 2>/dev/null && echo "FRAMEWORK: react-native"
+   test -f package.json && grep -q '"express"' package.json 2>/dev/null && echo "FRAMEWORK: express"
+   test -f package.json && grep -q '"fastify"' package.json 2>/dev/null && echo "FRAMEWORK: fastify"
+   test -f package.json && grep -q '"hono"' package.json 2>/dev/null && echo "FRAMEWORK: hono"
+   test -f package.json && grep -q '"koa"' package.json 2>/dev/null && echo "FRAMEWORK: koa"
+   test -f package.json && grep -q '"@ionic"' package.json 2>/dev/null && echo "FRAMEWORK: ionic"
+   test -f ionic.config.json && echo "FRAMEWORK: ionic"
+   # React + Vite (not a meta-framework)
+   test -f package.json && grep -q '"react"' package.json 2>/dev/null && grep -q '"vite"' package.json 2>/dev/null && ! grep -q '"next"' package.json 2>/dev/null && ! grep -q '"remix"' package.json 2>/dev/null && ! grep -q '"astro"' package.json 2>/dev/null && echo "FRAMEWORK: react-vite"
+   # Vue + Vite (not Nuxt)
+   test -f package.json && grep -q '"vue"' package.json 2>/dev/null && grep -q '"vite"' package.json 2>/dev/null && ! grep -q '"nuxt"' package.json 2>/dev/null && echo "FRAMEWORK: vue-vite"
+   test -f manage.py && echo "FRAMEWORK: django"
+   test -f package.json 2>/dev/null || {
+     grep -q "fastapi" requirements.txt pyproject.toml 2>/dev/null && echo "FRAMEWORK: fastapi"
+     grep -q "flask" requirements.txt pyproject.toml 2>/dev/null && echo "FRAMEWORK: flask"
+   }
+   test -f artisan && echo "FRAMEWORK: laravel"
+   test -f Gemfile && grep -q "rails" Gemfile 2>/dev/null && echo "FRAMEWORK: rails"
+   test -f go.mod && {
+     grep -q "echo" go.mod 2>/dev/null && echo "FRAMEWORK: echo"
+     grep -q "gin" go.mod 2>/dev/null && echo "FRAMEWORK: gin"
+     grep -q "fiber" go.mod 2>/dev/null && echo "FRAMEWORK: fiber"
+     test -d cmd && echo "FRAMEWORK: go-cli"
+   }
+   test -f Cargo.toml && {
+     grep -q "axum" Cargo.toml 2>/dev/null && echo "FRAMEWORK: axum"
+     grep -q "actix" Cargo.toml 2>/dev/null && echo "FRAMEWORK: actix"
+     grep -q "clap" Cargo.toml 2>/dev/null && echo "FRAMEWORK: clap-cli"
+   }
+   test -f pom.xml && grep -q "spring" pom.xml 2>/dev/null && echo "FRAMEWORK: spring"
+   test -f build.gradle && grep -q "spring" build.gradle 2>/dev/null && echo "FRAMEWORK: spring"
+   test -f build.gradle.kts && grep -q "ktor" build.gradle.kts 2>/dev/null && echo "FRAMEWORK: ktor"
+   test -f firebase.json && echo "FRAMEWORK: firebase"
+   test -f package.json && grep -q '"firebase"' package.json 2>/dev/null && echo "FRAMEWORK: firebase"
+   test -f pubspec.yaml && grep -q "flutter" pubspec.yaml 2>/dev/null && echo "FRAMEWORK: flutter"
+   echo "=== DONE ==="
+   ```
+2. Run: `bash /tmp/pipeline-redteam-detect.sh`
 
 Store the detected framework as `DETECTED_FRAMEWORK`.
 

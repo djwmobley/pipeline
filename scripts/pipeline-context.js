@@ -62,7 +62,7 @@ function platform(args) {
  */
 async function getTaskContext(client, taskId) {
   const { rows: [task] } = await client.query(
-    'SELECT id, title, status, phase, priority, issue_ref, category FROM tasks WHERE id = $1',
+    'SELECT id, title, status, phase, priority, github_issue, category FROM tasks WHERE id = $1',
     [taskId]
   );
   if (!task) return { error: `Task ${taskId} not found` };
@@ -77,8 +77,8 @@ async function getTaskContext(client, taskId) {
 
   // Issue body if linked — fetched via platform abstraction layer
   let issueBody = null;
-  if (task.issue_ref) {
-    const raw = platform(['issue', 'view', String(task.issue_ref)]);
+  if (task.github_issue) {
+    const raw = platform(['issue', 'view', String(task.github_issue)]);
     if (raw) {
       try { issueBody = JSON.parse(raw).body || null; } catch (_) { issueBody = raw; }
     }
@@ -130,7 +130,7 @@ async function getSecurityFindings(client, options = {}) {
   const whereClause = where.length > 0 ? `WHERE ${where.join(' AND ')}` : '';
   const { rows } = await client.query(
     `SELECT id, source, severity, confidence, location, category, description, impact,
-            remediation, effort, status, issue_ref
+            remediation, effort, status, github_issue
      FROM findings ${whereClause}
      ORDER BY CASE severity WHEN 'CRITICAL' THEN 0 WHEN 'HIGH' THEN 1 WHEN 'MEDIUM' THEN 2 ELSE 3 END
      LIMIT 50`,
@@ -168,7 +168,7 @@ async function getSessionContext(client) {
     'SELECT num, date, summary, tests FROM sessions ORDER BY num DESC LIMIT 1'
   );
   const { rows: tasks } = await client.query(
-    "SELECT id, title, status, issue_ref FROM tasks WHERE status NOT IN ('done', 'deferred') ORDER BY id"
+    "SELECT id, title, status, github_issue FROM tasks WHERE status NOT IN ('done', 'deferred') ORDER BY id"
   );
   const { rows: [{ count: gotchaCount }] } = await client.query(
     'SELECT COUNT(*) FROM gotchas WHERE active = TRUE'

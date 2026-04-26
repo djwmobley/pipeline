@@ -3,6 +3,12 @@ allowed-tools: Bash(git*), Bash(cd*), Bash(npx*), Bash(npm*), Bash(cargo*), Bash
 description: Branch completion workflow — verify tests, present options, execute choice, clean up
 ---
 
+```bash
+# Set active skill for routing enforcement
+node scripts/lib/active-skill.js write orientation
+```
+
+
 ## Pipeline Finish
 
 Guide completion of development work by presenting clear options and handling the chosen workflow.
@@ -298,7 +304,7 @@ If `build.artifact` is null or "source", skip this section entirely — source-o
 2. Query Postgres for the roadmap task:
    ```bash
    PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js query "$(cat <<'SQL'
-   SELECT * FROM tasks WHERE issue_ref = [N] AND category = 'roadmap'
+   SELECT * FROM tasks WHERE github_issue = [N] AND category = 'roadmap'
    SQL
    )"
    ```
@@ -343,6 +349,19 @@ Shipped: [task title] (task #[id])
 
 ---
 
+### Step 4c — Routing Report
+
+**Runs for Options 1 and 2 (merge paths).** Skip if `knowledge.tier` is not `"postgres"` and no `logs/routing-events.jsonl` exists.
+
+Run the routing report and include it in the ship summary:
+
+```bash
+PROJECT_ROOT=$(pwd) node scripts/pipeline-routing-report.js
+```
+
+Include the full markdown output as a `## Routing Report` section in the ship summary comment posted to the epic issue (append to the Step 4a comment body before posting, or post as a follow-up comment if 4a already ran).
+
+---
 ### Step 5 — Cleanup worktree
 
 For Options 1, 2, 3, 5: if in a worktree (git-dir path contains 'worktrees'), clean up after merge/discard.
