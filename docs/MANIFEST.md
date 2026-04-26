@@ -124,6 +124,15 @@ All three stores update automatically on merge. No manual intervention needed.
 | `docs/security.md` | Update if security steps (redteam, purple) routing changes |
 | `docs/index.html` | Update workflow overview if user-facing workflow changes |
 | `scripts/orchestrator.js` | Source of truth — doc must match code |
+| `CLAUDE.md` | Update skill authoring reference with new routing fields documentation |
+
+### Shipping Routing Rules or Operation Classes
+
+| Doc | What to Update |
+|-----|---------------|
+| `docs/MANIFEST.md` | Add source documents (spec, verdict, plan) to build artifact directories section |
+| `CLAUDE.md` | Add "Routing Fields" section to "Writing Skills" documenting `operation_class`, `allowed_models`, `allowed_direct_write` |
+| `scripts/pipeline-lint-agents.js` | Update or create linter validation for `operation_class` enum |
 
 ### Changing Plugin Infrastructure (hooks, plugin.json, marketplace.json)
 
@@ -200,6 +209,7 @@ These directories contain generated output, not maintained documentation:
 | `docs/plans/` | `/pipeline:plan`, `/pipeline:qa plan` | Implementation plans, test plans |
 | `docs/architecture.md` | `/pipeline:architect` | Engineering standards: typed contracts, decisions, security/testing standards, banned patterns |
 | `docs/findings/` | `/pipeline:redteam`, `/pipeline:audit`, `/pipeline:review`, `/pipeline:remediate`, `/pipeline:purpleteam`, `/pipeline:qa verify` | Security reports, audit findings, SBOM artifacts, remediation summaries, QA reports |
+| `docs/findings/` (routing) | `/pipeline:debate` (routing decision) | Routing verdict documents (e.g., `debate-2026-04-25-routing-opus-tier.md`) |
 | `docs/sessions/` | Auto-persistence | Session logs (files tier only, rotated to last 5) |
 
 ## Rule Directories
