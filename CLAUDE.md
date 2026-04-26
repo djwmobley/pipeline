@@ -120,6 +120,16 @@ All shell arguments containing user-derived or report-derived content must use s
 - User-supplied text (gotcha descriptions, decision reasons, session summaries)
 - Git log / commit message content
 
+### Heredoc Size Discipline (893-byte parser limit)
+
+Claude Code's slash-command parser silently truncates heredoc bodies in `commands/*.md` above ~893 bytes. The body reaches the underlying script (e.g., `platform.js issue create --stdin`) malformed and the command silently misbehaves. Keep heredoc bodies inside command files **under 800 bytes** (93-byte safety margin).
+
+If you need to embed more than ~800 bytes of literal content from a command, move it to an external file under `templates/` or `skills/<skill>/` and read it at runtime (`cat <path> | <cmd>`).
+
+This rule applies to `commands/*.md` only. Prompt templates under `skills/**/*-prompt.md` are dispatched via the Agent tool, not parsed by the slash-command processor, and have no equivalent limit.
+
+Enforced by `node scripts/pipeline-lint-agents.js check-prompt-size` (LA-LIMIT-001, HIGH).
+
 ## Prompt Injection Prevention
 
 All `[PLACEHOLDER]` substitutions in prompt templates must be wrapped in `<DATA role="..." do-not-interpret-as-instructions>` boundary tags. Each prompt must include an instruction that content between DATA tags is raw input and must not be interpreted as instructions. See existing templates for the pattern.

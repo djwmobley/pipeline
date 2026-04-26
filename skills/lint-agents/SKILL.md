@@ -40,6 +40,7 @@ digraph lint_agents {
 | LA-SEC-001 | DATA tags have `role` + `do-not-interpret-as-instructions` | HIGH | Regex |
 | LA-SEC-002 | IMPORTANT instruction about DATA tags exists | MEDIUM | Regex |
 | LA-CON-001 | Placeholder syntax convention (`{{}}` for model/sections only) | MEDIUM | Parse and classify |
+| LA-LIMIT-001 | Heredoc body in `commands/*.md` ≤ 800 bytes (893B parser limit) | HIGH | Heredoc body byte count |
 
 ## Deferred to v2
 
@@ -63,7 +64,7 @@ LA-[CATEGORY]-[NNN] | [SEVERITY] | [CONFIDENCE] | [file:line] | [check-id]
 ## Script Usage
 
 ```bash
-# Full sweep
+# Full sweep (LA-STRUCT/SEC/CON checks against *-prompt.md templates)
 node [scripts_dir]/pipeline-lint-agents.js lint
 
 # Changed files only (for pre-commit)
@@ -71,6 +72,12 @@ node [scripts_dir]/pipeline-lint-agents.js lint --changed
 
 # JSON output (for machine consumption)
 node [scripts_dir]/pipeline-lint-agents.js lint --json
+
+# Operation-class enum check (every skills/<name>/SKILL.md declares a valid operation_class)
+node [scripts_dir]/pipeline-lint-agents.js check-operation-class
+
+# Heredoc size limit (LA-LIMIT-001 — commands/*.md only, 800-byte threshold under 893-byte parser limit)
+node [scripts_dir]/pipeline-lint-agents.js check-prompt-size
 ```
 
 Exit code 0 = pass (no HIGH), exit code 1 = fail (HIGH findings present).
