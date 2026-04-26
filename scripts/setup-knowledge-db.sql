@@ -494,6 +494,147 @@ ALTER TABLE policy_sections ADD COLUMN IF NOT EXISTS fts_vec TSVECTOR
 CREATE INDEX IF NOT EXISTS policy_sections_fts_idx ON policy_sections USING gin(fts_vec);
 CREATE INDEX IF NOT EXISTS policy_sections_doc_idx ON policy_sections (doc_id);
 
+-- ─── CHUNKER / LOADER MIGRATION (2026-04-26, issue #142) ────────────────
+-- Adds memory_entry_chunks sibling table, content_hash columns for
+-- incremental sync, HNSW vector indexes for retrieval performance, and
+-- v_memory_hits unified view. See docs/plans/2026-04-26-chunker-loader-plan.md
+
+-- 1. policy_sections — add chunk_idx for sub-chunks of long sections
+ALTER TABLE policy_sections
+  ADD COLUMN IF NOT EXISTS chunk_idx INTEGER NOT NULL DEFAULT 0;
+
+ALTER TABLE policy_sections
+  ADD COLUMN IF NOT EXISTS content_hash TEXT;
+
+-- Replace any prior single-key unique with composite that includes chunk_idx
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'policy_sections_doc_section_uniq'
+  ) THEN
+    ALTER TABLE policy_sections DROP CONSTRAINT policy_sections_doc_section_uniq;
+  END IF;
+END $$;
+
+ALTER TABLE policy_sections
+  DROP CONSTRAINT IF EXISTS policy_sections_doc_section_chunk_uniq;
+ALTER TABLE policy_sections
+  ADD CONSTRAINT policy_sections_doc_section_chunk_uniq
+  UNIQUE (doc_id, section_num, chunk_idx);
+
+-- 2. session_chunks — add content_hash for incremental sync
+ALTER TABLE session_chunks
+  ADD COLUMN IF NOT EXISTS content_hash TEXT;
+
+-- 3. memory_entry_chunks — new sibling table
+CREATE TABLE IF NOT EXISTS memory_entry_chunks (
+  id          SERIAL PRIMARY KEY,
+  entry_id    INTEGER NOT NULL REFERENCES memory_entries(id) ON DELETE CASCADE,
+  chunk_idx   INTEGER NOT NULL,
+  content     TEXT NOT NULL,
+  content_hash TEXT,
+  created_at  TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE (entry_id, chunk_idx)
+);
+
+DO $$ BEGIN
+  ALTER TABLE memory_entry_chunks ADD COLUMN IF NOT EXISTS embedding vector(1024);
+EXCEPTION WHEN undefined_object THEN
+  RAISE NOTICE 'Skipping vector column on memory_entry_chunks — pgvector not installed.';
+END $$;
+
+ALTER TABLE memory_entry_chunks ADD COLUMN IF NOT EXISTS fts_vec TSVECTOR
+  GENERATED ALWAYS AS (to_tsvector('english', coalesce(content, ''))) STORED;
+CREATE INDEX IF NOT EXISTS mem_chunks_fts_idx
+  ON memory_entry_chunks USING gin(fts_vec);
+CREATE INDEX IF NOT EXISTS mem_chunks_entry_idx
+  ON memory_entry_chunks (entry_id);
+
+-- 4. HNSW vector indexes (verdict-required for retrieval performance at scale)
+DO $$ BEGIN
+  CREATE INDEX IF NOT EXISTS mem_chunks_vec_idx
+    ON memory_entry_chunks USING hnsw (embedding vector_cosine_ops);
+EXCEPTION
+  WHEN undefined_object THEN
+    RAISE NOTICE 'Skipping HNSW index on memory_entry_chunks — pgvector not installed.';
+  WHEN feature_not_supported THEN
+    RAISE NOTICE 'HNSW not supported (older pgvector) — falling back to ivfflat.';
+    EXECUTE 'CREATE INDEX IF NOT EXISTS mem_chunks_vec_idx ON memory_entry_chunks USING ivfflat (embedding vector_cosine_ops)';
+END $$;
+
+DO $$ BEGIN
+  CREATE INDEX IF NOT EXISTS session_chunks_vec_idx
+    ON session_chunks USING hnsw (embedding vector_cosine_ops);
+EXCEPTION
+  WHEN undefined_object THEN
+    RAISE NOTICE 'Skipping HNSW index on session_chunks — pgvector not installed.';
+  WHEN feature_not_supported THEN
+    RAISE NOTICE 'HNSW not supported (older pgvector) — falling back to ivfflat.';
+    EXECUTE 'CREATE INDEX IF NOT EXISTS session_chunks_vec_idx ON session_chunks USING ivfflat (embedding vector_cosine_ops)';
+END $$;
+
+DO $$ BEGIN
+  CREATE INDEX IF NOT EXISTS policy_sections_vec_idx
+    ON policy_sections USING hnsw (embedding vector_cosine_ops);
+EXCEPTION
+  WHEN undefined_object THEN
+    RAISE NOTICE 'Skipping HNSW index on policy_sections — pgvector not installed.';
+  WHEN feature_not_supported THEN
+    RAISE NOTICE 'HNSW not supported (older pgvector) — falling back to ivfflat.';
+    EXECUTE 'CREATE INDEX IF NOT EXISTS policy_sections_vec_idx ON policy_sections USING ivfflat (embedding vector_cosine_ops)';
+END $$;
+
+-- 5. v_memory_hits — unified search surface across all three chunk sources
+-- DECISION-001: source_row_id and source_ordinal are explicit; parent_id is
+-- display-only (semantically incompatible across source tables — do not use
+-- for grouping or linkage)
+CREATE OR REPLACE VIEW v_memory_hits AS
+  SELECT
+    'memory_entry_chunks'::text AS source_table,
+    mc.id AS chunk_id,
+    mc.entry_id AS source_row_id,
+    NULL::integer AS source_ordinal,
+    mc.chunk_idx,
+    (SELECT COUNT(*)::integer FROM memory_entry_chunks mc2 WHERE mc2.entry_id = mc.entry_id) AS total_chunks,
+    me.name AS label,
+    substring(mc.content, 1, 300) AS snippet,
+    mc.content,
+    mc.embedding,
+    mc.fts_vec
+  FROM memory_entry_chunks mc
+  JOIN memory_entries me ON me.id = mc.entry_id
+UNION ALL
+  SELECT
+    'policy_sections'::text,
+    ps.id,
+    ps.id,
+    NULL::integer,
+    ps.chunk_idx,
+    (SELECT COUNT(*)::integer FROM policy_sections ps2 WHERE ps2.doc_id = ps.doc_id AND ps2.section_num IS NOT DISTINCT FROM ps.section_num) AS total_chunks,
+    coalesce(ps.doc_id, '') || ' §' || coalesce(ps.section_num, '') AS label,
+    substring(ps.content, 1, 300),
+    ps.content,
+    ps.embedding,
+    ps.fts_vec
+  FROM policy_sections ps
+UNION ALL
+  SELECT
+    'session_chunks'::text,
+    sc.id,
+    sc.id,
+    sc.session_num,
+    sc.chunk_idx,
+    NULL::integer AS total_chunks,
+    coalesce(sc.session_id, '') || ' [' || coalesce(sc.chunk_kind, '') || ']' AS label,
+    substring(sc.content, 1, 300),
+    sc.content,
+    sc.embedding,
+    sc.fts_vec
+  FROM session_chunks sc;
+
+COMMENT ON VIEW v_memory_hits IS
+  'Unified semantic-memory search surface across memory_entry_chunks, policy_sections, session_chunks. Use source_row_id for reliable per-source row linkage; parent_id field is intentionally absent because it is semantically incompatible across source tables (entry_id is a row PK, but session_chunks needed session_num — different concept). source_ordinal carries session_num for session_chunks only.';
+
 -- Checklist items — process gates (pre-commit, release-prep, etc.)
 CREATE TABLE IF NOT EXISTS checklist_items (
   id SERIAL PRIMARY KEY,
