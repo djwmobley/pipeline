@@ -4,6 +4,10 @@ All notable changes to Pipeline are documented here. Format follows [Keep a Chan
 
 ## [Unreleased]
 
+### Added
+
+- **Chunker / loader for high-fidelity semantic memory retrieval** — `scripts/pipeline-chunker.js` (boundary-aware text splitter with per-source token-budget calibration) and `scripts/pipeline-memory-loader.js` (CLI loader for `memory_entries`, `session_chunks`, and `policy_sections` with SHA256 content_hash idempotence, BATCH=8 per-chunk error isolation, and Windows-aware `~/.claude/projects/<encoded-cwd>/` path computation). Closes the gap that left these three tables permanently empty in real projects (verified live: 690 chunks embedded, 0 errors). Schema additions: `memory_entry_chunks` sibling table, `policy_sections.chunk_idx`, `content_hash` columns on all three chunk tables, HNSW vector indexes, and the `v_memory_hits` unified search view. `cmdHybrid` and `cmdSearch` query the view as a unified section with chunk-position indicators. Acceptance tests in `scripts/test-chunker.js` (5/5 pass against pathological inputs from spec §6). Issue #142, Postgres task #60.
+
 ## [0.3.0-alpha] — 2026-04-25
 
 This release focuses on three areas: Windows safety hardening across the init, orientation, and finish commands (replacing POSIX bash blocks with Node scripts that use `execFileSync` argv arrays throughout); per-feature token tracking via transcript mining (new `scripts/pipeline-cost.js` helper and `feature_token_usage` Postgres table); and inter-session memory handling, where semantic recall now covers the full knowledge tier — decisions, sessions, gotchas, and six new memory-surface tables (memory_entries, session_chunks, policy_sections, checklist_items, incidents, corpus_files) are all wired into the hybrid search path, an `options.num_ctx` knob prevents Ollama from pre-truncating long inputs, and the embedder now gracefully skips tables that exist on paper but have not yet been populated by a loader.
