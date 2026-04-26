@@ -12,5 +12,6 @@ secrets*
 .DS_Store
 Thumbs.db
 *.log
+logs/*.jsonl
 .worktrees/
 worktrees/

@@ -32,11 +32,49 @@
       "Bash(chmod +x /c/Users/djwmo/dev/pipeline/scripts/*)",
       "Bash(gh api repos/djwmobley/pipeline/*)",
       "Bash(gh issue close *)",
-      "Bash(gh issue reopen *)"
+      "Bash(gh issue reopen *)",
+      "Bash(node /c/Users/djwmo/dev/pipeline/scripts/hooks/routing-check.js)",
+      "Bash(node /c/Users/djwmo/dev/pipeline/scripts/hooks/routing-log.js)",
+      "Bash(node /c/Users/djwmo/dev/pipeline/scripts/hooks/routing-stop.js)",
+      "Bash(node /c/Users/djwmo/dev/pipeline/scripts/pipeline-routing-report.js *)"
     ],
     "deny": [
       "Agent(pr-review-toolkit:*)",
       "Skill(pr-review-toolkit:*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /c/Users/djwmo/dev/pipeline/scripts/hooks/routing-check.js"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /c/Users/djwmo/dev/pipeline/scripts/hooks/routing-log.js"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /c/Users/djwmo/dev/pipeline/scripts/hooks/routing-stop.js"
+          }
+        ]
+      }
     ]
   }
 }
