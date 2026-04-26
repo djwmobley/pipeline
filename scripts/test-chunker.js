@@ -3,23 +3,26 @@
 /**
  * test-chunker.js — Automated acceptance-gate test runner (DECISION-003)
  *
- * Five pathological-input tests that exercise chunkText() and the content_hash
- * idempotence logic. Exit 0 = all pass; exit 1 = any failure.
+ * Six tests: five pathological-input tests (chunker logic + simulations) and
+ * one full E2E round-trip (DB + Ollama + retrieval). Exit 0 = all pass; exit 1 = any failure.
  *
  * Usage:
- *   node scripts/test-chunker.js          # Run all 5 tests
+ *   node scripts/test-chunker.js          # Run all 6 tests
  *   node scripts/test-chunker.js 1        # Run only test 1
  *   node scripts/test-chunker.js 2 4      # Run only tests 2 and 4
  *
  * Plan: docs/plans/2026-04-26-chunker-loader-plan.md §6 + Phase 8
  */
 
-const assert = require('assert');
-const crypto = require('crypto');
-const path   = require('path');
+const assert         = require('assert');
+const crypto         = require('crypto');
+const path           = require('path');
+const fs             = require('fs');
+const { execFileSync } = require('child_process');
 
-const { chunkText }   = require('./pipeline-chunker');
-const { encodeCwd }   = require('./lib/encoded-cwd');
+const { chunkText }           = require('./pipeline-chunker');
+const { encodeCwd, getClaudeProjectDir } = require('./lib/encoded-cwd');
+const { loadConfig, connect } = require('./lib/shared');
 
 // ─── TEST REGISTRY ────────────────────────────────────────────────────────────
 
@@ -500,19 +503,205 @@ async function test5() {
     `Windows encodeCwd: expected 'C--Users-djwmo-dev-pipeline', got '${winResult}'`);
 }
 
+// ─── TEST 6 — Real E2E (DB + Ollama + retrieval round-trip) ──────────────────
+
+async function test6() {
+  // Unique needle phrase — Date.now() ensures no cross-run collision in the DB
+  const NEEDLE   = `PHRASE_E2E_T6_NEEDLE_${Date.now()}_X42`;
+  const TARGET   = 6000;
+
+  // Resolve fixture path
+  const projectDir = getClaudeProjectDir(process.cwd());
+  const memDir     = path.join(projectDir, 'memory');
+  const filePath   = path.join(memDir, '__E2E_TEST_T6__.md');
+
+  // Connect to Postgres (needed for queries 3a, 3b, 3c, and cleanup)
+  let db;
+  const config = loadConfig();
+
+  // Ensure memory directory exists
+  if (!fs.existsSync(memDir)) {
+    fs.mkdirSync(memDir, { recursive: true });
+  }
+
+  try {
+    // ── Step 1: Write synthetic memory fixture (~6000 chars) ──────────────────
+    step('Step 1: Writing synthetic 6000-char memory fixture...', true);
+    const body = buildProseFixture(TARGET, NEEDLE);
+    assert.ok(body.length >= TARGET,
+      `Fixture too short: ${body.length} < ${TARGET}`);
+    fs.writeFileSync(filePath, `# E2E Test T6\n\n${body}`, 'utf8');
+    const fileSize = fs.statSync(filePath).size;
+    step(`Fixture written (${fileSize} bytes, needle embedded)`, true);
+
+    // ── Step 2: Invoke loader as child process ─────────────────────────────────
+    step('Step 2: Invoking pipeline-memory-loader.js memory...', true);
+    const loaderOut1 = execFileSync(
+      'node',
+      [path.join(__dirname, 'pipeline-memory-loader.js'), 'memory'],
+      {
+        env: { ...process.env, PROJECT_ROOT: process.cwd() },
+        stdio: 'pipe',
+        encoding: 'utf8',
+      }
+    );
+    const errMatch1 = loaderOut1.match(/Errors:\s+(\d+)/);
+    const errors1 = errMatch1 ? parseInt(errMatch1[1], 10) : -1;
+    const loaderOk = errors1 === 0;
+    step(`Loader run 1 reported Errors: ${errors1} (expected 0)`,
+      loaderOk,
+      loaderOk ? null : `Loader stdout:\n${loaderOut1.slice(0, 500)}`);
+    assert.strictEqual(errors1, 0,
+      `Loader run 1 Errors != 0 (got ${errors1}):\n${loaderOut1}`);
+
+    // ── Step 3: Query Postgres ─────────────────────────────────────────────────
+    db = await connect(config);
+
+    // 3a — exactly 1 memory_entries row
+    step('Step 3a: SELECT memory_entries WHERE name = __E2E_TEST_T6__...', true);
+    const entryRes = await db.query(
+      `SELECT id FROM memory_entries WHERE name = $1`,
+      ['__E2E_TEST_T6__']
+    );
+    const entryOk = entryRes.rows.length === 1;
+    step(`memory_entries row count: ${entryRes.rows.length} (expected 1)`,
+      entryOk,
+      entryOk ? null : `Got ${entryRes.rows.length} rows for name=__E2E_TEST_T6__`);
+    assert.strictEqual(entryRes.rows.length, 1,
+      `Expected exactly 1 memory_entries row, got ${entryRes.rows.length}`);
+    const entryId = entryRes.rows[0].id;
+
+    // 3b — at least 4 chunks (6000 chars / 1400 ≈ 5)
+    step('Step 3b: SELECT memory_entry_chunks WHERE entry_id = $entryId...', true);
+    const chunksRes = await db.query(
+      `SELECT chunk_idx, content FROM memory_entry_chunks WHERE entry_id = $1 ORDER BY chunk_idx`,
+      [entryId]
+    );
+    const chunkCount = chunksRes.rows.length;
+    const chunksOk = chunkCount >= 4;
+    step(`Chunk count: ${chunkCount} (expected >= 4)`,
+      chunksOk,
+      chunksOk ? null : `Only ${chunkCount} chunks stored for entry ${entryId}`);
+    assert.ok(chunkCount >= 4,
+      `Expected >= 4 chunks for 6000-char body, got ${chunkCount}`);
+
+    // 3c — all chunks have embeddings
+    step('Step 3c: COUNT chunks WHERE embedding IS NOT NULL...', true);
+    const embRes = await db.query(
+      `SELECT COUNT(*) AS n FROM memory_entry_chunks WHERE entry_id = $1 AND embedding IS NOT NULL`,
+      [entryId]
+    );
+    const embCount = parseInt(embRes.rows[0].n, 10);
+    const embOk = embCount === chunkCount;
+    step(`Embedded chunk count: ${embCount} / ${chunkCount} (expected all)`,
+      embOk,
+      embOk ? null : `Only ${embCount} of ${chunkCount} chunks have embeddings`);
+    assert.strictEqual(embCount, chunkCount,
+      `Expected all ${chunkCount} chunks embedded, got ${embCount}`);
+
+    // ── Step 4: Hybrid retrieval ───────────────────────────────────────────────
+    step('Step 4: Invoking pipeline-embed.js hybrid <needle>...', true);
+    const embedOut = execFileSync(
+      'node',
+      [path.join(__dirname, 'pipeline-embed.js'), 'hybrid', NEEDLE],
+      {
+        env: { ...process.env, PROJECT_ROOT: process.cwd() },
+        stdio: 'pipe',
+        encoding: 'utf8',
+      }
+    );
+    // Strip ANSI escape codes for clean substring matching
+    const plainOut = embedOut.replace(/\x1b\[[0-9;]*m/g, '');
+
+    const hasTable = plainOut.includes('[memory_entry_chunks]');
+    step(`Hybrid output contains [memory_entry_chunks]`,
+      hasTable,
+      hasTable ? null : `'[memory_entry_chunks]' not found in output:\n${plainOut.slice(0, 500)}`);
+    assert.ok(hasTable,
+      `Expected '[memory_entry_chunks]' in hybrid output`);
+
+    const hasEntry = plainOut.includes('__E2E_TEST_T6__');
+    step(`Hybrid output contains __E2E_TEST_T6__ label`,
+      hasEntry,
+      hasEntry ? null : `'__E2E_TEST_T6__' not found in output:\n${plainOut.slice(0, 500)}`);
+    assert.ok(hasEntry,
+      `Expected '__E2E_TEST_T6__' in hybrid output (parent name in chunk label)`);
+
+    // The needle itself (or first 20 chars of it) should appear in a snippet
+    const needlePrefix = NEEDLE.slice(0, 20);
+    const hasNeedle = plainOut.includes(needlePrefix) || plainOut.includes('PHRASE_E2E_T6_NEEDLE');
+    step(`Hybrid output snippet contains needle prefix`,
+      hasNeedle,
+      hasNeedle ? null : `needle prefix '${needlePrefix}' not in output:\n${plainOut.slice(0, 600)}`);
+    assert.ok(hasNeedle,
+      `Expected needle prefix '${needlePrefix}' in hybrid output snippet`);
+
+    // ── Step 5: Idempotence — second loader run ────────────────────────────────
+    step('Step 5: Re-running loader (idempotence check)...', true);
+    const loaderOut2 = execFileSync(
+      'node',
+      [path.join(__dirname, 'pipeline-memory-loader.js'), 'memory'],
+      {
+        env: { ...process.env, PROJECT_ROOT: process.cwd() },
+        stdio: 'pipe',
+        encoding: 'utf8',
+      }
+    );
+
+    const embMatch2 = loaderOut2.match(/Chunks embedded:\s+(\d+)/);
+    const skipMatch2 = loaderOut2.match(/Chunks skipped[^:]*:\s+(\d+)/);
+    const embedded2 = embMatch2 ? parseInt(embMatch2[1], 10) : -1;
+    const skipped2  = skipMatch2 ? parseInt(skipMatch2[1], 10) : -1;
+
+    const idemEmbOk  = embedded2 === 0;
+    const idemSkipOk = skipped2 >= chunkCount;
+    step(`Run 2 Chunks embedded: ${embedded2} (expected 0)`,
+      idemEmbOk,
+      idemEmbOk ? null : `Expected 0 re-embeds on second run, got ${embedded2}`);
+    assert.strictEqual(embedded2, 0,
+      `Idempotence fail: expected Chunks embedded=0 on run 2, got ${embedded2}`);
+    step(`Run 2 Chunks skipped: ${skipped2} (expected >= ${chunkCount})`,
+      idemSkipOk,
+      idemSkipOk ? null : `Expected >= ${chunkCount} skipped, got ${skipped2}`);
+    assert.ok(idemSkipOk,
+      `Idempotence fail: expected >= ${chunkCount} chunks skipped on run 2, got ${skipped2}`);
+
+    console.log(`  PASS — Test 6 — E2E round-trip (loader→DB→Ollama→hybrid retrieval)`);
+
+  } finally {
+    // ── Cleanup (always runs) ──────────────────────────────────────────────────
+    if (db) {
+      try {
+        await db.query(`DELETE FROM memory_entries WHERE name = $1`, ['__E2E_TEST_T6__']);
+      } catch (cleanErr) {
+        console.log(`  [cleanup] DB delete failed: ${cleanErr.message}`);
+      }
+      await db.end().catch(() => {});
+    }
+    if (fs.existsSync(filePath)) {
+      try {
+        fs.unlinkSync(filePath);
+      } catch (unlinkErr) {
+        console.log(`  [cleanup] File unlink failed: ${unlinkErr.message}`);
+      }
+    }
+  }
+}
+
 // ─── MAIN ─────────────────────────────────────────────────────────────────────
 
 const ALL_TESTS = [
-  { num: 1, title: 'Pathological policy section >8000 chars',      fn: test1 },
-  { num: 2, title: 'Pathological memory body >20000 chars',        fn: test2 },
-  { num: 3, title: 'Pathological session message >4000 chars JSONL', fn: test3 },
-  { num: 4, title: 'Idempotence — content_hash skip logic',        fn: test4 },
-  { num: 5, title: 'Partial failure resilience — BATCH=8 isolation', fn: test5 },
+  { num: 1, title: 'Pathological policy section >8000 chars',          fn: test1 },
+  { num: 2, title: 'Pathological memory body >20000 chars',            fn: test2 },
+  { num: 3, title: 'Pathological session message >4000 chars JSONL',   fn: test3 },
+  { num: 4, title: 'Idempotence — content_hash skip logic',            fn: test4 },
+  { num: 5, title: 'Partial failure resilience — BATCH=8 isolation',   fn: test5 },
+  { num: 6, title: 'E2E round-trip (loader→DB→Ollama→hybrid retrieval)', fn: test6 },
 ];
 
 async function main() {
   // Parse which tests to run: "node test-chunker.js 2 4" → [2, 4]
-  const args = process.argv.slice(2).map(Number).filter(n => n >= 1 && n <= 5);
+  const args = process.argv.slice(2).map(Number).filter(n => n >= 1 && n <= 6);
   const toRun = args.length > 0
     ? ALL_TESTS.filter(t => args.includes(t.num))
     : ALL_TESTS;
