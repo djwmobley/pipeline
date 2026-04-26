@@ -98,6 +98,51 @@ async function main() {
       process.exit(0);
     }
 
+    // ── Heredoc body size: Bash heredocs above threshold ─────────────────────
+    if (toolName === 'Bash') {
+      const cmd = Array.isArray(toolInput.command) ? toolInput.command.join(' ') : (toolInput.command || '');
+      const threshold = config.routing.heredoc_block_threshold || 200;
+      const lines = cmd.split('\n');
+      const heredocOpenRe = /<<-?\s*['"]?([A-Z][A-Z0-9_]*)['"]?/g;
+      let violationFound = false;
+      for (let i = 0; i < lines.length && !violationFound; i++) {
+        const matches = [...lines[i].matchAll(heredocOpenRe)];
+        for (const match of matches) {
+          const tag = match[1];
+          const closeRe = new RegExp('^\\s*' + tag + '\\s*$');
+          let bodyBytes = 0;
+          let closeIdx = -1;
+          for (let j = i + 1; j < lines.length; j++) {
+            if (closeRe.test(lines[j])) {
+              closeIdx = j;
+              break;
+            }
+            bodyBytes += Buffer.byteLength(lines[j] + '\n', 'utf8');
+          }
+          if (closeIdx !== -1 && bodyBytes > threshold) {
+            writeViolation({
+              type: 'heredoc_block',
+              tool: toolName,
+              skill: activeSkill,
+              detail: {
+                tag,
+                body_bytes: bodyBytes,
+                threshold,
+                command_excerpt: cmd.slice(0, 120),
+              },
+            }, config);
+            block(
+              `ROUTING BLOCK: Bash heredoc <<${tag} body is ${bodyBytes} bytes (threshold ${threshold}).\n` +
+              `Main-thread Bash heredocs above the threshold are drafting — dispatch qwen-coder for code or Sonnet for prose, then run the resulting command.\n` +
+              `To disable routing enforcement: set routing.enabled: false in .claude/pipeline.yml`
+            );
+            violationFound = true;
+            break;
+          }
+        }
+      }
+    }
+
     // ── Universal floor: Edit/Write above line threshold ──────────────────────
     if (toolName === 'Edit' || toolName === 'Write') {
       const content = toolInput.new_string || toolInput.content || '';
