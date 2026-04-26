@@ -16,6 +16,7 @@
  * Flags (apply to any subcommand):
  *   --force      Bypass content_hash skip; re-embed all chunks
  *   --dry-run    Read sources, compute chunks, print summary; no DB writes
+ *   --quiet      Suppress progress output; errors still surface to stderr
  *
  * Exit codes: 0 on success, 1 on any error.
  *
@@ -41,6 +42,9 @@ const args    = process.argv.slice(2);
 const subcmd  = args.find(a => !a.startsWith('--')) || '';
 const force   = args.includes('--force');
 const dryRun  = args.includes('--dry-run');
+const quiet   = args.includes('--quiet');
+
+const log = (...a) => { if (!quiet) console.log(...a); };
 
 // ─── MAIN ────────────────────────────────────────────────────────────────────
 
@@ -82,7 +86,7 @@ async function main() {
 }
 
 function printHelp() {
-  console.log([
+  log([
     '',
     'pipeline-memory-loader.js — embed memory, sessions, and policy into the knowledge DB',
     '',
@@ -99,6 +103,7 @@ function printHelp() {
     'Flags:',
     '  --force    Bypass content_hash skip; re-embed all chunks',
     '  --dry-run  Read sources and compute chunks; no DB writes',
+    '  --quiet    Suppress progress output; errors still surface to stderr',
     '',
   ].join('\n'));
 }
@@ -308,15 +313,15 @@ async function loadMemory(db, config) {
 }
 
 function printMemoryStats(stats, ms) {
-  console.log(`memory loader:`);
-  console.log(`  Files read:        ${stats.files}`);
-  console.log(`  Parents upserted:  ${stats.parents}`);
-  console.log(`  Chunks upserted:   ${stats.chunks}`);
-  console.log(`  Chunks embedded:   ${stats.embedded}`);
-  console.log(`  Chunks skipped (hash match, --force not set): ${stats.skipped}`);
-  console.log(`  Errors:            ${stats.errors}`);
-  console.log(`  Duration:          ${(ms / 1000).toFixed(1)}s`);
-  if (dryRun) console.log(`  (dry-run: no DB writes)`);
+  log(`memory loader:`);
+  log(`  Files read:        ${stats.files}`);
+  log(`  Parents upserted:  ${stats.parents}`);
+  log(`  Chunks upserted:   ${stats.chunks}`);
+  log(`  Chunks embedded:   ${stats.embedded}`);
+  log(`  Chunks skipped (hash match, --force not set): ${stats.skipped}`);
+  log(`  Errors:            ${stats.errors}`);
+  log(`  Duration:          ${(ms / 1000).toFixed(1)}s`);
+  if (dryRun) log(`  (dry-run: no DB writes)`);
 }
 
 // ─── SESSIONS LOADER ─────────────────────────────────────────────────────────
@@ -457,14 +462,14 @@ async function loadSessions(db, config) {
 }
 
 function printSessionStats(stats, ms) {
-  console.log(`sessions loader:`);
-  console.log(`  Files read:        ${stats.files}`);
-  console.log(`  Chunks upserted:   ${stats.chunks}`);
-  console.log(`  Chunks embedded:   ${stats.embedded}`);
-  console.log(`  Chunks skipped (hash match, --force not set): ${stats.skipped}`);
-  console.log(`  Errors:            ${stats.errors}`);
-  console.log(`  Duration:          ${(ms / 1000).toFixed(1)}s`);
-  if (dryRun) console.log(`  (dry-run: no DB writes)`);
+  log(`sessions loader:`);
+  log(`  Files read:        ${stats.files}`);
+  log(`  Chunks upserted:   ${stats.chunks}`);
+  log(`  Chunks embedded:   ${stats.embedded}`);
+  log(`  Chunks skipped (hash match, --force not set): ${stats.skipped}`);
+  log(`  Errors:            ${stats.errors}`);
+  log(`  Duration:          ${(ms / 1000).toFixed(1)}s`);
+  if (dryRun) log(`  (dry-run: no DB writes)`);
 }
 
 // ─── POLICY LOADER ───────────────────────────────────────────────────────────
@@ -595,15 +600,15 @@ function splitPolicySections(body) {
 }
 
 function printPolicyStats(stats, ms) {
-  console.log(`policy loader:`);
-  console.log(`  Files read:        ${stats.files}`);
-  console.log(`  Sections parsed:   ${stats.sections}`);
-  console.log(`  Chunks upserted:   ${stats.chunks}`);
-  console.log(`  Chunks embedded:   ${stats.embedded}`);
-  console.log(`  Chunks skipped (hash match, --force not set): ${stats.skipped}`);
-  console.log(`  Errors:            ${stats.errors}`);
-  console.log(`  Duration:          ${(ms / 1000).toFixed(1)}s`);
-  if (dryRun) console.log(`  (dry-run: no DB writes)`);
+  log(`policy loader:`);
+  log(`  Files read:        ${stats.files}`);
+  log(`  Sections parsed:   ${stats.sections}`);
+  log(`  Chunks upserted:   ${stats.chunks}`);
+  log(`  Chunks embedded:   ${stats.embedded}`);
+  log(`  Chunks skipped (hash match, --force not set): ${stats.skipped}`);
+  log(`  Errors:            ${stats.errors}`);
+  log(`  Duration:          ${(ms / 1000).toFixed(1)}s`);
+  if (dryRun) log(`  (dry-run: no DB writes)`);
 }
 
 // ─── ENTRYPOINT ──────────────────────────────────────────────────────────────
