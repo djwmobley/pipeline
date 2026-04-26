@@ -155,7 +155,32 @@ function ollamaEmbed(texts, config) {
       res.on('end', () => {
         try {
           const parsed = JSON.parse(data);
-          if (!parsed.embeddings) return reject(new Error(`Ollama error: ${JSON.stringify(parsed).slice(0, 200)}`));
+          if (!parsed.embeddings || !Array.isArray(parsed.embeddings)) {
+            return reject(new Error(`Ollama error: ${JSON.stringify(parsed).slice(0, 200)}`));
+          }
+          if (parsed.embeddings.length !== texts.length) {
+            return reject(new Error(
+              `Ollama returned ${parsed.embeddings.length} embeddings for ${texts.length} inputs ` +
+              `(likely context overrun — chunk text smaller before retry)`
+            ));
+          }
+          for (let i = 0; i < parsed.embeddings.length; i++) {
+            const vec = parsed.embeddings[i];
+            if (!Array.isArray(vec) || vec.length === 0) {
+              return reject(new Error(
+                `Ollama returned empty embedding at index ${i} ` +
+                `(likely context overrun — chunk text smaller before retry)`
+              ));
+            }
+            let sumSquares = 0;
+            for (let j = 0; j < vec.length; j++) sumSquares += vec[j] * vec[j];
+            if (Math.sqrt(sumSquares) < 1e-9) {
+              return reject(new Error(
+                `Ollama returned zero-magnitude embedding at index ${i} ` +
+                `(likely context overrun — chunk text smaller before retry)`
+              ));
+            }
+          }
           resolve(parsed.embeddings);
         } catch (e) { reject(e); }
       });
