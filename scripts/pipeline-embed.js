@@ -160,6 +160,12 @@ const TABLES = [
   },
 ];
 
+// ─── CHUNK-COVERED TABLES ────────────────────────────────────────────────────
+// Tables covered by v_memory_hits view — embedded as chunks, not as parent rows.
+// cmdIndex skips these to avoid Ollama context-overrun on long parent-row bodies.
+// cmdSearch and cmdHybrid query them via the view, not the parent tables directly.
+const MEMORY_HITS_COVERED = new Set(['memory_entries', 'session_chunks', 'policy_sections', 'memory_entry_chunks']);
+
 // ─── INTROSPECTION HELPERS ──────────────────────────────────────────────────
 
 async function tableExists(client, tableName) {
@@ -200,6 +206,10 @@ async function cmdIndex(forceAll) {
       }
       if (!(await columnExists(client, tbl.name, 'embedding'))) {
         console.log(c.dim(`Skipping ${tbl.name} — no embedding column. Run setup to add it.`));
+        continue;
+      }
+      if (MEMORY_HITS_COVERED.has(tbl.name)) {
+        console.log(c.dim(`Skipping ${tbl.name} — covered by v_memory_hits chunks.`));
         continue;
       }
 
@@ -280,9 +290,6 @@ async function cmdAdd(filepath, description) {
 
 async function cmdSearch(query) {
   console.log(`${c.bold('Semantic search:')} "${query}"\n`);
-
-  // Tables covered by v_memory_hits — queried via the view, not directly
-  const MEMORY_HITS_COVERED = new Set(['memory_entries', 'session_chunks', 'policy_sections', 'memory_entry_chunks']);
 
   const client = await connect(CONFIG);
   try {
@@ -373,9 +380,6 @@ async function cmdSearch(query) {
 
 async function cmdHybrid(query) {
   console.log(`${c.bold('Hybrid search:')} "${query}"\n`);
-
-  // Tables covered by v_memory_hits — queried via the view, not directly
-  const MEMORY_HITS_COVERED = new Set(['memory_entries', 'session_chunks', 'policy_sections', 'memory_entry_chunks']);
 
   const client = await connect(CONFIG);
   try {
