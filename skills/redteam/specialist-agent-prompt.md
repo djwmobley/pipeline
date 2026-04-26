@@ -17,9 +17,7 @@ Use this template when dispatching a domain specialist agent.
 12. `[SOURCE_DIRS]` → routing.source_dirs from pipeline.yml config
 13. `[SECURITY_AUDIT_CMD]` → `commands.security_audit` from pipeline.yml (or "null" if not configured)
 14. `[DIFF_FILES]` → output of `git diff --name-only main...HEAD -- [SOURCE_DIRS]`. If empty, replace with "FULL_SCAN".
-15. `[GITHUB_REPO]` → `integrations.github.repo` from pipeline.yml. If issue tracking is disabled, replace with empty string.
-16. `[GITHUB_ISSUE]` → task issue number for this red team phase. If issue tracking is disabled, replace with empty string.
-17. `[SCRIPTS_DIR]` → path to pipeline's scripts/ directory (absolute)
+15. `[GITHUB_ISSUE]` → task issue number for this red team phase. If issue tracking is disabled, replace with empty string.
 18. `[PROFILE]` → `project.profile` from pipeline.yml
 
 ```

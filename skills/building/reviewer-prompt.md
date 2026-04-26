@@ -9,13 +9,12 @@ Dispatch this reviewer after each implementer completes a task. It checks spec c
 3. `[TASK_NAME]` → the task name from the plan
 4. `[TASK_DESCRIPTION]` → full text of the task requirements from the plan
 5. `[TASK_ISSUE]` → issue number for this task. Empty string if issue tracking is disabled.
-6. `[GITHUB_REPO]` → `integrations.github.repo` from pipeline.yml. Empty string if issue tracking is disabled.
-7. `[SCRIPTS_DIR]` → path to pipeline's scripts/ directory (absolute)
-8. `[DIRECTORY]` → actual working directory path
-9. `[NON_NEGOTIABLES]` → the actual list from `review.non_negotiable` in pipeline.yml
-10. `{{TICKET_CONTEXT}}` → (remediation only) Replace with ticket-reading instructions based on backend. Not remediation → remove the `{{TICKET_CONTEXT}}` line entirely.
+6. `[DIRECTORY]` → actual working directory path
+7. `[NON_NEGOTIABLES]` → the actual list from `review.non_negotiable` in pipeline.yml
+8. `{{TICKET_CONTEXT}}` → (remediation only) Replace with ticket-reading instructions based on backend. Not remediation → remove the `{{TICKET_CONTEXT}}` line entirely.
+9. `[SHA_FROM_COMMENT]` → commit SHA extracted from the implementer's "## Implementation" comment on the task issue.
 
-**Removed from v1:** `[FULL TEXT of task requirements]` (now `[TASK_DESCRIPTION]`), `[From implementer's report]` (agent reads from task issue / build-state instead).
+**Removed from v1:** `[FULL TEXT of task requirements]` (now `[TASK_DESCRIPTION]`), `[From implementer's report]` (agent reads from task issue / build-state instead), GITHUB_REPO, SCRIPTS_DIR.
 
 ```
 Task tool (general-purpose, model: {{MODEL}}):

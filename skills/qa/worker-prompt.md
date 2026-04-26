@@ -15,9 +15,7 @@ Use this template when dispatching a QA worker agent to execute one work package
 10. `[FLAKE_RETRIES]` -> `qa.flake_retries` from pipeline.yml (default: 1)
 11. `[EXISTING_TEST_PATTERNS]` -> summary of existing test framework, file organization, fixture patterns
 12. `[ARCH_PLAN]` -> contents of `docs/architecture.md` if it exists. If absent, replace with "No architecture document available — use source code as ground truth for contracts."
-13. `[GITHUB_REPO]` -> `integrations.github.repo` from pipeline.yml (e.g., `owner/repo`). If issue tracking is disabled, replace with empty string.
-14. `[GITHUB_ISSUE]` -> task issue number for this QA phase. If issue tracking is disabled, replace with empty string.
-15. `[SCRIPTS_DIR]` -> path to pipeline's scripts/ directory (absolute)
+13. `[GITHUB_ISSUE]` -> task issue number for this QA phase. If issue tracking is disabled, replace with empty string.
 
 ```
 Task tool (general-purpose, model: {{MODEL}}):
