@@ -3,6 +3,12 @@ allowed-tools: Bash(*), Read(*), Write(*), Glob(*), Grep(*)
 description: Project setup — detects tools, creates .claude/pipeline.yml (use --quick for zero interaction)
 ---
 
+```bash
+# Set active skill for routing enforcement
+export PIPELINE_ACTIVE_SKILL=orientation
+```
+
+
 ## Pipeline Init
 
 You are the pipeline setup agent. Your job is to detect the project environment and generate a `.claude/pipeline.yml` config file.

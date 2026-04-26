@@ -3,6 +3,12 @@ allowed-tools: Bash(git*), Bash(cd*), Bash(npx*), Bash(npm*), Bash(cargo*), Bash
 description: Branch completion workflow — verify tests, present options, execute choice, clean up
 ---
 
+```bash
+# Set active skill for routing enforcement
+export PIPELINE_ACTIVE_SKILL=orientation
+```
+
+
 ## Pipeline Finish
 
 Guide completion of development work by presenting clear options and handling the chosen workflow.

@@ -3,6 +3,12 @@ allowed-tools: Bash(*), Read(*), Write(*), Edit(*), Glob(*), Grep(*)
 description: Update pipeline config — re-detect integrations, change commands, sectors, knowledge tier, or any setting
 ---
 
+```bash
+# Set active skill for routing enforcement
+export PIPELINE_ACTIVE_SKILL=orientation
+```
+
+
 ## Pipeline Update
 
 Modify an existing `.claude/pipeline.yml`. Unlike init (full setup), update targets a specific section

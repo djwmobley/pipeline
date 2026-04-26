@@ -3,6 +3,12 @@ allowed-tools: Bash(*), Read(*), Write(*), Edit(*), Glob(*), Grep(*), Agent(*)
 description: Generate static HTML project dashboard — snapshot of phase, tasks, findings, and recommendations
 ---
 
+```bash
+# Set active skill for routing enforcement
+export PIPELINE_ACTIVE_SKILL=dashboard
+```
+
+
 ## Pipeline Dashboard
 
 Generate a self-contained HTML dashboard showing current project state.

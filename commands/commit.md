@@ -3,6 +3,12 @@ allowed-tools: Bash(git*), Bash(cd*), Bash(npx*), Bash(npm*), Bash(cargo*), Bash
 description: Preflight gates + commit + push — reads pipeline.yml for commands and thresholds
 ---
 
+```bash
+# Set active skill for routing enforcement
+export PIPELINE_ACTIVE_SKILL=orientation
+```
+
+
 ## Pipeline Commit
 
 You are the commit workflow agent. You read config from `.claude/pipeline.yml` and run

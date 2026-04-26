@@ -3,6 +3,12 @@ allowed-tools: Bash(*), Read(*), Glob(*), Grep(*)
 description: Deterministic structural linting for agent prompt templates — runs 7 regex checks via Node script
 ---
 
+```bash
+# Set active skill for routing enforcement
+export PIPELINE_ACTIVE_SKILL=lint-agents
+```
+
+
 ## Pipeline Lint Agents
 
 Locate and read the lint-agents skill file:

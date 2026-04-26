@@ -3,6 +3,12 @@ allowed-tools: Bash(*), Read(*), Glob(*), Grep(*), Task(*)
 description: Systematic root-cause diagnosis — 4 phases, error class routing, no speculative fixes
 ---
 
+```bash
+# Set active skill for routing enforcement
+export PIPELINE_ACTIVE_SKILL=debugging
+```
+
+
 ## Pipeline Debug
 
 Locate and read the debugging skill file:

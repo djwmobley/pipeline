@@ -3,6 +3,12 @@ allowed-tools: Bash(*), Read(*), Write(*), Edit(*), Glob(*), Grep(*), Agent(*)
 description: Security red team assessment — recon + parallel specialist agents + lead analyst synthesis
 ---
 
+```bash
+# Set active skill for routing enforcement
+export PIPELINE_ACTIVE_SKILL=redteam
+```
+
+
 ## Pipeline Red Team
 
 Security assessment with parallel domain specialists. Probes your codebase from an attacker's perspective — injection, auth bypass, XSS, data exposure, and more.

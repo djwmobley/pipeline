@@ -3,6 +3,12 @@ allowed-tools: Bash(*), Read(*), Write(*), Edit(*), Glob(*), Grep(*), Task(*)
 description: Subagent-driven plan execution — fresh agent per task with post-task review
 ---
 
+```bash
+# Set active skill for routing enforcement
+export PIPELINE_ACTIVE_SKILL=building
+```
+
+
 ## Pipeline Build
 
 ### Preflight — Orientation check

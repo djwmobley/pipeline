@@ -3,6 +3,12 @@ allowed-tools: Bash(*), Read(*), Write(*), Edit(*), Glob(*), Grep(*), Agent(*)
 description: Compliance framework mapping — map red team findings to regulatory controls and analyze coverage scope
 ---
 
+```bash
+# Set active skill for routing enforcement
+export PIPELINE_ACTIVE_SKILL=compliance
+```
+
+
 ## Pipeline Compliance
 
 Maps red team findings (with CWE IDs) to regulatory compliance controls and produces a coverage scope analysis. This is compliance preparation — not a compliance assessment. The output helps teams understand which controls their security testing addresses and which require organizational or procedural assessment.

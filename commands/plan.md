@@ -3,6 +3,12 @@ allowed-tools: Bash(*), Read(*), Write(*), Glob(*), Grep(*), Task(*)
 description: Create an implementation plan from a spec — bite-sized tasks with build sequence
 ---
 
+```bash
+# Set active skill for routing enforcement
+export PIPELINE_ACTIVE_SKILL=planning
+```
+
+
 ## Pipeline Plan
 
 Locate and read the planning skill file:

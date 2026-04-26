@@ -3,6 +3,12 @@ allowed-tools: Bash(git*), Bash(cd*), Read(*), Grep(*)
 description: Assess change size and recommend the appropriate workflow
 ---
 
+```bash
+# Set active skill for routing enforcement
+export PIPELINE_ACTIVE_SKILL=debugging
+```
+
+
 ## Pipeline Triage
 
 Assess the size of the current change and recommend the correct workflow.

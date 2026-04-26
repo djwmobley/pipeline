@@ -3,6 +3,12 @@ allowed-tools: Bash(*), Read(*), Write(*), Glob(*), Grep(*), Agent(*)
 description: Purple team verification — verify aggregate security posture after remediation, codify defensive rules
 ---
 
+```bash
+# Set active skill for routing enforcement
+export PIPELINE_ACTIVE_SKILL=purpleteam
+```
+
+
 ## Pipeline Purple Team
 
 Aggregate security verification. Runs after a red team + remediation cycle to confirm that identified attack vectors are actually closed, exploit chains are broken, and verified fixes are codified into defensive rules for future development.

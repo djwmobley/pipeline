@@ -3,6 +3,12 @@ allowed-tools: Bash(*), Read(*), Write(*), Edit(*), Glob(*), Grep(*), Agent(*)
 description: Full security loop — red team, remediate, purple team with user gates between phases
 ---
 
+```bash
+# Set active skill for routing enforcement
+export PIPELINE_ACTIVE_SKILL=redteam
+```
+
+
 ## Pipeline Security
 
 Full security assessment loop. Orchestrates red team → remediate → purple team in sequence with explicit user review gates between each phase.

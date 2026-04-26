@@ -3,6 +3,12 @@ allowed-tools: Bash(*), Read(*), Write(*), Edit(*), Glob(*), Grep(*), Agent(*)
 description: Engineering Architect — technology decisions via recon + parallel domain specialists + synthesis
 ---
 
+```bash
+# Set active skill for routing enforcement
+export PIPELINE_ACTIVE_SKILL=architecture
+```
+
+
 ## Pipeline Architect
 
 Produce `docs/architecture.md` — a committed engineering standards document that constrains

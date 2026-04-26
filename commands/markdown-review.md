@@ -3,6 +3,12 @@ allowed-tools: Bash(*), Read(*), Write(*), Edit(*), Glob(*), Grep(*), Agent(*)
 description: Full markdown health check — file hygiene, information architecture, A2A protocol review with automated fixes
 ---
 
+```bash
+# Set active skill for routing enforcement
+export PIPELINE_ACTIVE_SKILL=markdown-review
+```
+
+
 ## Pipeline Markdown Review
 
 Full markdown health check with automated fixes. Scans plugin instruction files and user-generated markdown for hygiene issues, information architecture problems, and A2A protocol violations.

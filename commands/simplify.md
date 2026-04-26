@@ -3,6 +3,12 @@ allowed-tools: Bash(*), Read(*), Edit(*), Glob(*), Grep(*)
 description: Targeted code simplification — reviews specific files for SOLID violations, premature abstraction, dead code
 ---
 
+```bash
+# Set active skill for routing enforcement
+export PIPELINE_ACTIVE_SKILL=reviewing
+```
+
+
 ## Pipeline Simplify
 
 Simplify specific files flagged by `/pipeline:review` or `/pipeline:audit`.

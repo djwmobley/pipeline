@@ -3,6 +3,12 @@ allowed-tools: Bash(*)
 description: Create an isolated git worktree for feature work
 ---
 
+```bash
+# Set active skill for routing enforcement
+export PIPELINE_ACTIVE_SKILL=orientation
+```
+
+
 ## Pipeline Worktree
 
 Create an isolated git worktree for feature development.

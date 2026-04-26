@@ -3,6 +3,12 @@ allowed-tools: Bash(node*), Bash(cd*), Bash(npm*), Bash(find*), Read(*), Glob(*)
 description: Knowledge DB operations — setup, status, search, session recording, task management
 ---
 
+```bash
+# Set active skill for routing enforcement
+export PIPELINE_ACTIVE_SKILL=script_exec
+```
+
+
 ## Pipeline Knowledge
 
 Interact with the knowledge DB. Routes to the correct script based on the subcommand.

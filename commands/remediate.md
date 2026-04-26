@@ -3,6 +3,12 @@ allowed-tools: Bash(*), Read(*), Write(*), Edit(*), Glob(*), Grep(*), Agent(*)
 description: Multi-source remediation — parse findings, create tickets, batch fixes, verify
 ---
 
+```bash
+# Set active skill for routing enforcement
+export PIPELINE_ACTIVE_SKILL=remediation
+```
+
+
 ## Pipeline Remediate
 
 Fix findings from any pipeline workflow. Parses reports from red team, audit, review, UI review, or external sources, creates tickets (issues / Postgres / files), dispatches stateless implementer/reviewer agents, and verifies fixes.

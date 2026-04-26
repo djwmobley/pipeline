@@ -3,6 +3,12 @@ allowed-tools: Bash(*), Read(*), Glob(*), Grep(*), Agent(*)
 description: Antagonistic design debate — stress-test a spec with advocate, skeptic, and practitioner agents before planning
 ---
 
+```bash
+# Set active skill for routing enforcement
+export PIPELINE_ACTIVE_SKILL=debate
+```
+
+
 ## Pipeline Debate
 
 Locate and read the debate skill file:
