@@ -28,7 +28,7 @@ routing:
   # Convention routing (Option D)
   enabled: true                          # Set false to disable all routing enforcement
   chain_dispatch_threshold: 2000         # Bytes; Agent prompt above this triggers chain-dispatch rule
-  direct_write_line_threshold: 10        # Edit/Write blocked above this count without allowed_direct_write
+  direct_write_line_threshold: 100       # Edit/Write blocked above this count without allowed_direct_write (multi-paragraph LLM drafts)
   stop_hook_threshold: 150               # Words of non-excluded prose in a Stop hook turn before violation
 
   # Tier map: operation_class -> executor tier name

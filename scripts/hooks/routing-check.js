@@ -87,7 +87,7 @@ async function main() {
     if (toolName === 'Edit' || toolName === 'Write') {
       const content = toolInput.new_string || toolInput.content || '';
       const lineCount = countLines(content);
-      const threshold = config.routing.direct_write_line_threshold || 10;
+      const threshold = config.routing.direct_write_line_threshold || 100;
       if (lineCount > threshold) {
         const skillFm = loadSkillFrontmatter(activeSkill);
         if (!skillFm.allowed_direct_write) {

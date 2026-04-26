@@ -59,7 +59,7 @@ function loadConfig() {
   const knowledgeTier = getInSection('knowledge', 'tier') || 'files';
   const routingEnabled = getInSection('routing', 'enabled');
   const chainThreshold = parseInt(getInSection('routing', 'chain_dispatch_threshold') || '2000');
-  const writeThreshold = parseInt(getInSection('routing', 'direct_write_line_threshold') || '10');
+  const writeThreshold = parseInt(getInSection('routing', 'direct_write_line_threshold') || '100');
   const stopThreshold  = parseInt(getInSection('routing', 'stop_hook_threshold') || '150');
 
   // Parse bash_block_patterns from universal_floor section.
