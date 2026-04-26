@@ -22,6 +22,8 @@
  *
  *   node platform.js pr create --title "feat: X" --body "Description" --source feat/x --target main
  *   node platform.js pr create --title "feat: X" --stdin --source feat/x --target main
+ *   node platform.js pr merge <ref> --merge          # Standard merge — default
+ *   node platform.js pr merge <ref> --rebase
  *   node platform.js pr merge <ref> --squash
  *   node platform.js pr comment <ref> "Review findings"
  *   node platform.js pr comment <ref> --stdin              # Read body from stdin
@@ -295,9 +297,13 @@ const github = {
     return ref;
   },
 
-  async prMerge({ ref, squash, deleteSourceBranch, message, repo }) {
+  async prMerge({ ref, method = 'merge', deleteSourceBranch, message, repo }) {
     const args = ['pr', 'merge', String(ref), '--repo', repo];
-    if (squash) args.push('--squash');
+    const methodFlag = { merge: '--merge', rebase: '--rebase', squash: '--squash' }[method];
+    if (!methodFlag) {
+      throw new Error(`Unknown merge method: ${method}. Supported: merge, rebase, squash`);
+    }
+    args.push(methodFlag);
     if (deleteSourceBranch) args.push('--delete-branch');
     if (message) args.push('--body', message);
 
@@ -456,10 +462,16 @@ const azureDevops = {
     return String(data.pullRequestId);
   },
 
-  async prMerge({ ref, squash, deleteSourceBranch, message, config }) {
+  async prMerge({ ref, method = 'merge', deleteSourceBranch, message, config }) {
     const orgArgs = azureDevops._orgArgs(config);
     const args = ['repos', 'pr', 'update', '--id', String(ref), '--status', 'completed', ...orgArgs, '--output', 'json'];
-    if (squash) args.push('--squash', 'true');
+    if (method === 'squash') {
+      args.push('--squash', 'true');
+    } else if (method === 'rebase') {
+      throw new Error('Rebase merge is not supported on Azure DevOps backend (az repos pr update has no rebase flag).');
+    } else if (method !== 'merge') {
+      throw new Error(`Unknown merge method: ${method}. Supported: merge, squash`);
+    }
     if (deleteSourceBranch) args.push('--delete-source-branch', 'true');
     if (message) args.push('--merge-commit-message', message);
 
@@ -567,7 +579,7 @@ function parseArgs(argv) {
       if (key === 'stdin') {
         result.flags.stdin = true;
         i++;
-      } else if (key === 'squash' || key === 'delete-branch') {
+      } else if (key === 'squash' || key === 'merge' || key === 'rebase' || key === 'delete-branch') {
         result.flags[key] = true;
         i++;
       } else if (i + 1 < args.length && !args[i + 1].startsWith('--')) {
@@ -670,9 +682,15 @@ async function main() {
         case 'create':
           result = await backend.prCreate({ title: flags.title, body: stdinBody || flags.body, source: flags.source || flags.head, target: flags.target || flags.base, repo, config });
           break;
-        case 'merge':
-          result = await backend.prMerge({ ref: rest[0], squash: flags.squash, deleteSourceBranch: flags['delete-branch'], message: flags.body || flags.message, repo, config });
+        case 'merge': {
+          const methodFlags = ['merge', 'rebase', 'squash'].filter(m => flags[m]);
+          if (methodFlags.length > 1) {
+            throw new Error(`Only one of --merge, --rebase, --squash may be specified (got: ${methodFlags.join(', ')})`);
+          }
+          const method = methodFlags[0] || 'merge';
+          result = await backend.prMerge({ ref: rest[0], method, deleteSourceBranch: flags['delete-branch'], message: flags.body || flags.message, repo, config });
           break;
+        }
         case 'comment':
           result = await backend.prComment({ ref: rest[0], body: stdinBody || rest[1] || flags.body, repo, config });
           break;
