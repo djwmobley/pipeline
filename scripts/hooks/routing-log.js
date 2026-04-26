@@ -54,12 +54,21 @@ async function main() {
 
   try {
     if (config.knowledge.tier === 'postgres') {
+      // stdio: ['ignore', 'pipe', 'ignore'] suppresses pipeline-db.js
+      // stderr — same fix routing-config.js::writeViolation got in
+      // commit 2e4b2f1. Without it, any DB error (verb missing,
+      // connection refused, etc.) leaks into the hook's stderr stream
+      // and surfaces in Claude Code output. Telemetry hooks must be silent.
       const { execFileSync } = require('child_process');
       execFileSync('node', [
         path.join(getPluginDir(), 'scripts', 'pipeline-db.js'),
         'routing-event',
         JSON.stringify(record),
-      ], { cwd: getProjectRoot(), encoding: 'utf8' });
+      ], {
+        cwd: getProjectRoot(),
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+      });
     } else {
       appendJsonl(
         path.join(getProjectRoot(), 'logs', 'routing-events.jsonl'),
