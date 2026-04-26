@@ -343,6 +343,19 @@ Shipped: [task title] (task #[id])
 
 ---
 
+### Step 4c — Routing Report
+
+**Runs for Options 1 and 2 (merge paths).** Skip if `knowledge.tier` is not `"postgres"` and no `logs/routing-events.jsonl` exists.
+
+Run the routing report and include it in the ship summary:
+
+```bash
+PROJECT_ROOT=$(pwd) node scripts/pipeline-routing-report.js
+```
+
+Include the full markdown output as a `## Routing Report` section in the ship summary comment posted to the epic issue (append to the Step 4a comment body before posting, or post as a follow-up comment if 4a already ran).
+
+---
 ### Step 5 — Cleanup worktree
 
 For Options 1, 2, 3, 5: if in a worktree (git-dir path contains 'worktrees'), clean up after merge/discard.
