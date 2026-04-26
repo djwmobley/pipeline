@@ -281,6 +281,9 @@ async function cmdAdd(filepath, description) {
 async function cmdSearch(query) {
   console.log(`${c.bold('Semantic search:')} "${query}"\n`);
 
+  // Tables covered by v_memory_hits — queried via the view, not directly
+  const MEMORY_HITS_COVERED = new Set(['memory_entries', 'session_chunks', 'policy_sections', 'memory_entry_chunks']);
+
   const client = await connect(CONFIG);
   try {
     // Pre-check: is there anything to search?
@@ -298,7 +301,39 @@ async function cmdSearch(query) {
 
     let resultNum = 0;
 
+    // ── v_memory_hits (chunked: memory + sessions + policy) ──
+    const { rows: viewExists } = await client.query(
+      "SELECT 1 FROM pg_views WHERE viewname = 'v_memory_hits' LIMIT 1"
+    );
+    if (!viewExists.length) {
+      console.log(c.yellow('  (v_memory_hits view not found — run setup to enable chunked memory search)'));
+    } else {
+      const { rows: viewRows } = await client.query(
+        `SELECT source_table, chunk_id, source_row_id, source_ordinal, chunk_idx, total_chunks, label, snippet,
+                1 - (embedding <=> $1::vector) AS cosine_similarity
+         FROM v_memory_hits
+         WHERE embedding IS NOT NULL
+         ORDER BY embedding <=> $1::vector
+         LIMIT 5`,
+        [vec]
+      );
+      if (viewRows.length > 0) {
+        console.log(c.bold('── memory (chunked: memory + sessions + policy) ──'));
+        viewRows.forEach((row) => {
+          resultNum++;
+          const score = (row.cosine_similarity * 100).toFixed(1);
+          const chunkLabel = row.total_chunks > 1
+            ? ` (chunk ${row.chunk_idx + 1}/${row.total_chunks})`
+            : '';
+          const snippet = (row.snippet || '').substring(0, 120).replace(/\n/g, ' ');
+          console.log(`${c.cyan(String(resultNum).padStart(2))}. ${c.bold(`[${row.source_table}] ${row.label}${chunkLabel}`)} ${c.dim(`(${score}%)`)}`);
+          console.log(`    ${snippet}...\n`);
+        });
+      }
+    }
+
     for (const tbl of TABLES) {
+      if (MEMORY_HITS_COVERED.has(tbl.name)) continue;
       if (!(await tableExists(client, tbl.name))) continue;
 
       const { rows: [{ count }] } = await client.query(`SELECT COUNT(*) FROM ${tbl.name}`);
@@ -339,12 +374,49 @@ async function cmdSearch(query) {
 async function cmdHybrid(query) {
   console.log(`${c.bold('Hybrid search:')} "${query}"\n`);
 
+  // Tables covered by v_memory_hits — queried via the view, not directly
+  const MEMORY_HITS_COVERED = new Set(['memory_entries', 'session_chunks', 'policy_sections', 'memory_entry_chunks']);
+
   const client = await connect(CONFIG);
   try {
     let resultNum = 0;
     let qEmb = null;
 
+    // ── v_memory_hits (chunked: memory + sessions + policy) ──
+    const { rows: viewExists } = await client.query(
+      "SELECT 1 FROM pg_views WHERE viewname = 'v_memory_hits' LIMIT 1"
+    );
+    if (!viewExists.length) {
+      console.log(c.yellow('  (v_memory_hits view not found — run setup to enable chunked memory search)'));
+    } else {
+      if (!qEmb) { [qEmb] = await ollamaEmbed([query], CONFIG); }
+      const vec = `[${qEmb.join(',')}]`;
+      const { rows: viewRows } = await client.query(
+        `SELECT source_table, chunk_id, source_row_id, source_ordinal, chunk_idx, total_chunks, label, snippet,
+                ts_rank(fts_vec, plainto_tsquery($1)) * 0.3 +
+                (1 - (embedding <=> $2::vector)) * 0.7 AS score
+         FROM v_memory_hits
+         WHERE embedding IS NOT NULL
+         ORDER BY score DESC
+         LIMIT 5`,
+        [query, vec]
+      );
+      if (viewRows.length > 0) {
+        console.log(c.bold('── memory (chunked: memory + sessions + policy) ──'));
+        viewRows.forEach((row) => {
+          resultNum++;
+          const chunkLabel = row.total_chunks > 1
+            ? ` (chunk ${row.chunk_idx + 1}/${row.total_chunks})`
+            : '';
+          const snippet = (row.snippet || '').substring(0, 120).replace(/\n/g, ' ');
+          console.log(`${c.cyan(String(resultNum).padStart(2))}. ${c.bold(`[${row.source_table}] ${row.label}${chunkLabel}`)} ${c.dim(`(${(row.score * 100).toFixed(1)}%)`)}`);
+          console.log(`    ${snippet}...\n`);
+        });
+      }
+    }
+
     for (const tbl of TABLES) {
+      if (MEMORY_HITS_COVERED.has(tbl.name)) continue;
       if (!(await tableExists(client, tbl.name))) continue;
 
       const { rows: [{ count }] } = await client.query(`SELECT COUNT(*) FROM ${tbl.name}`);
