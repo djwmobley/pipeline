@@ -43,6 +43,16 @@ async function main() {
   const toolName  = input.tool_name  || '';
   const toolInput = input.tool_input || {};
 
+  // R4 — bypass-on-dispatch. Subagent tool calls always include `agent_id` and
+  // `agent_type` in the stdin payload (verified empirically 2026-04-26 — see
+  // memory project_r4_bypass_signal_2026-04-26). Main-thread (orchestrator)
+  // calls do not. Token-spender rules (tier-mismatch, direct-write threshold,
+  // chain-dispatch) target the orchestrator's choice of action; subagents were
+  // dispatched specifically to do the work and must not be re-constrained by
+  // the same rules. Universal floor (destructive SQL) is about the action and
+  // still applies to all callers — checked below before this guard takes effect.
+  const isSubagentCall = !!input.agent_id;
+
   const activeSkill = require('../lib/active-skill').read();
 
   let config;
@@ -81,6 +91,11 @@ async function main() {
           );
         }
       }
+    }
+
+    // Subagent bypass — rules below target Opus orchestrator choices, not subagent execution.
+    if (isSubagentCall) {
+      process.exit(0);
     }
 
     // ── Universal floor: Edit/Write above line threshold ──────────────────────

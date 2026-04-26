@@ -17,3 +17,4 @@ logs/*.jsonl
 worktrees/
 .claude/.active-skill
 .claude/settings.json
+.scratch/
