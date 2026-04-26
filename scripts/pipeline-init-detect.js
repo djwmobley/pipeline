@@ -12,6 +12,49 @@ const { execFileSync } = require('child_process');
 
 const cwd = process.cwd();
 
+// ─── Sub-command dispatch ─────────────────────────────────────────────────────
+
+const subCommand = process.argv[2];
+
+if (subCommand === 'detect-local-models') {
+  detectLocalModelHosts().then((results) => {
+    for (const r of results) {
+      const status = r.detected ? 'DETECTED' : 'not detected';
+      const modelInfo = r.detected ? ` — ${r.models.length} model(s): ${r.models.slice(0, 5).join(', ')}${r.models.length > 5 ? '...' : ''}` : '';
+      process.stdout.write(`${r.name} (${r.endpoint}): ${status}${modelInfo}\n`);
+    }
+  }).catch((e) => {
+    process.stderr.write(`detect-local-models failed: ${e.message}\n`);
+    process.exit(1);
+  });
+  // Exit before running the rest of the module
+  return;
+}
+
+async function detectLocalModelHosts() {
+  const { getAdapter } = require('./lib/local-model-adapter');
+
+  const probes = [
+    { name: 'Ollama',    hostType: 'ollama',            endpoint: 'http://localhost:11434', apiProtocol: 'ollama_native'     },
+    { name: 'LM Studio', hostType: 'openai_compatible', endpoint: 'http://localhost:1234',  apiProtocol: 'openai_compatible' },
+    { name: 'vLLM',      hostType: 'openai_compatible', endpoint: 'http://localhost:8000',  apiProtocol: 'openai_compatible' },
+    { name: 'llama.cpp', hostType: 'openai_compatible', endpoint: 'http://localhost:8080',  apiProtocol: 'openai_compatible' },
+  ];
+
+  const results = [];
+  for (const probe of probes) {
+    try {
+      const adapter = getAdapter(probe.hostType);
+      const cfg = { endpoint: probe.endpoint, modelName: '', apiProtocol: probe.apiProtocol, timeoutMs: 3000, maxRetries: 0 };
+      const models = await adapter.listModels(cfg);
+      results.push({ ...probe, detected: true, models });
+    } catch (_) {
+      results.push({ ...probe, detected: false, models: [] });
+    }
+  }
+  return results;
+}
+
 function step(name, fn) {
   try {
     return fn();
