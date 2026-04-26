@@ -59,12 +59,12 @@ These six tables were added in 0.3.0-alpha. The schema and embedder are fully wi
 
 | Table | Purpose | Primary text fields (embedding input) | Populator |
 |-------|---------|--------------------------------------|-----------|
-| `memory_entries` | Auto-memory entries — mirrors `~/.claude/projects/<encoded-cwd>/memory/*.md` | `"Memory: {name}\n{description}\n\n{body[0:5000]}"` | User-provided loader (no in-plugin loader shipped — epic #109) |
-| `session_chunks` | Chunked Claude Code session transcripts for semantic recall | `"Session {session_num} {chunk_kind}: {content}"` | User-provided loader (no in-plugin loader shipped — epic #109) |
-| `policy_sections` | Policy/standards docs (CLAUDE.md, etc.) broken into addressable sections | `"Policy: {doc_id} {section_num}: {section_title}\n\n{content}"` | User-provided loader (no in-plugin loader shipped — epic #109) |
-| `checklist_items` | Process checklists at known cadences (pre-commit, release-prep, etc.) | `"Checklist: {checklist_name} [{cadence}]: {title}\n{description}\n{verification_step}"` | User-provided loader (no in-plugin loader shipped — epic #109) |
-| `incidents` | Post-incident notes (`incident_code`, `what_happened`, `what_we_did`, `watch_for`) | `"Incident: {incident_code}: {title}\nWhat happened: {what_happened}\nWhat we did: {what_we_did}\nWatch for: {watch_for}"` | User-provided loader (no in-plugin loader shipped — epic #109) |
-| `corpus_files` | Arbitrary file corpus (PDFs, docs, summaries) for grounded retrieval | `"File: {path}\nDomain: {source_domain}\n\n{summary}"` | User-provided loader (no in-plugin loader shipped — epic #109) |
+| `memory_entries` | Auto-memory entries — mirrors `~/.claude/projects/<encoded-cwd>/memory/*.md` | `"Memory: {name}\n{description}\n\n{body[0:5000]}"` | `node scripts/pipeline-memory-loader.js memory` |
+| `session_chunks` | Chunked Claude Code session transcripts for semantic recall | `"Session {session_num} {chunk_kind}: {content}"` | `node scripts/pipeline-memory-loader.js sessions` |
+| `policy_sections` | Policy/standards docs (CLAUDE.md, etc.) broken into addressable sections | `"Policy: {doc_id} {section_num}: {section_title}\n\n{content}"` | `node scripts/pipeline-memory-loader.js policy` |
+| `checklist_items` | Process checklists at known cadences (pre-commit, release-prep, etc.) | `"Checklist: {checklist_name} [{cadence}]: {title}\n{description}\n{verification_step}"` | User-provided loader (deferred to follow-up epic — see #142 for the three shipped loaders) |
+| `incidents` | Post-incident notes (`incident_code`, `what_happened`, `what_we_did`, `watch_for`) | `"Incident: {incident_code}: {title}\nWhat happened: {what_happened}\nWhat we did: {what_we_did}\nWatch for: {watch_for}"` | User-provided loader (deferred to follow-up epic — see #142 for the three shipped loaders) |
+| `corpus_files` | Arbitrary file corpus (PDFs, docs, summaries) for grounded retrieval | `"File: {path}\nDomain: {source_domain}\n\n{summary}"` | User-provided loader (deferred to follow-up epic — see #142 for the three shipped loaders) |
 
 ---
 
@@ -245,15 +245,26 @@ node scripts/pipeline-embed.js hybrid "destructive operation guard"
 
 ### Loader status
 
-**Pipeline does not ship a loader for these six tables.** What's shipped is the schema (the six `CREATE TABLE` blocks in `setup-knowledge-db.sql`) and the embedder support (the six rows in `pipeline-embed.js`'s `TABLES` array). Anything that populates the tables — files synced into rows, transcripts chunked, policy docs sectioned — is up to the user.
+Pipeline ships loaders for three of the six inter-session memory tables: `memory_entries`, `session_chunks`, and `policy_sections`. The other three (`checklist_items`, `incidents`, `corpus_files`) remain user-provided.
 
-A user-written loader would, broadly, need to:
+The shipped loader is `scripts/pipeline-memory-loader.js`. It reads from filesystem sources, chunks via `scripts/pipeline-chunker.js` to respect `mxbai-embed-large`'s 512-token cap, computes SHA256 content hashes for incremental sync, and embeds in BATCH=8 with per-chunk error isolation:
 
-1. Read its sources (files from `memory/`, session JSONL, policy docs, checklists, etc.) — the exact protocol depends on the source.
-2. Upsert rows into the relevant tables — schema is at `scripts/setup-knowledge-db.sql`.
-3. Either embed inline (call Ollama directly) or rely on the next `pipeline-embed.js index` run.
+| Subcommand | Source | Chunk ceiling |
+|------------|--------|---------------|
+| `memory`   | `~/.claude/projects/<encoded-cwd>/memory/*.md` | 1400 chars (prose) |
+| `sessions` | `~/.claude/projects/<encoded-cwd>/*.jsonl`     | 560 chars (JSONL/tool_result) |
+| `policy`   | project + global `CLAUDE.md`                   | 1400 chars (prose) |
+| `all`      | All three in sequence                          | per-source above |
 
-Whether to ship an opinionated loader inside Pipeline — and if so, what protocol it would follow — is tracked as a design question under epic #109, not a port-existing-code task. Tables remain empty in projects without a loader; `cmdHybrid`'s defensive guards mean the empty tables are silently skipped.
+Flags: `--force` (bypass content_hash skip), `--dry-run` (compute chunks, skip DB writes).
+
+Idempotence: re-running with no source change makes zero Ollama calls. Adding a new memory file or session JSONL embeds only the new content; unchanged rows are skipped via `content_hash` match.
+
+Search across the three loaded tables uses the unified view `v_memory_hits` and surfaces in `node scripts/pipeline-embed.js hybrid` and `... search` commands as a single section labeled "memory (chunked: memory + sessions + policy)" with `[source_table]` prefixes and `chunk N/M` position indicators.
+
+A loader for the remaining three tables (`checklist_items`, `incidents`, `corpus_files`) is deferred — these tables have no natural filesystem source-of-truth; they are populated by pipeline workflow commands rather than file mirrors.
+
+The corresponding embedder swap to a longer-context model (e.g., `bge-m3`) is tracked as Strategy B follow-up and is intentionally out of scope of the chunker/loader release.
 
 ---
 
