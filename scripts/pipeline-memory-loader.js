@@ -124,6 +124,12 @@ function sha256(text) {
 async function embedPending(db, config, table, buildCtx, stats) {
   if (dryRun || !db) return;
 
+  // Allowlist guard — prevent arbitrary table names from reaching SQL
+  const ALLOWED_TABLES = new Set(['memory_entry_chunks', 'session_chunks', 'policy_sections']);
+  if (!ALLOWED_TABLES.has(table)) {
+    throw new Error(`embedPending called with disallowed table: ${table}`);
+  }
+
   // Fetch pending rows — join to parent table for context prefix where needed
   let rows;
   if (table === 'memory_entry_chunks') {
@@ -147,21 +153,35 @@ async function embedPending(db, config, table, buildCtx, stats) {
   for (let i = 0; i < rows.length; i += BATCH) {
     const batch = rows.slice(i, i + BATCH);
     const texts = batch.map(buildCtx);
-    const ids   = batch.map(r => r.id);
 
     try {
       const embeddings = await ollamaEmbed(texts, config && config.knowledge);
+      // Happy path: write all embeddings in the batch
       for (let j = 0; j < batch.length; j++) {
         const vec = `[${embeddings[j].join(',')}]`;
         await db.query(
           `UPDATE ${table} SET embedding = $1 WHERE id = $2`,
-          [vec, ids[j]]
+          [vec, batch[j].id]
         );
         stats.embedded++;
       }
-    } catch (err) {
-      console.error(`  [EMBED ERROR] table=${table} ids=[${ids.join(',')}] err=${err.message}`);
-      stats.errored += batch.length;
+    } catch (batchErr) {
+      // Batch-level failure: fall back to per-chunk individual retry so that
+      // a single oversized chunk doesn't mark healthy chunks as errored.
+      for (let j = 0; j < batch.length; j++) {
+        try {
+          const [vec1] = await ollamaEmbed([texts[j]], config && config.knowledge);
+          const vec = `[${vec1.join(',')}]`;
+          await db.query(
+            `UPDATE ${table} SET embedding = $1 WHERE id = $2`,
+            [vec, batch[j].id]
+          );
+          stats.embedded++;
+        } catch (chunkErr) {
+          stats.errored++;
+          console.error(c.red(`  embed error: table=${table} id=${batch[j].id} chunk_idx=${batch[j].chunk_idx} :: ${chunkErr.message.slice(0, 100)}`));
+        }
+      }
     }
   }
 }
@@ -245,11 +265,12 @@ async function loadMemory(db, config) {
         const stored = existingHashes.get(chunk.chunkIdx);
 
         if (!force && stored === hash) {
-          // Hash match and not forced — preserve existing embedding, skip re-embed
+          // Hash match and not forced — row already exists; ON CONFLICT DO NOTHING
+          // preserves the existing row (including its embedding) unchanged.
           stats.skipped++;
           await db.query(
-            `INSERT INTO memory_entry_chunks (entry_id, chunk_idx, content, content_hash, embedding)
-             VALUES ($1, $2, $3, $4, (SELECT embedding FROM memory_entry_chunks WHERE entry_id = $1 AND chunk_idx = $2))
+            `INSERT INTO memory_entry_chunks (entry_id, chunk_idx, content, content_hash)
+             VALUES ($1, $2, $3, $4)
              ON CONFLICT (entry_id, chunk_idx) DO NOTHING`,
             [entryId, chunk.chunkIdx, chunk.content, hash]
           );
@@ -359,7 +380,17 @@ async function loadSessions(db, config) {
         if (subChunks.length === 0) subChunks.push(content.slice(0, CONST_JSONL_CEILING));
       } else if (Array.isArray(content)) {
         for (const el of content) {
-          const str = typeof el === 'string' ? el : JSON.stringify(el);
+          // Skip non-text elements (images, tool_use refs, tool_result refs) —
+          // they carry no retrievable text and would bloat the chunk store.
+          let str;
+          if (typeof el === 'string') {
+            str = el;
+          } else if (el && typeof el === 'object' && el.type === 'text' && typeof el.text === 'string') {
+            str = el.text;
+          } else {
+            // Non-text element (image, tool_use, tool_result, etc.) — skip
+            continue;
+          }
           if (str.trim().length === 0) continue;
           const pieces = chunkText(str, CONST_JSONL_CEILING, 'prose');
           for (const p of pieces) subChunks.push(p.content);

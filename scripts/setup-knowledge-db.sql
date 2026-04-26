@@ -607,7 +607,7 @@ UNION ALL
   SELECT
     'policy_sections'::text,
     ps.id,
-    ps.id,
+    NULL::integer,
     NULL::integer,
     ps.chunk_idx,
     (SELECT COUNT(*)::integer FROM policy_sections ps2 WHERE ps2.doc_id = ps.doc_id AND ps2.section_num IS NOT DISTINCT FROM ps.section_num) AS total_chunks,
@@ -633,7 +633,7 @@ UNION ALL
   FROM session_chunks sc;
 
 COMMENT ON VIEW v_memory_hits IS
-  'Unified semantic-memory search surface across memory_entry_chunks, policy_sections, session_chunks. Use source_row_id for reliable per-source row linkage; parent_id field is intentionally absent because it is semantically incompatible across source tables (entry_id is a row PK, but session_chunks needed session_num — different concept). source_ordinal carries session_num for session_chunks only.';
+  'Unified semantic-memory search surface across memory_entry_chunks, policy_sections, session_chunks. For policy_sections, source_row_id is NULL because policy chunks have no separate parent table; group on (label, source_table) instead. For session_chunks, source_row_id is sc.id (chunk PK, not a parent FK). For memory_entry_chunks, source_row_id is mc.entry_id (parent FK in memory_entries). source_ordinal carries session_num for session_chunks only.';
 
 -- Checklist items — process gates (pre-commit, release-prep, etc.)
 CREATE TABLE IF NOT EXISTS checklist_items (
