@@ -7,14 +7,13 @@
 3. `[TASK_NAME]` → actual task name from the plan
 4. `[TASK_DESCRIPTION]` → full text of the task from the plan (still pasted — this is the primary input the agent works from)
 5. `[TASK_ISSUE]` → issue number for this task (from build-state.json or plan). Empty string if issue tracking is disabled.
-6. `[GITHUB_REPO]` → `integrations.github.repo` from pipeline.yml. Empty string if issue tracking is disabled.
-7. `[SCRIPTS_DIR]` → path to pipeline's scripts/ directory (absolute)
-8. `[DIRECTORY]` → actual working directory path
-9. `{{TDD_SECTION}}` → If task has `tdd: required`, replace with the content of skills/tdd/SKILL.md. If `tdd: optional` or absent, remove the placeholder line entirely.
-10. `{{FRAMEWORK}}` → Read `project.profile` from pipeline.yml (e.g., `spa`, `fullstack`, `api`). If null, omit the line.
-11. `{{TICKET_CONTEXT}}` → (remediation only) Replace with ticket-reading instructions based on backend. Not remediation → remove the `{{TICKET_CONTEXT}}` line entirely.
+6. `[DIRECTORY]` → actual working directory path
+7. `{{TDD_SECTION}}` → If task has `tdd: required`, replace with the content of skills/tdd/SKILL.md. If `tdd: optional` or absent, remove the placeholder line entirely.
+8. `[FRAMEWORK]` → Read `project.profile` from pipeline.yml (e.g., `spa`, `fullstack`, `api`). If null, omit the line.
+9. `{{TICKET_CONTEXT}}` → (remediation only) Replace with ticket-reading instructions based on backend. Not remediation → remove the `{{TICKET_CONTEXT}}` line entirely.
+10. `[SHA]` → commit SHA recorded by the implementer in the issue comment (extract from "## Implementation" comment body).
 
-**Removed from v1:** `[Scene-setting]`, `{{DECISION_REGISTER}}`, `{{ARCHITECTURAL_CONSTRAINTS}}`, `{{PRIOR_TASKS}}` — the agent reads these from stores directly.
+**Removed from v1:** GITHUB_REPO, SCRIPTS_DIR, DECISION_REGISTER, ARCHITECTURAL_CONSTRAINTS, PRIOR_TASKS — the agent reads these from stores directly.
 
 ```
 Task tool (general-purpose, model: {{MODEL}}):
@@ -115,7 +114,7 @@ Task tool (general-purpose, model: {{MODEL}}):
 
     ## Project Profile
 
-    Framework/profile: {{FRAMEWORK}}
+    Framework/profile: [FRAMEWORK]
 
     **Safety guard:** Never remove security controls (authentication checks,
     input validation, output encoding, CSRF tokens, rate limiting) unless the

@@ -12,7 +12,6 @@ Use this template when dispatching the QA lead verifier to synthesize worker res
 7. `[TEST_COMMAND]` -> `commands.test` from pipeline.yml
 8. `[BROWSER_TESTING]` -> `qa.browser_testing` from pipeline.yml (true/false)
 9. `[DB_VERIFICATION]` -> `qa.db_verification` from pipeline.yml (true/false)
-10. `[SCRIPTS_DIR]` -> path to pipeline's scripts/ directory (absolute)
 
 ```
 Task tool (general-purpose, model: {{MODEL}}):

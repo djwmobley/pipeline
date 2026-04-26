@@ -10,7 +10,7 @@
     {
       "name": "pipeline",
       "description": "Web-first agent workflow engine — content-blind orchestrator routes stateless AI agents through a 13-step quality pipeline with three-store A2A reporting",
-      "version": "0.2.0-alpha",
+      "version": "0.3.0-alpha",
       "source": "./",
       "category": "development"
     }
