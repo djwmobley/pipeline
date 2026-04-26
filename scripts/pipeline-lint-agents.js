@@ -419,6 +419,90 @@ function formatReport(allFindings, templateCount, jsonMode) {
   return lines.join('\n');
 }
 
+// ─── CHECK PROMPT SIZE (LA-LIMIT-001) ───────────────────────────────────────
+//
+// Claude Code's slash-command parser has an empirically-observed ~893-byte
+// limit on heredoc bodies emitted from a command markdown file. Above that
+// the parser silently truncates the body before piping it to the target
+// command's stdin (typically `node [scripts_dir]/platform.js issue ... --stdin`).
+// The 800-byte threshold leaves a 93-byte safety margin.
+//
+// Scope: commands/*.md only. Prompt templates (skills/**/*-prompt.md) and
+// SKILL.md files are not user-invocable slash commands — Opus reads them and
+// dispatches their content via the Agent tool, so the parser limit doesn't
+// apply.
+//
+// Heredoc syntax detected:
+//   <<'TAG' ... TAG    (literal, single-quoted)
+//   <<TAG ... TAG      (expansion enabled)
+//   <<-TAG ... TAG     (strip leading tabs)
+// The closing tag must appear on a line of its own (optionally indented).
+
+const PROMPT_SIZE_LIMIT_BYTES = 800;
+
+function checkPromptSize() {
+  const commandsDir = path.join(PLUGIN_ROOT, 'commands');
+  if (!fs.existsSync(commandsDir)) {
+    console.log(c.green(`  PASS  No commands/ directory.`));
+    return;
+  }
+
+  const targets = [];
+  for (const entry of fs.readdirSync(commandsDir, { withFileTypes: true })) {
+    if (entry.isFile() && entry.name.endsWith('.md')) {
+      targets.push(path.join(commandsDir, entry.name));
+    }
+  }
+
+  const findings = [];
+
+  for (const absPath of targets) {
+    const relPath = path.relative(PLUGIN_ROOT, absPath).replace(/\\/g, '/');
+    const lines = fs.readFileSync(absPath, 'utf8').split('\n');
+
+    for (let i = 0; i < lines.length; i++) {
+      const m = lines[i].match(/<<-?\s*'?([A-Z][A-Z0-9_]*)'?/);
+      if (!m) continue;
+      const tag = m[1];
+      const closeRe = new RegExp(`^\\s*${tag}\\s*$`);
+
+      let bytes = 0;
+      let closed = false;
+      let closeIdx = -1;
+      for (let j = i + 1; j < lines.length; j++) {
+        if (closeRe.test(lines[j])) { closed = true; closeIdx = j; break; }
+        bytes += Buffer.byteLength(lines[j] + '\n', 'utf8');
+      }
+
+      if (closed && bytes > PROMPT_SIZE_LIMIT_BYTES) {
+        findings.push({
+          id:          'LA-LIMIT-001',
+          severity:    'HIGH',
+          confidence:  'HIGH',
+          file:        relPath,
+          line:        i + 1,
+          checkId:     'heredoc-exceeds-size-limit',
+          message:     `Heredoc <<${tag} body is ${bytes} bytes (limit ${PROMPT_SIZE_LIMIT_BYTES}). Claude Code's slash-command parser truncates heredoc bodies above ~893 bytes. Move the body to an external file (templates/ or skills/) and read it at runtime.`,
+        });
+      }
+
+      if (closed) i = closeIdx; // skip past this heredoc to avoid nested-tag confusion
+    }
+  }
+
+  if (findings.length === 0) {
+    console.log(c.green(`  PASS  Scanned ${targets.length} command files, no heredoc exceeds ${PROMPT_SIZE_LIMIT_BYTES} bytes.`));
+    console.log(c.bold(c.green(`\nAll ${targets.length} commands pass LA-LIMIT-001.`)));
+    return;
+  }
+
+  for (const f of findings) {
+    console.log(c.red(formatFinding(f)));
+  }
+  console.log(c.bold(c.red(`\n${findings.length} heredoc(s) exceed the ${PROMPT_SIZE_LIMIT_BYTES}-byte limit.`)));
+  process.exit(1);
+}
+
 // ─── CHECK OPERATION_CLASS ──────────────────────────────────────────────────
 
 function checkOperationClass() {
@@ -482,9 +566,15 @@ function main() {
     return;
   }
 
+  if (command === 'check-prompt-size') {
+    checkPromptSize();
+    return;
+  }
+
   if (command !== 'lint') {
     console.log(`Usage: node pipeline-lint-agents.js lint [--changed] [--json] [--files "f1 f2"] [--exclude "pattern1,pattern2"]`);
     console.log(`       node pipeline-lint-agents.js check-operation-class`);
+    console.log(`       node pipeline-lint-agents.js check-prompt-size`);
     process.exit(0);
   }
 
