@@ -10,6 +10,7 @@
  *
  * Usage:
  *   node platform.js issue create --title "Fix bug" --body "Description" --labels "pipeline,roadmap"
+ *   node platform.js issue create --title "Fix bug" --stdin          # Read body from stdin
  *   node platform.js issue comment <ref> "Comment text"
  *   node platform.js issue comment <ref> --stdin           # Read body from stdin
  *   node platform.js issue close <ref>
@@ -20,6 +21,7 @@
  *   node platform.js issue search <query> --state open
  *
  *   node platform.js pr create --title "feat: X" --body "Description" --source feat/x --target main
+ *   node platform.js pr create --title "feat: X" --stdin --source feat/x --target main
  *   node platform.js pr merge <ref> --squash
  *   node platform.js pr comment <ref> "Review findings"
  *   node platform.js pr comment <ref> --stdin              # Read body from stdin
