@@ -28,6 +28,8 @@ const {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
+let warnedThisSession = false;
+
 async function main() {
   let input;
   try {
@@ -37,6 +39,10 @@ async function main() {
     input = JSON.parse(raw);
   } catch (e) {
     logError(`Failed to parse stdin: ${e.message}`);
+    if (!warnedThisSession) {
+      process.stderr.write('[routing-check] WARNING: stdin JSON parse failed; hook bypassed for this call.\n');
+      warnedThisSession = true;
+    }
     process.exit(0); // Fail open — malformed input should not block work
   }
 

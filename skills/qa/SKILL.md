@@ -54,33 +54,77 @@ Read all available inputs:
    - What timing/ordering assumptions exist?
 3. For each risk, write a P0 test scenario
 
-### Step 3 — Generate QA Section
+### Step 3 — Generate QA Section (anchored format — REQUIRED)
 
-Output a `## QA Strategy` section for the implementation plan:
+Every Risk, P0 Test Scenario, and Seam Test row MUST start with `[Key: Value]` anchor tags that resolve against the plan body and the filesystem. Unanchored rows and rows whose anchors do not resolve are rejected by `scripts/pipeline-lint-plan.js` (Step 4 below). Reasoning agents have historically fabricated Task IDs, file paths, and function signatures; the anchor format makes fabrication structurally detectable.
+
+**Required anchors per row type:**
+
+| Row type | Required | Optional |
+|----------|----------|----------|
+| Risk (R&lt;n&gt;) | `[Task: N.M]` ≥1 OR `[Constraint: DECISION-NNN]` ≥1 | `[Files: ...]` |
+| P0 Test Scenario (TS-NNN) | `[Risk: R&lt;n&gt;]` ≥1 AND `[Task: N.M]` ≥1 | `[Files: ...]`, `[Function: name]`, `[Field: name]` |
+| Seam Test (SEAM-NNN) | `[Tasks: N.M, P.Q]` ≥2 AND `[Files: a, b]` ≥2 | `[Function: name]` |
+
+**Anchor value formats:**
+- `[Task: 1.5]` or `[Tasks: 1.5, 2.2]` — must resolve to `### Task N.M:` headers in the plan
+- `[Files: scripts/foo.js]` or `[Files: scripts/foo.js, scripts/bar.js]` — each path must exist on disk OR appear in a cited Task's `**Files:**` block
+- `[Risk: R3]` or `[Risks: R1, R2]` — must resolve to a defined `**R&lt;n&gt;**` row in this same QA section
+- `[Constraint: DECISION-002]` — must resolve to a `**DECISION-NNN:**` line in Architectural Constraints → Decisions for This Feature
+- `[Function: getChunkTables]` or `[Field: maxRetries]` — must appear verbatim in a code block of any cited Task
+
+**Output format:**
+
+Risk rows describe **failure mode only** — `Boundary`, `Failure mode`, `Severity`. The mitigation IS the cited Task; do not write `Mitigation:` / `Mitigated by:` / `Implementation:` / `Solution:` prose. The linter rejects rows containing these words. Mitigation prose is the most fabrication-prone surface; if you find yourself wanting to describe the fix, the fix lives in the cited Task and that is enough.
 
 ```markdown
 ## QA Strategy
 
 ### Risk Assessment
-1. [Risk]: [description — e.g., "Cart state persists after session expiry, causing stale checkout"]
-2. [Risk]: [description]
-3. [Risk]: [description]
-4. [Risk]: [description]
-5. [Risk]: [description]
+
+- **R1** [Task: 1.5] [Files: scripts/setup-knowledge-db.sql] — Boundary: setup-knowledge-db.sql ↔ existing session_chunks rows. Failure mode: UNIQUE constraint creation collides with pre-migration duplicate rows. Severity: CRITICAL.
+- **R2** [Task: 1.6] — Boundary: routing-check.js process lifecycle ↔ subagent dispatch. Failure mode: warning suppression flag is in-process; if Claude Code spawns a fresh hook process per invocation, "once-per-session" semantics never trigger. Severity: HIGH.
+- **R3** [Constraint: DECISION-002] — Boundary: embedWithRetry shared helper ↔ embedPending and cmdIndex callers. Failure mode: extraction loses caller-supplied options object semantics. Severity: HIGH.
+- (5 risks total, ordered by severity)
 
 ### P0 Test Scenarios
-- TS-001: [name] — [what it verifies, business behavior]. Type: [unit/integration/e2e]. Covers risk: [N].
-- TS-002: [name] — [what it verifies]. Type: [type]. Covers risk: [N].
-- ...
+
+- **TS-001** [Risk: R1] [Task: 1.5] [Files: scripts/test-chunker.js, scripts/setup-knowledge-db.sql] — Business behavior verified. Type: integration.
+- **TS-002** [Risks: R1, R2] [Task: 1.5] [Function: addUniqueConstraint] — ...
+- (6-10 scenarios; each maps to one or more risks; at least one per phase)
 
 ### Seam Tests
-- SEAM-001: [integration boundary] — [what could go wrong at this boundary]
-- SEAM-002: [integration boundary] — [what could go wrong]
-- ...
+
+- **SEAM-001** [Tasks: 1.2, 2.4] [Files: commands/finish.md, scripts/pipeline-memory-loader.js] — Boundary description.
+- (3-5 boundaries)
 
 ### Test Intent Rule
 Every test MUST include a comment: `// Verifies: [business behavior] (TS-NNN)`
 ```
+
+**Anti-fabrication rules:**
+
+1. **Never invent a Task ID.** If a risk applies to a task that does not exist in the plan, the risk is out of scope — drop it or pick a different boundary.
+2. **Never invent a file path.** If a risk involves a file the plan never edits or creates, that risk is not actually in scope for this plan — drop it.
+3. **Never invent a function or field signature.** Read the cited Task's body verbatim to confirm names. The linter checks that `[Function: name]` and `[Field: name]` tokens appear in the cited Task's body. If a field is defined in a Decision (e.g., `maxRetries` in DECISION-002), anchor the field reference to the Decision: `[Constraint: DECISION-002]`, not to a Task that doesn't name it.
+4. **Never invent a state-persistence design.** If a risk's failure-mode description requires naming a mechanism the cited Task does not implement (e.g., "writes to `.claude/pipeline.yml` flag" when the Task uses an in-process flag), the description is fabricated — re-read the Task and name the actual mechanism.
+5. **No Mitigation: / Mitigated by: / Implementation: / Solution: prose.** The linter rejects these keywords in Risk rows. The mitigation IS the cited Task. State the boundary and the failure mode; the cited Task IS the answer.
+
+If you cannot anchor a risk, the risk is not real for this plan. Drop it. Do not write prose that "sounds plausible."
+
+### Step 4 — Lint the QA section (REQUIRED gate)
+
+After writing the QA section, run:
+
+```bash
+node scripts/pipeline-lint-plan.js --plan [plan path]
+```
+
+Exit 0 = pass. Exit 1 = findings. Findings are line-numbered and actionable.
+
+**On findings:** regenerate ONLY the offending rows with the lint output as input context. Do not rewrite the entire section. Re-run the linter. Iterate up to 3 times; if findings persist, surface to the orchestrator with the lint output and stop.
+
+**On pass:** the QA section is ready for the plan-reviewer dispatch.
 
 Build agents see this section alongside their tasks and write tests that map to it.
 

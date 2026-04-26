@@ -147,9 +147,19 @@ After tasks, include an ordered build sequence:
 
 After writing the complete plan:
 1. Verify every spec requirement traces to at least one task — missing coverage MUST be fixed before review
-2. Dispatch plan-reviewer subagent (see plan-reviewer-prompt.md)
-3. If Issues Found: fix, re-dispatch until Approved
-4. If loop exceeds 3 iterations, surface to human
+2. **Run the structural linter — REQUIRED gate before review:**
+
+   ```bash
+   node scripts/pipeline-lint-plan.js --plan [plan path]
+   ```
+
+   The linter validates that every anchor tag in the QA Strategy section (Task IDs, file paths, function/field names, risk references, decision references) resolves against the plan body and the filesystem. Reasoning agents fabricate these references; the linter makes fabrication structurally detectable. Exit 0 = pass; exit 1 = findings.
+
+   On findings: regenerate the offending rows in the QA section with the lint output as input context (do not rewrite the entire section). Re-run the linter. Iterate up to 3 times. If findings persist, surface to the orchestrator with the lint output and stop — do NOT advance to plan-reviewer dispatch with unresolved anchor failures.
+
+3. Dispatch plan-reviewer subagent (see plan-reviewer-prompt.md) — only after the linter exits 0
+4. If Issues Found: fix, re-dispatch until Approved
+5. If loop exceeds 3 iterations, surface to human
 
 ## Execution Handoff
 

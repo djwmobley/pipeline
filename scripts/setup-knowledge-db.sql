@@ -526,6 +526,28 @@ ALTER TABLE policy_sections
 ALTER TABLE session_chunks
   ADD COLUMN IF NOT EXISTS content_hash TEXT;
 
+-- session_chunks — pre-flight: detect duplicates that would break the new UNIQUE constraint
+DO $$
+DECLARE dup_count INTEGER;
+BEGIN
+  SELECT COUNT(*) INTO dup_count FROM (
+    SELECT session_id, chunk_idx, COUNT(*) c
+    FROM session_chunks
+    WHERE session_id IS NOT NULL
+    GROUP BY session_id, chunk_idx HAVING COUNT(*) > 1
+  ) d;
+  IF dup_count > 0 THEN
+    RAISE EXCEPTION 'session_chunks has % duplicate (session_id, chunk_idx) rows — dedupe before applying UNIQUE constraint', dup_count;
+  END IF;
+END $$;
+
+-- session_chunks — prevent duplicate (session_id, chunk_idx) pairs
+DO $$ BEGIN
+  ALTER TABLE session_chunks
+    ADD CONSTRAINT session_chunks_session_chunk_unique UNIQUE (session_id, chunk_idx);
+EXCEPTION WHEN duplicate_table THEN NULL;
+END $$;
+
 -- 3. memory_entry_chunks — new sibling table
 CREATE TABLE IF NOT EXISTS memory_entry_chunks (
   id          SERIAL PRIMARY KEY,

@@ -339,6 +339,23 @@ If there was no issue to close, omit the issue portion:
 Shipped: [task title] (task #[id])
 ```
 
+**Auto-load memory** — read `finish.auto_load_memory` from `.claude/pipeline.yml` (default `false`).
+
+If `true`:
+```bash
+node '[SCRIPTS_DIR]/pipeline-memory-loader.js' all --quiet
+```
+If the loader exits non-zero, print:
+```
+Memory loader exited with error — merge succeeded, embedding skipped.
+```
+and continue.
+
+If `false` or absent, print:
+```
+Run node '[SCRIPTS_DIR]/pipeline-memory-loader.js' all to embed this session.
+```
+
 `$SCRIPTS_DIR` is already resolved in the "Persist to knowledge tier" section — use the same value here.
 
 | Rationalization | Reality |
