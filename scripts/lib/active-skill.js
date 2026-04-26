@@ -14,8 +14,7 @@
 const fs   = require('fs');
 const path = require('path');
 
-const STALENESS_MS  = 60000;
-const FALLBACK      = 'conversation_mode';
+const FALLBACK = 'conversation_mode';
 
 function getProjectRoot() {
   if (process.env.PROJECT_ROOT) return process.env.PROJECT_ROOT;
@@ -46,17 +45,17 @@ function write(name) {
 
 /**
  * Read the active skill name.
- * Returns FALLBACK when file missing, stale (>60 s), or malformed.
+ * Returns FALLBACK when file missing or malformed. The marker is authoritative
+ * until overwritten — long-running orchestrator turns must not be told they're
+ * in conversation_mode just because a wall-clock window elapsed. Stop hook
+ * clears the marker; SessionStart writes the FALLBACK marker on resume.
  * @returns {string}
  */
 function read() {
   try {
-    const raw  = fs.readFileSync(markerPath(), 'utf8');
-    const obj  = JSON.parse(raw);
-    if (!obj || !obj.ts) return FALLBACK;
-    const age  = Date.now() - Date.parse(obj.ts);
-    if (!Number.isFinite(age) || age > STALENESS_MS) return FALLBACK;
-    return obj.skill || FALLBACK;
+    const raw = fs.readFileSync(markerPath(), 'utf8');
+    const obj = JSON.parse(raw);
+    return (obj && obj.skill) || FALLBACK;
   } catch (_) {
     return FALLBACK;
   }
