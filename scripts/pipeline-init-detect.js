@@ -42,14 +42,15 @@ async function detectLocalModelHosts() {
   ];
 
   const results = [];
-  for (const probe of probes) {
+  for (const entry of probes) {
     try {
-      const adapter = getAdapter(probe.hostType);
-      const cfg = { endpoint: probe.endpoint, modelName: '', apiProtocol: probe.apiProtocol, timeoutMs: 3000, maxRetries: 0 };
+      const adapter = getAdapter(entry.hostType);
+      const cfg = { endpoint: entry.endpoint, modelName: '', apiProtocol: entry.apiProtocol, timeoutMs: 3000, maxRetries: 0 };
+      await adapter.probe(cfg);  // throws on unreachable or non-200
       const models = await adapter.listModels(cfg);
-      results.push({ ...probe, detected: true, models });
+      results.push({ ...entry, detected: true, models });
     } catch (_) {
-      results.push({ ...probe, detected: false, models: [] });
+      results.push({ ...entry, detected: false, models: [] });
     }
   }
   return results;
