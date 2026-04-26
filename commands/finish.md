@@ -5,7 +5,7 @@ description: Branch completion workflow — verify tests, present options, execu
 
 ```bash
 # Set active skill for routing enforcement
-export PIPELINE_ACTIVE_SKILL=orientation
+node scripts/lib/active-skill.js write orientation
 ```
 
 
@@ -304,7 +304,7 @@ If `build.artifact` is null or "source", skip this section entirely — source-o
 2. Query Postgres for the roadmap task:
    ```bash
    PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js query "$(cat <<'SQL'
-   SELECT * FROM tasks WHERE issue_ref = [N] AND category = 'roadmap'
+   SELECT * FROM tasks WHERE github_issue = [N] AND category = 'roadmap'
    SQL
    )"
    ```

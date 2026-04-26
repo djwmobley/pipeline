@@ -5,7 +5,7 @@ description: Run the project test suite and produce a structured pass/fail repor
 
 ```bash
 # Set active skill for routing enforcement
-export PIPELINE_ACTIVE_SKILL=tdd
+node scripts/lib/active-skill.js write tdd
 ```
 
 

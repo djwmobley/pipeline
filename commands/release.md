@@ -5,7 +5,7 @@ description: Changelog generation + version bump + git tag + optional deploy tri
 
 ```bash
 # Set active skill for routing enforcement
-export PIPELINE_ACTIVE_SKILL=orientation
+node scripts/lib/active-skill.js write orientation
 ```
 
 

@@ -5,7 +5,7 @@ description: "QA — test planning and verification. Two modes: 'plan' (pre-buil
 
 ```bash
 # Set active skill for routing enforcement
-export PIPELINE_ACTIVE_SKILL=qa
+node scripts/lib/active-skill.js write qa
 ```
 
 

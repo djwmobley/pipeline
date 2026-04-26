@@ -5,7 +5,7 @@ description: Chain pipeline steps — runs steps sequentially, honoring gates an
 
 ```bash
 # Set active skill for routing enforcement
-export PIPELINE_ACTIVE_SKILL=building
+node scripts/lib/active-skill.js write building
 ```
 
 

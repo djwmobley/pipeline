@@ -25,7 +25,7 @@ async function main() {
 
   const config = loadConfig();
 
-  if (config.tier === 'postgres') {
+  if (config.knowledge.tier === 'postgres') {
     await reportFromPostgres(config, days, asJson);
   } else {
     reportFromJsonl(config, days, asJson);

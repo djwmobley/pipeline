@@ -15,3 +15,5 @@ Thumbs.db
 logs/*.jsonl
 .worktrees/
 worktrees/
+.claude/.active-skill
+.claude/settings.json

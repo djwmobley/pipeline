@@ -5,7 +5,7 @@ description: Deterministic structural linting for agent prompt templates — run
 
 ```bash
 # Set active skill for routing enforcement
-export PIPELINE_ACTIVE_SKILL=lint-agents
+node scripts/lib/active-skill.js write lint-agents
 ```
 
 

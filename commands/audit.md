@@ -5,7 +5,7 @@ description: Full codebase review — Phase 0 grep + parallel sector agents + sy
 
 ```bash
 # Set active skill for routing enforcement
-export PIPELINE_ACTIVE_SKILL=auditing
+node scripts/lib/active-skill.js write auditing
 ```
 
 

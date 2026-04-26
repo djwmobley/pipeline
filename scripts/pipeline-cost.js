@@ -269,8 +269,8 @@ async function cmdRecord(flags) {
   const notes = typeof flags.notes === 'string' ? flags.notes : null;
 
   const config = loadConfig();
-  if (config.tier !== 'postgres') {
-    process.stderr.write(`knowledge.tier is '${config.tier}', not 'postgres' — skipping DB insert.\n`);
+  if (config.knowledge.tier !== 'postgres') {
+    process.stderr.write(`knowledge.tier is '${config.knowledge.tier}', not 'postgres' — skipping DB insert.\n`);
     process.stdout.write(JSON.stringify(result, null, 2) + '\n');
     return;
   }

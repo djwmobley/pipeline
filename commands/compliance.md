@@ -5,7 +5,7 @@ description: Compliance framework mapping — map red team findings to regulator
 
 ```bash
 # Set active skill for routing enforcement
-export PIPELINE_ACTIVE_SKILL=compliance
+node scripts/lib/active-skill.js write compliance
 ```
 
 
@@ -36,7 +36,7 @@ If `compliance.enabled` is false or not present: "Compliance mapping is not enab
 If `knowledge.tier` is `"postgres"` AND `integrations.postgres.enabled`:
 
 ```bash
-node scripts/pipeline-db.js query "SELECT topic, decision, reason FROM decisions WHERE topic ILIKE '%compliance%' OR topic ILIKE '%audit%' OR topic ILIKE '%regulatory%' OR topic ILIKE '%framework%' ORDER BY created_at DESC LIMIT 10"
+PROJECT_ROOT=$(pwd) node scripts/pipeline-db.js query "SELECT topic, decision, reason FROM decisions WHERE topic ILIKE '%compliance%' OR topic ILIKE '%audit%' OR topic ILIKE '%regulatory%' OR topic ILIKE '%framework%' ORDER BY created_at DESC LIMIT 10"
 ```
 
 If `knowledge.tier` is `"files"`:

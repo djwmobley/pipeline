@@ -5,7 +5,7 @@ description: Full markdown health check — file hygiene, information architectu
 
 ```bash
 # Set active skill for routing enforcement
-export PIPELINE_ACTIVE_SKILL=markdown-review
+node scripts/lib/active-skill.js write markdown-review
 ```
 
 

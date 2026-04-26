@@ -5,7 +5,7 @@ description: Create an isolated git worktree for feature work
 
 ```bash
 # Set active skill for routing enforcement
-export PIPELINE_ACTIVE_SKILL=orientation
+node scripts/lib/active-skill.js write orientation
 ```
 
 

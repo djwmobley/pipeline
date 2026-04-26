@@ -5,7 +5,7 @@ description: Targeted code simplification — reviews specific files for SOLID v
 
 ```bash
 # Set active skill for routing enforcement
-export PIPELINE_ACTIVE_SKILL=reviewing
+node scripts/lib/active-skill.js write reviewing
 ```
 
 

@@ -31,7 +31,7 @@ async function main() {
 
   const toolName  = input.tool_name  || '';
   const toolInput = input.tool_input || {};
-  const activeSkill = process.env.PIPELINE_ACTIVE_SKILL || 'conversation_mode';
+  const activeSkill = require('../lib/active-skill').read();
 
   let config;
   try { config = loadConfig(); } catch (_) { process.exit(0); }

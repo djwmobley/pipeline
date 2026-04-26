@@ -5,7 +5,7 @@ description: Full security loop — red team, remediate, purple team with user g
 
 ```bash
 # Set active skill for routing enforcement
-export PIPELINE_ACTIVE_SKILL=redteam
+node scripts/lib/active-skill.js write redteam
 ```
 
 

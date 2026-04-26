@@ -14,7 +14,12 @@
       "Bash(node /c/Users/djwmo/dev/pipeline/scripts/platform.js pr create --title 'fix\\(init\\): Playwright detection false-negative on Windows via npx.cmd' --source fix/integrations-npx-windows --target main --stdin)",
       "Skill(pipeline:debate)",
       "Skill(pipeline:plan)",
-      "Skill(pipeline:build)"
+      "Skill(pipeline:build)",
+      "Bash(mkdir -p C:/Users/djwmo/AppData/Local/Temp/routing-test-debug/.claude)",
+      "Bash(cat)",
+      "Read(//c/Users/djwmo/AppData/Local/Temp/routing-test-debug/**)",
+      "Bash(rm /c/Users/djwmo/.claude/projects/C--Users-djwmo-dev-pipeline/memory/project_pending_merge.md /c/Users/djwmo/.claude/projects/C--Users-djwmo-dev-pipeline/memory/project_mr_v2_session.md)",
+      "Read(//c/Users/djwmo/.claude/projects/C--Users-djwmo-dev-pipeline/memory/**)"
     ]
   }
 }

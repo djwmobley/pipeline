@@ -5,7 +5,7 @@ description: Knowledge DB operations — setup, status, search, session recordin
 
 ```bash
 # Set active skill for routing enforcement
-export PIPELINE_ACTIVE_SKILL=script_exec
+node scripts/lib/active-skill.js write conversation_mode
 ```
 
 

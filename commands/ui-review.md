@@ -5,7 +5,7 @@ description: Capture a screenshot and analyze the UI — layout, hit targets, te
 
 ```bash
 # Set active skill for routing enforcement
-export PIPELINE_ACTIVE_SKILL=reviewing
+node scripts/lib/active-skill.js write reviewing
 ```
 
 

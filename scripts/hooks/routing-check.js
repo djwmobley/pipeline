@@ -9,7 +9,6 @@
  *         (Claude Code falls through on hook error — this is intentional).
  *
  * Environment:
- *   PIPELINE_ACTIVE_SKILL — skill directory name (e.g., "building"). If unset: "conversation_mode".
  *   PIPELINE_DIR          — root of pipeline plugin (default: two levels above this script).
  *   PROJECT_ROOT          — root of the user project (default: walk up from cwd).
  */
@@ -44,7 +43,7 @@ async function main() {
   const toolName  = input.tool_name  || '';
   const toolInput = input.tool_input || {};
 
-  const activeSkill = process.env.PIPELINE_ACTIVE_SKILL || 'conversation_mode';
+  const activeSkill = require('../lib/active-skill').read();
 
   let config;
   try {
@@ -62,7 +61,8 @@ async function main() {
   try {
     // ── Universal floor: Bash SQL/psql patterns ───────────────────────────────
     if (toolName === 'Bash') {
-      const cmd = toolInput.command || '';
+      // Array guard: Claude Code may pass command as an array; join so RegExp.test() doesn't coerce via Array.toString()
+      const cmd = Array.isArray(toolInput.command) ? toolInput.command.join(' ') : (toolInput.command || '');
       const patterns = config.routing.universal_floor.bash_block_patterns;
       for (const pat of patterns) {
         if (new RegExp(pat).test(cmd)) {
@@ -140,9 +140,10 @@ async function main() {
       if (tier && tier !== 'mixed') {
         const allowed = resolveAllowedModels(tier, skillFm.allowed_models);
         const requested = toolInput.model;
-        // Check if requested model matches any allowed name (substring match for partial names)
+        // Prefix match delimited by '-' or '@' prevents false positives like
+        // allowed='haiku-Y' matching requested='haiku-X' (both start with 'haiku-').
         const isAllowed = allowed.some(a =>
-          a === requested || requested.startsWith(a) || a.startsWith(requested)
+          a === requested || requested.startsWith(a + '-') || requested.startsWith(a + '@')
         );
         if (!isAllowed && allowed.length > 0) {
           writeViolation({

@@ -5,7 +5,7 @@ description: Per-change quality review — evaluates code quality with severity 
 
 ```bash
 # Set active skill for routing enforcement
-export PIPELINE_ACTIVE_SKILL=reviewing
+node scripts/lib/active-skill.js write reviewing
 ```
 
 

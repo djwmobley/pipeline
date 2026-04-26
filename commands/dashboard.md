@@ -5,7 +5,7 @@ description: Generate static HTML project dashboard — snapshot of phase, tasks
 
 ```bash
 # Set active skill for routing enforcement
-export PIPELINE_ACTIVE_SKILL=dashboard
+node scripts/lib/active-skill.js write dashboard
 ```
 
 

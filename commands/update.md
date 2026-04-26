@@ -5,7 +5,7 @@ description: Update pipeline config — re-detect integrations, change commands,
 
 ```bash
 # Set active skill for routing enforcement
-export PIPELINE_ACTIVE_SKILL=orientation
+node scripts/lib/active-skill.js write orientation
 ```
 
 
@@ -62,59 +62,61 @@ Then follow the chosen route below.
 
 Re-run all integration probes (single script to avoid parallel-cancel issues):
 
-```bash
-echo "=== ENV VARS ==="
-echo "SENTRY_AUTH_TOKEN=${SENTRY_AUTH_TOKEN:+SET}"
-echo "POSTHOG_API_KEY=${POSTHOG_API_KEY:+SET}"
-echo "GAMMA_API_KEY=${GAMMA_API_KEY:+SET}"
-echo "GITHUB_TOKEN=${GITHUB_TOKEN:+SET}"
+1. Use the Write tool to create `/tmp/pipeline-update-probes.sh` with this content:
+   ```sh
+   echo "=== ENV VARS ==="
+   echo "SENTRY_AUTH_TOKEN=${SENTRY_AUTH_TOKEN:+SET}"
+   echo "POSTHOG_API_KEY=${POSTHOG_API_KEY:+SET}"
+   echo "GAMMA_API_KEY=${GAMMA_API_KEY:+SET}"
+   echo "GITHUB_TOKEN=${GITHUB_TOKEN:+SET}"
 
-echo "=== POSTGRES DETECTION ==="
-PG_READY=""
-if command -v pg_isready >/dev/null 2>&1; then
-  PG_READY="pg_isready"
-  echo "pg_isready: on PATH"
-else
-  for d in \
-    "/c/Program Files/PostgreSQL"/*/bin \
-    "/c/Program Files (x86)/PostgreSQL"/*/bin \
-    "/usr/lib/postgresql"/*/bin \
-    "/opt/homebrew/bin" \
-    "/usr/local/bin"; do
-    if test -f "$d/pg_isready" || test -f "$d/pg_isready.exe"; then
-      PG_READY="$d/pg_isready"
-      echo "pg_isready: found at $d (not on PATH)"
-      break
-    fi
-  done
-  test -z "$PG_READY" && echo "pg_isready: not found"
-fi
-for d in \
-  "/c/Program Files/PostgreSQL"/* \
-  "/c/Program Files (x86)/PostgreSQL"/* \
-  "/usr/lib/postgresql"/* \
-  "/opt/homebrew/opt/postgresql"*; do
-  test -d "$d" 2>/dev/null && echo "pg_install: $d"
-done
-if test -n "$PG_READY"; then
-  "$PG_READY" -h localhost -p 5432 2>/dev/null && echo "postgres_5432: accepting connections" || echo "postgres_5432: not responding"
-else
-  (echo > /dev/tcp/localhost/5432) 2>/dev/null && echo "postgres_5432: port open" || echo "postgres_5432: closed"
-fi
-for port in 5433 5434 54320; do
-  (echo > /dev/tcp/localhost/$port) 2>/dev/null && echo "postgres_alt_port: $port open" || true
-done
+   echo "=== POSTGRES DETECTION ==="
+   PG_READY=""
+   if command -v pg_isready >/dev/null 2>&1; then
+     PG_READY="pg_isready"
+     echo "pg_isready: on PATH"
+   else
+     for d in \
+       "/c/Program Files/PostgreSQL"/*/bin \
+       "/c/Program Files (x86)/PostgreSQL"/*/bin \
+       "/usr/lib/postgresql"/*/bin \
+       "/opt/homebrew/bin" \
+       "/usr/local/bin"; do
+       if test -f "$d/pg_isready" || test -f "$d/pg_isready.exe"; then
+         PG_READY="$d/pg_isready"
+         echo "pg_isready: found at $d (not on PATH)"
+         break
+       fi
+     done
+     test -z "$PG_READY" && echo "pg_isready: not found"
+   fi
+   for d in \
+     "/c/Program Files/PostgreSQL"/* \
+     "/c/Program Files (x86)/PostgreSQL"/* \
+     "/usr/lib/postgresql"/* \
+     "/opt/homebrew/opt/postgresql"*; do
+     test -d "$d" 2>/dev/null && echo "pg_install: $d"
+   done
+   if test -n "$PG_READY"; then
+     "$PG_READY" -h localhost -p 5432 2>/dev/null && echo "postgres_5432: accepting connections" || echo "postgres_5432: not responding"
+   else
+     (echo > /dev/tcp/localhost/5432) 2>/dev/null && echo "postgres_5432: port open" || echo "postgres_5432: closed"
+   fi
+   for port in 5433 5434 54320; do
+     (echo > /dev/tcp/localhost/$port) 2>/dev/null && echo "postgres_alt_port: $port open" || true
+   done
 
-echo "=== OTHER SERVICES ==="
-curl -s --connect-timeout 2 http://localhost:11434/api/tags 2>&1 | head -1 || echo "ollama: no"
-curl -s --connect-timeout 2 http://localhost:9222/json/version 2>&1 | head -1 || echo "chrome: no"
+   echo "=== OTHER SERVICES ==="
+   curl -s --connect-timeout 2 http://localhost:11434/api/tags 2>&1 | head -1 || echo "ollama: no"
+   curl -s --connect-timeout 2 http://localhost:9222/json/version 2>&1 | head -1 || echo "chrome: no"
 
-echo "=== CLI TOOLS ==="
-npx playwright --version 2>/dev/null || echo "playwright: no"
-gh --version 2>/dev/null || echo "gh: no"
+   echo "=== CLI TOOLS ==="
+   npx playwright --version 2>/dev/null || echo "playwright: no"
+   gh --version 2>/dev/null || echo "gh: no"
 
-echo "=== DONE ==="
-```
+   echo "=== DONE ==="
+   ```
+2. Run: `bash /tmp/pipeline-update-probes.sh`
 
 Compare results against current config. Show a diff:
 
@@ -164,84 +166,86 @@ Update only the `commands` section.
 
 Run this detection script to understand what's actually in the project:
 
-```bash
-echo "=== FRAMEWORK DETECTION ==="
-# JS/TS frameworks
-for f in next.config.js next.config.ts next.config.mjs; do test -f "$f" && echo "FRAMEWORK: nextjs"; done
-for f in nuxt.config.ts nuxt.config.js; do test -f "$f" && echo "FRAMEWORK: nuxt"; done
-for f in svelte.config.js svelte.config.ts; do test -f "$f" && echo "FRAMEWORK: sveltekit"; done
-for f in remix.config.js remix.config.ts; do test -f "$f" && echo "FRAMEWORK: remix"; done
-for f in astro.config.mjs astro.config.ts; do test -f "$f" && echo "FRAMEWORK: astro"; done
-test -f angular.json && echo "FRAMEWORK: angular"
-test -f capacitor.config.ts -o -f capacitor.config.json && echo "FRAMEWORK: capacitor"
-test -f package.json && grep -q '"expo"' package.json 2>/dev/null && echo "FRAMEWORK: expo"
-test -f package.json && grep -q '"react-native"' package.json 2>/dev/null && echo "FRAMEWORK: react-native"
-test -f package.json && grep -q '"express"' package.json 2>/dev/null && echo "FRAMEWORK: express"
-test -f package.json && grep -q '"fastify"' package.json 2>/dev/null && echo "FRAMEWORK: fastify"
-test -f package.json && grep -q '"hono"' package.json 2>/dev/null && echo "FRAMEWORK: hono"
-test -f package.json && grep -q '"koa"' package.json 2>/dev/null && echo "FRAMEWORK: koa"
-test -f package.json && grep -q '"@ionic"' package.json 2>/dev/null && echo "FRAMEWORK: ionic"
-test -f ionic.config.json && echo "FRAMEWORK: ionic"
-# React + Vite (not a meta-framework)
-test -f package.json && grep -q '"react"' package.json 2>/dev/null && grep -q '"vite"' package.json 2>/dev/null && ! grep -q '"next"' package.json 2>/dev/null && ! grep -q '"remix"' package.json 2>/dev/null && ! grep -q '"astro"' package.json 2>/dev/null && echo "FRAMEWORK: react-vite"
-# Vue + Vite (not Nuxt)
-test -f package.json && grep -q '"vue"' package.json 2>/dev/null && grep -q '"vite"' package.json 2>/dev/null && ! grep -q '"nuxt"' package.json 2>/dev/null && echo "FRAMEWORK: vue-vite"
+1. Use the Write tool to create `/tmp/pipeline-update-detect.sh` with this content:
+   ```sh
+   echo "=== FRAMEWORK DETECTION ==="
+   # JS/TS frameworks
+   for f in next.config.js next.config.ts next.config.mjs; do test -f "$f" && echo "FRAMEWORK: nextjs"; done
+   for f in nuxt.config.ts nuxt.config.js; do test -f "$f" && echo "FRAMEWORK: nuxt"; done
+   for f in svelte.config.js svelte.config.ts; do test -f "$f" && echo "FRAMEWORK: sveltekit"; done
+   for f in remix.config.js remix.config.ts; do test -f "$f" && echo "FRAMEWORK: remix"; done
+   for f in astro.config.mjs astro.config.ts; do test -f "$f" && echo "FRAMEWORK: astro"; done
+   test -f angular.json && echo "FRAMEWORK: angular"
+   test -f capacitor.config.ts -o -f capacitor.config.json && echo "FRAMEWORK: capacitor"
+   test -f package.json && grep -q '"expo"' package.json 2>/dev/null && echo "FRAMEWORK: expo"
+   test -f package.json && grep -q '"react-native"' package.json 2>/dev/null && echo "FRAMEWORK: react-native"
+   test -f package.json && grep -q '"express"' package.json 2>/dev/null && echo "FRAMEWORK: express"
+   test -f package.json && grep -q '"fastify"' package.json 2>/dev/null && echo "FRAMEWORK: fastify"
+   test -f package.json && grep -q '"hono"' package.json 2>/dev/null && echo "FRAMEWORK: hono"
+   test -f package.json && grep -q '"koa"' package.json 2>/dev/null && echo "FRAMEWORK: koa"
+   test -f package.json && grep -q '"@ionic"' package.json 2>/dev/null && echo "FRAMEWORK: ionic"
+   test -f ionic.config.json && echo "FRAMEWORK: ionic"
+   # React + Vite (not a meta-framework)
+   test -f package.json && grep -q '"react"' package.json 2>/dev/null && grep -q '"vite"' package.json 2>/dev/null && ! grep -q '"next"' package.json 2>/dev/null && ! grep -q '"remix"' package.json 2>/dev/null && ! grep -q '"astro"' package.json 2>/dev/null && echo "FRAMEWORK: react-vite"
+   # Vue + Vite (not Nuxt)
+   test -f package.json && grep -q '"vue"' package.json 2>/dev/null && grep -q '"vite"' package.json 2>/dev/null && ! grep -q '"nuxt"' package.json 2>/dev/null && echo "FRAMEWORK: vue-vite"
 
-# PHP frameworks
-test -f artisan && echo "FRAMEWORK: laravel"
+   # PHP frameworks
+   test -f artisan && echo "FRAMEWORK: laravel"
 
-# Python frameworks
-test -f manage.py && echo "FRAMEWORK: django"
-test -f package.json 2>/dev/null || {
-  grep -q "fastapi" requirements.txt pyproject.toml 2>/dev/null && echo "FRAMEWORK: fastapi"
-  grep -q "flask" requirements.txt pyproject.toml 2>/dev/null && echo "FRAMEWORK: flask"
-}
+   # Python frameworks
+   test -f manage.py && echo "FRAMEWORK: django"
+   test -f package.json 2>/dev/null || {
+     grep -q "fastapi" requirements.txt pyproject.toml 2>/dev/null && echo "FRAMEWORK: fastapi"
+     grep -q "flask" requirements.txt pyproject.toml 2>/dev/null && echo "FRAMEWORK: flask"
+   }
 
-# Ruby
-test -f Gemfile && grep -q "rails" Gemfile 2>/dev/null && echo "FRAMEWORK: rails"
+   # Ruby
+   test -f Gemfile && grep -q "rails" Gemfile 2>/dev/null && echo "FRAMEWORK: rails"
 
-# Go
-test -f go.mod && {
-  grep -q "echo" go.mod 2>/dev/null && echo "FRAMEWORK: echo"
-  grep -q "gin" go.mod 2>/dev/null && echo "FRAMEWORK: gin"
-  grep -q "fiber" go.mod 2>/dev/null && echo "FRAMEWORK: fiber"
-  test -d cmd && echo "FRAMEWORK: go-cli"
-}
+   # Go
+   test -f go.mod && {
+     grep -q "echo" go.mod 2>/dev/null && echo "FRAMEWORK: echo"
+     grep -q "gin" go.mod 2>/dev/null && echo "FRAMEWORK: gin"
+     grep -q "fiber" go.mod 2>/dev/null && echo "FRAMEWORK: fiber"
+     test -d cmd && echo "FRAMEWORK: go-cli"
+   }
 
-# Rust
-test -f Cargo.toml && {
-  grep -q "axum" Cargo.toml 2>/dev/null && echo "FRAMEWORK: axum"
-  grep -q "actix" Cargo.toml 2>/dev/null && echo "FRAMEWORK: actix"
-  grep -q "clap" Cargo.toml 2>/dev/null && echo "FRAMEWORK: clap-cli"
-}
+   # Rust
+   test -f Cargo.toml && {
+     grep -q "axum" Cargo.toml 2>/dev/null && echo "FRAMEWORK: axum"
+     grep -q "actix" Cargo.toml 2>/dev/null && echo "FRAMEWORK: actix"
+     grep -q "clap" Cargo.toml 2>/dev/null && echo "FRAMEWORK: clap-cli"
+   }
 
-# Java/Kotlin
-test -f pom.xml && grep -q "spring" pom.xml 2>/dev/null && echo "FRAMEWORK: spring"
-test -f build.gradle && grep -q "spring" build.gradle 2>/dev/null && echo "FRAMEWORK: spring"
-test -f build.gradle.kts && grep -q "ktor" build.gradle.kts 2>/dev/null && echo "FRAMEWORK: ktor"
+   # Java/Kotlin
+   test -f pom.xml && grep -q "spring" pom.xml 2>/dev/null && echo "FRAMEWORK: spring"
+   test -f build.gradle && grep -q "spring" build.gradle 2>/dev/null && echo "FRAMEWORK: spring"
+   test -f build.gradle.kts && grep -q "ktor" build.gradle.kts 2>/dev/null && echo "FRAMEWORK: ktor"
 
-# Cloud/platform
-test -f firebase.json && echo "FRAMEWORK: firebase"
-test -f package.json && grep -q '"firebase"' package.json 2>/dev/null && echo "FRAMEWORK: firebase"
+   # Cloud/platform
+   test -f firebase.json && echo "FRAMEWORK: firebase"
+   test -f package.json && grep -q '"firebase"' package.json 2>/dev/null && echo "FRAMEWORK: firebase"
 
-# Mobile (additional)
-test -f pubspec.yaml && grep -q "flutter" pubspec.yaml 2>/dev/null && echo "FRAMEWORK: flutter"
+   # Mobile (additional)
+   test -f pubspec.yaml && grep -q "flutter" pubspec.yaml 2>/dev/null && echo "FRAMEWORK: flutter"
 
-echo "=== DIRECTORY STRUCTURE ==="
-for d in src lib app pkg cmd internal server pages routes components api models controllers handlers views services middleware stores hooks screens navigation prisma drizzle supabase ios android; do
-  test -d "$d" && echo "DIR: $d/"
-done
-# Also check one level down in src/ and app/
-for parent in src app; do
-  if test -d "$parent"; then
-    for d in "$parent"/*/; do
-      test -d "$d" && echo "DIR: $d"
-    done
-  fi
-done 2>/dev/null
+   echo "=== DIRECTORY STRUCTURE ==="
+   for d in src lib app pkg cmd internal server pages routes components api models controllers handlers views services middleware stores hooks screens navigation prisma drizzle supabase ios android; do
+     test -d "$d" && echo "DIR: $d/"
+   done
+   # Also check one level down in src/ and app/
+   for parent in src app; do
+     if test -d "$parent"; then
+       for d in "$parent"/*/; do
+         test -d "$d" && echo "DIR: $d"
+       done
+     fi
+   done 2>/dev/null
 
-echo "=== DONE ==="
-```
+   echo "=== DONE ==="
+   ```
+2. Run: `bash /tmp/pipeline-update-detect.sh`
 
 **Framework label → checklist mapping:**
 

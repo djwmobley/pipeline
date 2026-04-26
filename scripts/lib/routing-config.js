@@ -42,7 +42,9 @@ function loadConfig() {
   const content = fs.readFileSync(configPath, 'utf8');
 
   const getSection = (section) => {
-    const match = content.match(new RegExp(`^${section}:.*\\n((?:[ \\t]+.*\\n?)*)`, 'm'));
+    // Allow blank/whitespace-only lines within a section (same fix as getNestedSection).
+    // Each iteration: one indented line OR one blank line, each terminated by \n.
+    const match = content.match(new RegExp(`^${section}:.*\\n((?:(?:[ \\t]+[^\\n]*|[ \\t]*)\\n)*)`, 'm'));
     return match ? match[1] : '';
   };
   const getInSection = (section, key) => {
@@ -52,7 +54,10 @@ function loadConfig() {
   };
   const getNestedSection = (section, subsection) => {
     const sec = getSection(section);
-    const match = sec.match(new RegExp(`^\\s*${subsection}:.*\\n((?:\\s{4,}.*\\n?)*)`, 'm'));
+    // Bug: (?:\s{4,}.*\n?)* required every line to be indented, so blank lines within
+    // a subsection terminated the match early. Allow blank/whitespace-only lines too.
+    // Each iteration: one 4+-indented line OR one blank line, each terminated by \n.
+    const match = sec.match(new RegExp(`^\\s*${subsection}:.*\\n((?:(?:[ \\t]{4,}[^\\n]*|[ \\t]*)\\n)*)`, 'm'));
     return match ? match[1] : '';
   };
 
@@ -63,17 +68,16 @@ function loadConfig() {
   const stopThreshold  = parseInt(getInSection('routing', 'stop_hook_threshold') || '150');
 
   // Parse bash_block_patterns from universal_floor section.
-  // The spec shipped with `\\s` etc. in regex literals — that matches
-  // a literal backslash followed by `s`, not a whitespace metachar. In
-  // a JS regex *literal* you write the metachar with a single backslash
-  // (`\s`); the double-escape form is only correct when the pattern is
-  // a string passed to `new RegExp(...)`. Without this fix, every
-  // user-configured pattern was silently dropped and bashPatterns
-  // always defaulted to the hardcoded fallback.
+  // YAML strings double-escape backslashes (`\\s` for the whitespace
+  // metachar), but this regex-based parser reads raw bytes — so `\\s`
+  // arrives at `new RegExp()` as 4 chars and is interpreted as literal
+  // `\s` rather than the whitespace class. Unescape `\\` → `\` once
+  // here so authors can write YAML-conformant `"\\s"` and get the
+  // metachar at match time.
   const floorSection = getNestedSection('routing', 'universal_floor');
   const bashPatterns = [];
   const bpMatches = floorSection.matchAll(/^\s*-\s*"([^"]+)"/gm);
-  for (const m of bpMatches) bashPatterns.push(m[1]);
+  for (const m of bpMatches) bashPatterns.push(m[1].replace(/\\\\/g, '\\'));
 
   // Parse tier_map — same regex-literal escaping fix. Without it,
   // tierMap was always {} and the entire tier-mismatch enforcement path
@@ -115,6 +119,13 @@ function loadConfig() {
 
 function loadSkillFrontmatter(skillName) {
   if (_fmCache[skillName]) return _fmCache[skillName];
+
+  // Reject path traversal attempts before resolving — e.g. '../../etc/passwd'
+  if (!/^[a-zA-Z0-9_-]+$/.test(skillName)) {
+    const fm = { operation_class: 'conversation_mode', allowed_direct_write: false, _invalid_name: true };
+    _fmCache[skillName] = fm;
+    return fm;
+  }
 
   const pluginDir = getPluginDir();
   const skillFile = path.join(pluginDir, 'skills', skillName, 'SKILL.md');
@@ -176,7 +187,8 @@ function writeViolation(record, config) {
   const cfg = config || loadConfig();
   const ts = new Date().toISOString();
   const full = { ts, ...record };
-  const line = JSON.stringify(full);
+  // Stringify once; reuse for both the postgres arg and the JSONL fallback line.
+  const payload = JSON.stringify(full);
 
   if (cfg.knowledge.tier === 'postgres') {
     // Write to Postgres via pipeline-db.js to avoid inline SQL.
@@ -191,7 +203,7 @@ function writeViolation(record, config) {
       execFileSync('node', [
         path.join(getPluginDir(), 'scripts', 'pipeline-db.js'),
         'routing-violation',
-        JSON.stringify(full),
+        payload,
       ], {
         cwd: cfg._root || getProjectRoot(),
         encoding: 'utf8',
@@ -199,10 +211,10 @@ function writeViolation(record, config) {
       });
     } catch (_) {
       // Fall through to JSONL on DB write failure
-      appendJsonl(path.join(cfg._root || getProjectRoot(), 'logs', 'routing-violations.jsonl'), line);
+      appendJsonl(path.join(cfg._root || getProjectRoot(), 'logs', 'routing-violations.jsonl'), payload);
     }
   } else {
-    appendJsonl(path.join(cfg._root || getProjectRoot(), 'logs', 'routing-violations.jsonl'), line);
+    appendJsonl(path.join(cfg._root || getProjectRoot(), 'logs', 'routing-violations.jsonl'), payload);
   }
 }
 

@@ -64,7 +64,7 @@ async function main() {
   } catch (_) { process.exit(0); }
 
   const message = input.message || '';
-  const activeSkill = process.env.PIPELINE_ACTIVE_SKILL || 'conversation_mode';
+  const activeSkill = require('../lib/active-skill').read();
 
   let config;
   try { config = loadConfig(); } catch (_) { process.exit(0); }
@@ -83,6 +83,8 @@ async function main() {
       detail:     { word_count: wordCount, threshold },
     }, config);
   }
+
+  try { require('../lib/active-skill').clear(); } catch (_) {}
 
   process.exit(0);
 }

@@ -70,7 +70,7 @@ function loadConfig() {
     project: projectName,
   };
 
-  if (!fs.existsSync(configPath)) return { ...defaults, root, tier: 'files', embedding_model: null };
+  if (!fs.existsSync(configPath)) return { ...defaults, root, knowledge: { tier: 'files', host: defaults.host, port: defaults.port, database: defaults.database, user: defaults.user, embedding_model: null, num_ctx: null } };
   const content = fs.readFileSync(configPath, 'utf8');
 
   // Get a top-level key (not indented)
@@ -93,17 +93,22 @@ function loadConfig() {
   };
 
   const resolvedProjectName = getInSection('project', 'name') || defaults.project;
-  const tier = getInSection('knowledge', 'tier');
+  const tier = getInSection('knowledge', 'tier') || 'files';
+  const host = getInSection('knowledge', 'host') || defaults.host;
+  const port = parseInt(getInSection('knowledge', 'port') || defaults.port);
+  const database = getInSection('knowledge', 'database') || defaults.database;
+  const user = getInSection('knowledge', 'user') || defaults.user;
+  const embedding_model = getInSection('knowledge', 'embedding_model') || null;
+  const num_ctx = getInSection('knowledge', 'num_ctx') || null;
 
   return {
-    host: getInSection('knowledge', 'host') || defaults.host,
-    port: parseInt(getInSection('knowledge', 'port') || defaults.port),
-    database: getInSection('knowledge', 'database') || defaults.database,
-    user: getInSection('knowledge', 'user') || defaults.user,
+    host,
+    port,
+    database,
+    user,
     project: resolvedProjectName,
-    tier: tier || 'files',
-    embedding_model: getInSection('knowledge', 'embedding_model') || null,
-    num_ctx: getInSection('knowledge', 'num_ctx') || null,
+    // knowledge: nested object mirrors routing-config.js shape for cross-script consistency
+    knowledge: { tier, host, port, database, user, embedding_model, num_ctx },
     root,
   };
 }

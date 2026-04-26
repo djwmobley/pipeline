@@ -5,7 +5,7 @@ description: Project setup — detects tools, creates .claude/pipeline.yml (use 
 
 ```bash
 # Set active skill for routing enforcement
-export PIPELINE_ACTIVE_SKILL=orientation
+node scripts/lib/active-skill.js write orientation
 ```
 
 

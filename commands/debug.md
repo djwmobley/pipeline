@@ -5,7 +5,7 @@ description: Systematic root-cause diagnosis — 4 phases, error class routing, 
 
 ```bash
 # Set active skill for routing enforcement
-export PIPELINE_ACTIVE_SKILL=debugging
+node scripts/lib/active-skill.js write debugging
 ```
 
 

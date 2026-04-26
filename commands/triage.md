@@ -5,7 +5,7 @@ description: Assess change size and recommend the appropriate workflow
 
 ```bash
 # Set active skill for routing enforcement
-export PIPELINE_ACTIVE_SKILL=debugging
+node scripts/lib/active-skill.js write conversation_mode
 ```
 
 

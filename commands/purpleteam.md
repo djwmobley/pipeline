@@ -5,7 +5,7 @@ description: Purple team verification — verify aggregate security posture afte
 
 ```bash
 # Set active skill for routing enforcement
-export PIPELINE_ACTIVE_SKILL=purpleteam
+node scripts/lib/active-skill.js write purpleteam
 ```
 
 
@@ -64,11 +64,11 @@ Read both files in full. Parse the remediation summary to build:
 If `knowledge.tier` is `"postgres"` AND `integrations.postgres.enabled`:
 
 ```bash
-node scripts/pipeline-db.js query "SELECT topic, decision, reason FROM decisions WHERE topic ILIKE '%security%' OR topic ILIKE '%auth%' OR topic ILIKE '%encrypt%' OR topic ILIKE '%token%' OR topic ILIKE '%session%' ORDER BY created_at DESC LIMIT 20"
+PROJECT_ROOT=$(pwd) node scripts/pipeline-db.js query "SELECT topic, decision, reason FROM decisions WHERE topic ILIKE '%security%' OR topic ILIKE '%auth%' OR topic ILIKE '%encrypt%' OR topic ILIKE '%token%' OR topic ILIKE '%session%' ORDER BY created_at DESC LIMIT 20"
 ```
 
 ```bash
-node scripts/pipeline-db.js query "SELECT issue, rule FROM gotchas WHERE issue ILIKE '%security%' OR issue ILIKE '%auth%' OR issue ILIKE '%vuln%' OR issue ILIKE '%inject%' OR issue ILIKE '%xss%' ORDER BY created_at DESC LIMIT 20"
+PROJECT_ROOT=$(pwd) node scripts/pipeline-db.js query "SELECT issue, rule FROM gotchas WHERE issue ILIKE '%security%' OR issue ILIKE '%auth%' OR issue ILIKE '%vuln%' OR issue ILIKE '%inject%' OR issue ILIKE '%xss%' ORDER BY created_at DESC LIMIT 20"
 ```
 
 If `knowledge.tier` is `"files"`:

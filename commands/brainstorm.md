@@ -5,7 +5,7 @@ description: Design before LARGE changes — explore context, clarify requiremen
 
 ```bash
 # Set active skill for routing enforcement
-export PIPELINE_ACTIVE_SKILL=brainstorming
+node scripts/lib/active-skill.js write brainstorming
 ```
 
 

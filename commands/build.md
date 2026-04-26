@@ -5,7 +5,7 @@ description: Subagent-driven plan execution — fresh agent per task with post-t
 
 ```bash
 # Set active skill for routing enforcement
-export PIPELINE_ACTIVE_SKILL=building
+node scripts/lib/active-skill.js write building
 ```
 
 
@@ -258,7 +258,7 @@ PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js update task [task_id] defe
 2. Query for a parent roadmap task:
    ```bash
    PROJECT_ROOT=$(pwd) node [scripts_dir]/pipeline-db.js query "$(cat <<'SQL'
-   SELECT * FROM tasks WHERE issue_ref = [N] AND category = 'roadmap'
+   SELECT * FROM tasks WHERE github_issue = [N] AND category = 'roadmap'
    SQL
    )"
    ```

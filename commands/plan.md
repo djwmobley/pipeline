@@ -5,7 +5,7 @@ description: Create an implementation plan from a spec — bite-sized tasks with
 
 ```bash
 # Set active skill for routing enforcement
-export PIPELINE_ACTIVE_SKILL=planning
+node scripts/lib/active-skill.js write planning
 ```
 
 
