@@ -649,6 +649,18 @@ If pnpm-install declined, offer: "Run these yourself when ready: `cd [scripts_di
 
 ---
 
+### Step 4d (optional) — Seed memory from existing sessions
+
+If the knowledge tier is `postgres`, you can embed existing session transcripts into the knowledge DB immediately. This is useful when migrating a project that already has session history in `docs/sessions/`.
+
+```bash
+node '[SCRIPTS_DIR]/pipeline-memory-loader.js' all
+```
+
+Skip this step if no sessions exist yet or you prefer to run the loader manually later. If no session files are found, the loader exits 0 with a "no sessions found" message — this is not an error.
+
+---
+
 ### Step 5 — Generate config
 
 Using all detected values, generate `.claude/pipeline.yml`.
