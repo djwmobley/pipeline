@@ -50,6 +50,27 @@ const ANCHOR_RENDER = {
   Library:  { syntax: '`[Library: name]`',                                     useFor: 'Dependency from a manifest file' },
 };
 
+// Module-load invariant: ANCHOR_TYPES (canonical, imported) and ANCHOR_RENDER
+// (this generator's render details) must agree on the set of keys. If
+// pipeline-lint-recon.js ever adds an anchor type without a matching render
+// entry here, fail loudly at startup rather than throw an opaque TypeError
+// inside renderAnchorTable.
+{
+  const renderKeys = new Set(Object.keys(ANCHOR_RENDER));
+  const typesSet   = new Set(ANCHOR_TYPES);
+  const missing    = ANCHOR_TYPES.filter(t => !renderKeys.has(t));
+  const extra      = Object.keys(ANCHOR_RENDER).filter(k => !typesSet.has(k));
+  if (missing.length || extra.length) {
+    const parts = [];
+    if (missing.length) parts.push(`missing render entries: ${missing.join(', ')}`);
+    if (extra.length)   parts.push(`stale render entries: ${extra.join(', ')}`);
+    throw new Error(
+      `pipeline-generate-recon-prompt: ANCHOR_TYPES and ANCHOR_RENDER are out of sync — ${parts.join('; ')}. ` +
+      `Update ANCHOR_RENDER in this file to match the canonical ANCHOR_TYPES exported by pipeline-lint-recon.js.`
+    );
+  }
+}
+
 // ─── REGION RENDERERS ────────────────────────────────────────────────────────
 
 /**
@@ -127,8 +148,10 @@ function generateRegion(regionId) {
 // Allow leading whitespace so markers can sit inside indented YAML literal
 // blocks (e.g., the `prompt: |` body in skills/architecture/recon-agent-prompt.md).
 // Captured indent is propagated to every emitted line so the YAML scalar stays valid.
-const BEGIN_RE = /^([ \t]*)<!-- BEGIN GENERATED: ([a-z0-9-]+) -->$/;
-const END_RE   = /^([ \t]*)<!-- END GENERATED: ([a-z0-9-]+) -->$/;
+// Trailing whitespace after `-->` is tolerated so editors that auto-trim or
+// auto-pad lines don't silently defeat marker detection.
+const BEGIN_RE = /^([ \t]*)<!-- BEGIN GENERATED: ([a-z0-9-]+) -->[ \t]*$/;
+const END_RE   = /^([ \t]*)<!-- END GENERATED: ([a-z0-9-]+) -->[ \t]*$/;
 
 /**
  * Parse a file's lines and return an array of regions:
@@ -360,6 +383,19 @@ function runSelfTests() {
       threw = e.message.includes('unknown region id: version-list');
     }
     assert('Test 6: unknown region id throws with correct message', threw);
+  }
+
+  // ── Test 7a: Trailing whitespace after --> still matches markers ─────────
+  {
+    const lines = [
+      '<!-- BEGIN GENERATED: anchor-table -->   ',
+      'placeholder',
+      '<!-- END GENERATED: anchor-table -->\t',
+    ];
+    let regions;
+    try { regions = parseRegions(lines); } catch (e) { regions = null; }
+    assert('Test 7a: BEGIN with trailing spaces matches', regions !== null && regions.length === 1);
+    assert('Test 7a: END with trailing tab matches', regions !== null && regions[0].id === 'anchor-table');
   }
 
   // ── Test 7b: Indented markers — generated content inherits indent ────────
