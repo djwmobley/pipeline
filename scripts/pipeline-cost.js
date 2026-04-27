@@ -26,18 +26,12 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { loadConfig, connect } = require('./lib/shared');
+const { getClaudeProjectDir } = require('./lib/encoded-cwd');
 
 // ─── TRANSCRIPT RESOLUTION ─────────────────────────────────────────────────
 
 function transcriptDir() {
-  // Claude Code encodes the cwd into a directory name under ~/.claude/projects/.
-  // Example: C:\Users\djwmo\dev\pipeline → C--Users-djwmo-dev-pipeline
-  // Rule: every char that's not alphanumeric and not "-" becomes "-". That maps
-  // ":", "\", "/", "." all to "-" and produces the double-dash after drive letters.
-  const home = os.homedir();
-  const cwd = process.cwd();
-  const encoded = cwd.replace(/[^a-zA-Z0-9-]/g, '-');
-  return path.join(home, '.claude', 'projects', encoded);
+  return getClaudeProjectDir(process.cwd());
 }
 
 function listTranscripts(dir) {

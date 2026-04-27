@@ -161,10 +161,20 @@ const TABLES = [
 ];
 
 // ─── CHUNK-COVERED TABLES ────────────────────────────────────────────────────
+// Derived from information_schema at first use; cached for the process lifetime.
 // Tables covered by v_memory_hits view — embedded as chunks, not as parent rows.
 // cmdIndex skips these to avoid Ollama context-overrun on long parent-row bodies.
-// cmdSearch and cmdHybrid query them via the view, not the parent tables directly.
-const MEMORY_HITS_COVERED = new Set(['memory_entries', 'session_chunks', 'policy_sections', 'memory_entry_chunks']);
+let _chunkTablesCached = null;
+
+async function getChunkTables(client) {
+  if (_chunkTablesCached) return _chunkTablesCached;
+  const { rows } = await client.query(
+    "SELECT table_name FROM information_schema.tables " +
+    "WHERE table_name LIKE '%_chunks' AND table_schema = current_schema()"
+  );
+  _chunkTablesCached = new Set(rows.map(r => r.table_name));
+  return _chunkTablesCached;
+}
 
 // ─── INTROSPECTION HELPERS ──────────────────────────────────────────────────
 
@@ -199,6 +209,7 @@ async function cmdIndex(forceAll) {
   try {
     let totalDone = 0;
 
+    const chunkTables = await getChunkTables(client);
     for (const tbl of TABLES) {
       if (!(await tableExists(client, tbl.name))) {
         console.log(c.dim(`Skipping ${tbl.name} — table does not exist.`));
@@ -208,7 +219,7 @@ async function cmdIndex(forceAll) {
         console.log(c.dim(`Skipping ${tbl.name} — no embedding column. Run setup to add it.`));
         continue;
       }
-      if (MEMORY_HITS_COVERED.has(tbl.name)) {
+      if (chunkTables.has(tbl.name)) {
         console.log(c.dim(`Skipping ${tbl.name} — covered by v_memory_hits chunks.`));
         continue;
       }
@@ -339,8 +350,9 @@ async function cmdSearch(query) {
       }
     }
 
+    const chunkTables = await getChunkTables(client);
     for (const tbl of TABLES) {
-      if (MEMORY_HITS_COVERED.has(tbl.name)) continue;
+      if (chunkTables.has(tbl.name)) continue;
       if (!(await tableExists(client, tbl.name))) continue;
 
       const { rows: [{ count }] } = await client.query(`SELECT COUNT(*) FROM ${tbl.name}`);
@@ -419,8 +431,9 @@ async function cmdHybrid(query) {
       }
     }
 
+    const chunkTables = await getChunkTables(client);
     for (const tbl of TABLES) {
-      if (MEMORY_HITS_COVERED.has(tbl.name)) continue;
+      if (chunkTables.has(tbl.name)) continue;
       if (!(await tableExists(client, tbl.name))) continue;
 
       const { rows: [{ count }] } = await client.query(`SELECT COUNT(*) FROM ${tbl.name}`);
