@@ -257,4 +257,4 @@ pipeline. It runs automatically on every PR via `.github/workflows/test-chunker.
   tests (chunker logic, DB schema, incremental sync) still run.
 - The CI Postgres service is pinned to `pgvector/pgvector:pg16`. Update the image
   tag in the workflow file and its comment together when upgrading.
-- `npm ci` runs in `scripts/` (where `package.json` lives), not the repo root.
+- `pnpm install --frozen-lockfile` runs in `scripts/` (where `package.json` and `pnpm-lock.yaml` live), not the repo root. The project uses pnpm; `package-lock.json` is gitignored — do not switch to `npm ci`.

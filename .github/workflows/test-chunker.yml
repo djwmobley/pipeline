@@ -23,11 +23,16 @@ jobs:
           - 5432:5432
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'pnpm'
+          cache-dependency-path: scripts/pnpm-lock.yaml
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
         working-directory: scripts
       - name: Apply knowledge DB schema
         run: psql -h localhost -U postgres -f scripts/setup-knowledge-db.sql
