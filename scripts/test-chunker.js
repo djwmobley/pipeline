@@ -28,6 +28,7 @@ const { loadConfig, connect } = require('./lib/shared');
 
 let passed = 0;
 let failed = 0;
+let skipped = 0;
 
 /**
  * Print a step result: two-column output "  label" + padding + status.
@@ -49,7 +50,11 @@ function step(label, ok, detail) {
 async function runTest(num, title, fn) {
   console.log(`\nTEST ${num} — ${title}`);
   try {
-    await fn();
+    const result = await fn();
+    if (result && result.skipped) {
+      skipped++;
+      return 'skipped';
+    }
     console.log(`  PASS — Test ${num}`);
     passed++;
     return true;
@@ -506,6 +511,11 @@ async function test5() {
 // ─── TEST 6 — Real E2E (DB + Ollama + retrieval round-trip) ──────────────────
 
 async function test6() {
+  if (process.env.OLLAMA_SKIP === '1') {
+    console.log('  ⊘ Test 6 — E2E round-trip (skipped: OLLAMA_SKIP=1)');
+    return { skipped: true };
+  }
+
   // Unique needle phrase — Date.now() ensures no cross-run collision in the DB
   const NEEDLE   = `PHRASE_E2E_T6_NEEDLE_${Date.now()}_X42`;
   const TARGET   = 6000;
@@ -713,17 +723,15 @@ async function main() {
 
   console.log('');
   console.log('='.repeat(60));
-  const total = passed + failed;
-  if (failed === 0) {
+  const total = passed + failed + skipped;
+  if (failed === 0 && skipped === 0) {
     console.log(`SUMMARY: ${passed}/${total} tests passed`);
-  } else {
-    const failedNums = ALL_TESTS
-      .filter(t => toRun.includes(t))
-      .filter((_, i) => {
-        // We can't easily track which test failed by number here since runTest
-        // modifies global counters — use a simpler approach below.
-      });
+  } else if (failed === 0) {
+    console.log(`SUMMARY: ${passed} passed, 0 failed, ${skipped} skipped`);
+  } else if (skipped === 0) {
     console.log(`SUMMARY: ${passed}/${total} tests passed (${failed} failed)`);
+  } else {
+    console.log(`SUMMARY: ${passed} passed, ${failed} failed, ${skipped} skipped`);
   }
   console.log('='.repeat(60));
   process.exit(failed > 0 ? 1 : 0);

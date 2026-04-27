@@ -247,3 +247,14 @@ This applies to both:
 After modifying any command or skill:
 1. Run `claude plugin validate .` from the plugin root to verify plugin structure
 2. Test the modified command in a real project with a `.claude/pipeline.yml`
+
+### Embedding pipeline CI gate
+
+`node scripts/test-chunker.js` (6 tests) is the regression gate for the embedding
+pipeline. It runs automatically on every PR via `.github/workflows/test-chunker.yml`.
+
+- When `OLLAMA_SKIP=1` is set, Ollama embedding assertions are skipped; structural
+  tests (chunker logic, DB schema, incremental sync) still run.
+- The CI Postgres service is pinned to `pgvector/pgvector:pg16`. Update the image
+  tag in the workflow file and its comment together when upgrading.
+- `pnpm install --frozen-lockfile` runs in `scripts/` (where `package.json` and `pnpm-lock.yaml` live), not the repo root. The project uses pnpm; `package-lock.json` is gitignored — do not switch to `npm ci`.
