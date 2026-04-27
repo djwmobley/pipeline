@@ -31,6 +31,7 @@ const crypto = require('crypto');
 const { chunkText }          = require('./pipeline-chunker');
 const { getClaudeProjectDir } = require('./lib/encoded-cwd');
 const { loadConfig, connect, c, ollamaEmbed } = require('./lib/shared');
+const { embedWithRetry }                       = require('./pipeline-embed');
 
 const BATCH                = 8;
 const CONST_PROSE_CEILING  = 1400;  // DECISION-004: prose sources
@@ -155,40 +156,27 @@ async function embedPending(db, config, table, buildCtx, stats) {
 
   if (rows.length === 0) return;
 
-  for (let i = 0; i < rows.length; i += BATCH) {
-    const batch = rows.slice(i, i + BATCH);
-    const texts = batch.map(buildCtx);
+  // Pre-compute text for each row so embedFn is a pure (texts) => vectors call
+  for (const row of rows) {
+    row.text = buildCtx(row);
+  }
 
-    try {
-      const embeddings = await ollamaEmbed(texts, config && config.knowledge);
-      // Happy path: write all embeddings in the batch
-      for (let j = 0; j < batch.length; j++) {
-        const vec = `[${embeddings[j].join(',')}]`;
-        await db.query(
-          `UPDATE ${table} SET embedding = $1 WHERE id = $2`,
-          [vec, batch[j].id]
-        );
-        stats.embedded++;
-      }
-    } catch (batchErr) {
-      // Batch-level failure: fall back to per-chunk individual retry so that
-      // a single oversized chunk doesn't mark healthy chunks as errored.
-      for (let j = 0; j < batch.length; j++) {
-        try {
-          const [vec1] = await ollamaEmbed([texts[j]], config && config.knowledge);
-          const vec = `[${vec1.join(',')}]`;
-          await db.query(
-            `UPDATE ${table} SET embedding = $1 WHERE id = $2`,
-            [vec, batch[j].id]
-          );
-          stats.embedded++;
-        } catch (chunkErr) {
-          stats.errored++;
-          console.error(c.red(`  embed error: table=${table} id=${batch[j].id} chunk_idx=${batch[j].chunk_idx} :: ${chunkErr.message.slice(0, 100)}`));
-        }
-      }
+  const embedFn = (texts) => ollamaEmbed(texts, config && config.knowledge);
+
+  const result = await embedWithRetry(rows, embedFn, { batchSize: BATCH });
+
+  // Write successfully embedded rows to DB
+  for (const row of rows) {
+    if (row._vector) {
+      await db.query(
+        `UPDATE ${table} SET embedding = $1 WHERE id = $2`,
+        [row._vector, row.id]
+      );
+      stats.embedded++;
     }
   }
+
+  stats.errored = (stats.errored || 0) + result.skipped + result.failed;
 }
 
 // ─── MEMORY LOADER ───────────────────────────────────────────────────────────

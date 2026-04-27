@@ -160,6 +160,11 @@ const TABLES = [
   },
 ];
 
+// ─── EMBED CONSTANTS ─────────────────────────────────────────────────────────
+
+// Safety guard for mxbai-embed-large 512-token cap (~4 chars/token, with margin).
+const MAX_EMBED_BYTES = 2000;
+
 // ─── CHUNK-COVERED TABLES ────────────────────────────────────────────────────
 // Derived from information_schema at first use; cached for the process lifetime.
 // Tables covered by v_memory_hits view — embedded as chunks, not as parent rows.
@@ -202,6 +207,87 @@ async function hasAnyEmbeddings(client, tableName) {
   return rows.length > 0;
 }
 
+// ─── EMBED WITH RETRY ────────────────────────────────────────────────────────
+
+/**
+ * Batch-embed rows with oversize guard, per-batch failure isolation, and
+ * per-row exponential-backoff retry.
+ *
+ * @param {Array}    rows                  - Array of { id, text, ...passthrough } objects.
+ *                                           Caller must set row.text before calling.
+ * @param {Function} embedFn               - async (string[]) => number[][] — one vector per input.
+ * @param {object}   [opts]
+ * @param {number}   [opts.batchSize=32]   - Number of rows per Ollama call.
+ * @param {number}   [opts.maxRetries=3]   - Per-row retry attempts after batch failure.
+ * @param {Function} [opts.onBatchError]   - (err, batch) => void — called on batch rejection.
+ * @returns {Promise<{ embedded: number, skipped: number, failed: number }>}
+ *   Successful rows have row._vector set (pgvector string "[v0,v1,...]").
+ */
+async function embedWithRetry(rows, embedFn, { batchSize = 32, maxRetries = 3, onBatchError = null } = {}) {
+  let embedded = 0;
+  let skipped  = 0;
+  let failed   = 0;
+
+  // Partition: skip rows whose text exceeds MAX_EMBED_BYTES
+  const eligible  = [];
+  const oversized = [];
+  for (const row of rows) {
+    if ((row.text || '').length > MAX_EMBED_BYTES) {
+      oversized.push(row);
+    } else {
+      eligible.push(row);
+    }
+  }
+
+  for (const row of oversized) {
+    process.stderr.write(
+      `[embedWithRetry] Skipping row id=${row.id}: ${(row.text || '').length} chars exceeds MAX_EMBED_BYTES (${MAX_EMBED_BYTES})\n`
+    );
+    skipped++;
+  }
+
+  // Process eligible rows in batches
+  for (let i = 0; i < eligible.length; i += batchSize) {
+    const batch = eligible.slice(i, i + batchSize);
+    const texts = batch.map(r => r.text || '');
+
+    try {
+      const embeddings = await embedFn(texts);
+      for (let j = 0; j < batch.length; j++) {
+        batch[j]._vector = `[${embeddings[j].join(',')}]`;
+        embedded++;
+      }
+    } catch (batchErr) {
+      if (onBatchError) onBatchError(batchErr, batch);
+
+      // Per-row retry with exponential backoff (2s / 4s / 8s)
+      for (const row of batch) {
+        let rowEmbedded = false;
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+          const delayMs = Math.pow(2, attempt) * 1000; // 2s, 4s, 8s
+          await new Promise(res => setTimeout(res, delayMs));
+          try {
+            const [vec] = await embedFn([row.text || '']);
+            row._vector = `[${vec.join(',')}]`;
+            embedded++;
+            rowEmbedded = true;
+            break;
+          } catch (retryErr) {
+            if (attempt === maxRetries) {
+              process.stderr.write(
+                `[embedWithRetry] Failed row id=${row.id} after ${maxRetries} retries: ${retryErr.message.slice(0, 100)}\n`
+              );
+            }
+          }
+        }
+        if (!rowEmbedded) failed++;
+      }
+    }
+  }
+
+  return { embedded, skipped, failed };
+}
+
 // ─── INDEX ───────────────────────────────────────────────────────────────────
 
 async function cmdIndex(forceAll) {
@@ -236,35 +322,28 @@ async function cmdIndex(forceAll) {
 
       console.log(`${c.bold('Embedding')} ${rows.length} ${tbl.name} entries via ${EMBED_MODEL}...`);
 
-      const BATCH = 32;
-      let done = 0;
-      try {
-        for (let i = 0; i < rows.length; i += BATCH) {
-          const batch = rows.slice(i, i + BATCH);
-          const texts = batch.map(tbl.textFn);
-          const embeddings = await ollamaEmbed(texts, CONFIG);
-
-          if (embeddings.length !== batch.length) {
-            throw new Error(
-              `Ollama returned ${embeddings.length} embeddings for a batch of ${batch.length} ` +
-              `(table: ${tbl.name}, batch offset: ${i}). ` +
-              `This may indicate a context-length overrun. Try reducing BATCH size or truncating long text fields.`
-            );
-          }
-
-          for (let j = 0; j < batch.length; j++) {
-            const vec = `[${embeddings[j].join(',')}]`;
-            await client.query(tbl.updateSql, [vec, batch[j][tbl.idCol]]);
-            done++;
-            process.stdout.write(`\r  ${done}/${rows.length} embedded...`);
-          }
-        }
-        console.log(`\n${c.green('Done.')} ${tbl.name}: ${done} entries embedded.`);
-      } catch (err) {
-        console.error(`\n${c.red(`Error embedding ${tbl.name}:`)} ${err.message}`);
-        console.error(c.dim(`  ${done} rows written before failure. Re-run "index" to resume.`));
+      // Pre-compute text for each row so embedFn is a pure (texts) => vectors call
+      for (const row of rows) {
+        row.text   = tbl.textFn(row);
+        row.id     = row[tbl.idCol]; // embedWithRetry expects row.id
       }
-      totalDone += done;
+
+      const embedFn = (texts) => ollamaEmbed(texts, CONFIG);
+
+      const result = await embedWithRetry(rows, embedFn, { batchSize: 32 });
+
+      // Write successfully embedded rows to DB
+      let done = 0;
+      for (const row of rows) {
+        if (row._vector) {
+          await client.query(tbl.updateSql, [row._vector, row[tbl.idCol]]);
+          done++;
+          process.stdout.write(`\r  ${done}/${rows.length} embedded...`);
+        }
+      }
+
+      console.log(`\n${c.green('Done.')} ${tbl.name}: ${result.embedded} embedded, ${result.skipped} skipped (oversize), ${result.failed} failed.`);
+      totalDone += result.embedded;
     }
 
     console.log(`\n${c.bold('Total:')} ${totalDone} entries embedded across all tables.`);
@@ -574,8 +653,13 @@ Requires: Ollama running at ${OLLAMA_HOST}:${OLLAMA_PORT}
 `);
 }
 
+// ─── EXPORTS ─────────────────────────────────────────────────────────────────
+
+module.exports = { embedWithRetry, MAX_EMBED_BYTES };
+
 // ─── ENTRY ───────────────────────────────────────────────────────────────────
 
+if (require.main === module) {
 const [, , cmd, ...args] = process.argv;
 
 (async () => {
@@ -606,3 +690,4 @@ const [, , cmd, ...args] = process.argv;
     process.exit(1);
   }
 })();
+} // end require.main === module
