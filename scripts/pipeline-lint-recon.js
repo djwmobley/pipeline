@@ -416,7 +416,9 @@ function validatePatternAnchor({ patternName, fileAnchors, lineNo, projectRoot, 
  * validateLibraryAnchor — [Library: name] must be in any package.json deps.
  */
 function validateLibraryAnchor({ libName, lineNo, allDeps }) {
-  if (allDeps.has(libName)) return [];
+  // Strip optional version suffix so [Library: react@18] matches a "react" key.
+  const bareLib = libName.replace(/@[^\s]*$/, '');
+  if (allDeps.has(libName) || allDeps.has(bareLib)) return [];
   return [new Finding({
     rule:       'library-not-in-deps',
     severity:   'error',
@@ -592,24 +594,6 @@ function lintConstraintsBlock(blockLines, blockStartLine, projectRoot, options) 
       findings.push(...checkPathInProse({ lineText: text, lineNo, fileAnchors: anchors.files, strict }));
       findings.push(...checkFunctionInProse({ lineText: text, lineNo, anchors, strict }));
       findings.push(...checkClaimWithoutAnchor({ lineText: text, lineNo, strict }));
-    }
-  }
-
-  // ── Existing Stack: validate [Library: name] and [File: ...] anchors ──────
-  const stackSec = parsed.sections.get('Existing Stack');
-  if (stackSec) {
-    for (const { text, lineIdx } of stackSec.lines) {
-      if (text.trim() === '' || /^###/.test(text)) continue;
-      if (fenced.has(lineIdx)) continue;
-      const lineNo  = blockStartLine + lineIdx;
-      const anchors = parseLineAnchors(text);
-
-      for (const libName of anchors.libraries) {
-        findings.push(...validateLibraryAnchor({ libName, lineNo, allDeps }));
-      }
-      for (const rawFile of anchors.files) {
-        findings.push(...validateFileAnchor({ rawValue: rawFile, lineNo, projectRoot }));
-      }
     }
   }
 
