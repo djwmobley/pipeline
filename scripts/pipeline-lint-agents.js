@@ -557,6 +557,43 @@ function checkOperationClass() {
 
 // ─── MAIN ────────────────────────────────────────────────────────────────────
 
+// ─── CHECK RECON-PROMPT GENERATOR SYNC ──────────────────────────────────────
+
+function checkReconPromptSync() {
+  const { computeRewrite } = require('./pipeline-generate-recon-prompt');
+  const target = path.join(PLUGIN_ROOT, 'skills', 'architecture', 'recon-agent-prompt.md');
+  if (!fs.existsSync(target)) {
+    console.log(c.green(`  PASS  recon-agent-prompt.md not found — no regions to check.`));
+    return;
+  }
+  const current = fs.readFileSync(target, 'utf8');
+  let rewritten, regionIds;
+  try {
+    ({ rewritten, regionIds } = computeRewrite(current));
+  } catch (err) {
+    console.log(c.red(`  FAIL  pipeline-generate-recon-prompt: ${err.message}`));
+    process.exit(1);
+  }
+  if (rewritten === current) {
+    const n = regionIds.length;
+    console.log(c.green(`  PASS  recon-agent-prompt.md generator regions in sync (${n} region${n === 1 ? '' : 's'}).`));
+    console.log(c.bold(c.green(`\nGenerator regions in sync.`)));
+    return;
+  }
+  const finding = {
+    id:         'LA-GEN-001',
+    severity:   'HIGH',
+    confidence: 'HIGH',
+    file:       path.relative(PLUGIN_ROOT, target).replace(/\\/g, '/'),
+    line:       0,
+    checkId:    'recon-prompt-generator-drift',
+    message:    `Generator regions out of sync with pipeline-lint-recon.js exports. Run \`node scripts/pipeline-generate-recon-prompt.js --write\` to regenerate.`,
+  };
+  console.log(c.red(formatFinding(finding)));
+  console.log(c.bold(c.red(`\nGenerator regions out of sync.`)));
+  process.exit(1);
+}
+
 function main() {
   const args = process.argv.slice(2);
   const command = args[0];
@@ -571,10 +608,16 @@ function main() {
     return;
   }
 
+  if (command === 'check-recon-prompt-sync') {
+    checkReconPromptSync();
+    return;
+  }
+
   if (command !== 'lint') {
     console.log(`Usage: node pipeline-lint-agents.js lint [--changed] [--json] [--files "f1 f2"] [--exclude "pattern1,pattern2"]`);
     console.log(`       node pipeline-lint-agents.js check-operation-class`);
     console.log(`       node pipeline-lint-agents.js check-prompt-size`);
+    console.log(`       node pipeline-lint-agents.js check-recon-prompt-sync`);
     process.exit(0);
   }
 
