@@ -143,6 +143,29 @@ After tasks, include an ordered build sequence:
 3. [Task P] — [what it produces] (depends on: Task M)
 ```
 
+## Manual Invocation — Required Substeps
+
+`/pipeline:plan` (the slash command) automatically runs these orchestration steps
+before dispatching the planner subagent. If you invoke the planning skill directly
+via an `Agent` tool call without the slash command, you MUST run these substeps
+yourself, in order:
+
+1. Architecture recon — dispatch `/pipeline:architect` (or the architecture skill)
+   against the files and directories the spec touches. Feed recon output into the
+   `## Architectural Constraints` section of the planner prompt.
+2. Debate (LARGE+ features only) — dispatch `/pipeline:debate` with the spec as
+   input. The debate verdict must be available before the planner prompt is composed.
+   For MEDIUM changes this is offered but optional. For TINY changes skip it.
+3. Planner subagent — dispatch this skill (`skills/planning/SKILL.md`) with the
+   full spec, recon constraints, and (if applicable) debate verdict as inputs.
+4. Plan reviewer — after the plan file is written, dispatch the plan-reviewer
+   subagent (see `plan-reviewer-prompt.md` in this skill directory) to verify
+   coverage and constraint compliance. Iterate until Approved or loop exceeds 3
+   rounds (surface to human at that point).
+
+Skipping any of these steps produces an incomplete plan. The orchestrator is
+responsible for all four substeps; the planner subagent produces only Step 3 output.
+
 ## Plan Review Loop
 
 After writing the complete plan:
