@@ -33,6 +33,22 @@ scripts/                    — Setup scripts (e.g., Postgres knowledge DB)
 - Include red flags and rationalization prevention tables
 - Reference config values as `config.section.key` — never hardcode project-specific values
 
+### Generator-Managed Regions (do not hand-edit between markers)
+
+Some sections of skill files are produced deterministically by `scripts/pipeline-generate-recon-prompt.js` from canonical constants exported by `scripts/pipeline-lint-recon.js`. These sections are wrapped in HTML comment markers:
+
+```
+<!-- BEGIN GENERATED: <region-id> -->
+...content rewritten by the generator...
+<!-- END GENERATED: <region-id> -->
+```
+
+Hand-edits between BEGIN/END markers will be reverted on the next generator run AND fail CI via `node scripts/pipeline-lint-agents.js check-recon-prompt-sync`. To change a generated region, change the canonical source in `pipeline-lint-recon.js` (the exported constants) and run `node scripts/pipeline-generate-recon-prompt.js --write`.
+
+Why: agents reliably hallucinate when asked to restate structured lists (anchor types, allowlist values). Tearing the agent out of that work entirely — generator emits, agent never authors — is the structural fix. See `feedback_aggressive_tooling_over_reasoning.md` and `feedback_self_examination_during_dogfooding.md` in user memory.
+
+Currently region-managed: anchor-type table + pattern allowlist in `skills/architecture/recon-agent-prompt.md`. Future generator-managed regions follow the same marker convention.
+
 ### Routing Fields (Convention-not-reason)
 
 Skills declare three YAML frontmatter fields used by the PreToolUse routing hook (`scripts/hooks/routing-check.js`) to enforce model/tool routing per skill at dispatch time.
