@@ -124,8 +124,11 @@ function generateRegion(regionId) {
 
 // ─── MARKER PARSING ──────────────────────────────────────────────────────────
 
-const BEGIN_RE = /^<!-- BEGIN GENERATED: ([a-z0-9-]+) -->$/;
-const END_RE   = /^<!-- END GENERATED: ([a-z0-9-]+) -->$/;
+// Allow leading whitespace so markers can sit inside indented YAML literal
+// blocks (e.g., the `prompt: |` body in skills/architecture/recon-agent-prompt.md).
+// Captured indent is propagated to every emitted line so the YAML scalar stays valid.
+const BEGIN_RE = /^([ \t]*)<!-- BEGIN GENERATED: ([a-z0-9-]+) -->$/;
+const END_RE   = /^([ \t]*)<!-- END GENERATED: ([a-z0-9-]+) -->$/;
 
 /**
  * Parse a file's lines and return an array of regions:
@@ -141,29 +144,33 @@ function parseRegions(lines) {
   const regions = [];
   let openId = null;
   let openIdx = -1;
+  let openIndent = '';
 
   for (let i = 0; i < lines.length; i++) {
     const beginMatch = lines[i].match(BEGIN_RE);
     const endMatch   = lines[i].match(END_RE);
 
     if (beginMatch) {
-      const id = beginMatch[1];
+      const indent = beginMatch[1];
+      const id     = beginMatch[2];
       if (!KNOWN_REGIONS.has(id)) {
         throw new Error(`unknown region id: ${id}`);
       }
-      openId  = id;
-      openIdx = i;
+      openId     = id;
+      openIdx    = i;
+      openIndent = indent;
     } else if (endMatch) {
-      const id = endMatch[1];
+      const id = endMatch[2];
       if (openId === null) {
         throw new Error(`unclosed or mismatched region: ${id}`);
       }
       if (id !== openId) {
         throw new Error(`unclosed or mismatched region: ${openId}`);
       }
-      regions.push({ id, beginLine: openIdx, endLine: i });
-      openId  = null;
-      openIdx = -1;
+      regions.push({ id, beginLine: openIdx, endLine: i, indent: openIndent });
+      openId     = null;
+      openIdx    = -1;
+      openIndent = '';
     }
   }
 
@@ -184,7 +191,12 @@ function parseRegions(lines) {
  * @returns {{ rewritten: string, regionIds: string[] }}
  */
 function computeRewrite(content) {
-  const lines   = content.split('\n');
+  // Detect and preserve the file's line-ending style. Splitting on /\r?\n/
+  // strips trailing \r so the regex anchors match; joining on `eol` writes
+  // back the same style so we never silently flip CRLF→LF (Windows-authored
+  // files in this repo are CRLF; UNIX files are LF).
+  const eol     = content.includes('\r\n') ? '\r\n' : '\n';
+  const lines   = content.split(/\r?\n/);
   const regions = parseRegions(lines);  // throws on error
 
   if (regions.length === 0) {
@@ -195,12 +207,15 @@ function computeRewrite(content) {
   const outLines = [];
   let cursor = 0;
 
-  for (const { id, beginLine, endLine } of regions) {
+  for (const { id, beginLine, endLine, indent } of regions) {
     // Lines before this region (including BEGIN marker)
     outLines.push(...lines.slice(cursor, beginLine + 1));
-    // Fresh generated content
-    outLines.push(...generateRegion(id));
-    // END marker
+    // Fresh generated content, prefixed with the BEGIN marker's leading
+    // whitespace so the region stays inside any enclosing YAML literal block.
+    for (const line of generateRegion(id)) {
+      outLines.push(line.length === 0 ? '' : indent + line);
+    }
+    // END marker (preserved verbatim from input)
     outLines.push(lines[endLine]);
     cursor = endLine + 1;
   }
@@ -208,7 +223,7 @@ function computeRewrite(content) {
   // Remaining lines after last region
   outLines.push(...lines.slice(cursor));
 
-  return { rewritten: outLines.join('\n'), regionIds: regions.map(r => r.id) };
+  return { rewritten: outLines.join(eol), regionIds: regions.map(r => r.id) };
 }
 
 // ─── SELF-TESTS ──────────────────────────────────────────────────────────────
@@ -345,6 +360,35 @@ function runSelfTests() {
       threw = e.message.includes('unknown region id: version-list');
     }
     assert('Test 6: unknown region id throws with correct message', threw);
+  }
+
+  // ── Test 7b: Indented markers — generated content inherits indent ────────
+  {
+    const tmpFile = path.join(os.tmpdir(), `gen-recon-test7b-${Date.now()}.md`);
+    const indented = [
+      'prompt: |',
+      '    Some prose.',
+      '    <!-- BEGIN GENERATED: anchor-table -->',
+      '    placeholder',
+      '    <!-- END GENERATED: anchor-table -->',
+      '    Trailing prose.',
+    ].join('\n');
+    fs.writeFileSync(tmpFile, indented, 'utf8');
+
+    const { rewritten } = computeRewrite(fs.readFileSync(tmpFile, 'utf8'));
+    fs.writeFileSync(tmpFile, rewritten, 'utf8');
+
+    const after = fs.readFileSync(tmpFile, 'utf8').split('\n');
+    const tableHeaderLine = after.find(l => l.includes('| Anchor | Syntax | Use for |'));
+    assert('Test 7b: indented anchor-table header is itself indented 4 spaces',
+      tableHeaderLine !== undefined && tableHeaderLine.startsWith('    | Anchor'));
+    const fileRow = after.find(l => l.includes('| File |'));
+    assert('Test 7b: indented File row also indented 4 spaces',
+      fileRow !== undefined && fileRow.startsWith('    | File |'));
+    assert('Test 7b: BEGIN marker indent preserved',
+      after.some(l => l === '    <!-- BEGIN GENERATED: anchor-table -->'));
+
+    fs.unlinkSync(tmpFile);
   }
 
   // ── Test 7: Unclosed region (BEGIN without END) throws ───────────────────
