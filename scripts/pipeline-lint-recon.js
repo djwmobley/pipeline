@@ -51,6 +51,16 @@ class Finding {
   }
 }
 
+// ─── ANCHOR VOCABULARY (canonical — exported for downstream generators) ─────
+// The five anchor types this linter recognizes. [File: ...] additionally
+// supports a `:line` variant (e.g., [File: scripts/foo.js:42]); that is a
+// validator-level detail, not a separate anchor type.
+const ANCHOR_TYPES = ['File', 'Function', 'Field', 'Pattern', 'Library'];
+
+// Recommended retry cap for orchestrators that re-dispatch a recon agent
+// after a failing lint pass. Architecture skill's Step 1b uses this value.
+const MAX_LINT_ITERATIONS = 3;
+
 // ─── PATTERN ALLOWLIST ───────────────────────────────────────────────────────
 
 const ARCH_PATTERN_ALLOWLIST = new Set([
@@ -1054,6 +1064,9 @@ module.exports = {
   parseLineAnchors,
   lintConstraintsBlock,
   Finding,
+  ANCHOR_TYPES,
+  ARCH_PATTERN_ALLOWLIST,
+  MAX_LINT_ITERATIONS,
 };
 
 // ─── ENTRY POINT ─────────────────────────────────────────────────────────────
