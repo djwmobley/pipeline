@@ -25,8 +25,9 @@ Analyze the codebase and spec to produce architectural decision records that con
 ## Recon Anchor Contract
 
 Every claim in a recon Constraints Block must cite an anchor recognized by
-`scripts/pipeline-lint-recon.js` — `[File: path]`, `[Function: name]`, `[Field: name]`,
-`[Pattern: name]`, `[Library: name]`, or `[Version: x.y.z]`. See `recon-agent-prompt.md`
+`scripts/pipeline-lint-recon.js` — `[File: path]` (or `[File: path:line]`),
+`[Function: name]`, `[Field: name]`, `[Pattern: name]`, or `[Library: name]`.
+See `recon-agent-prompt.md`
 in this skill directory for the full anchor format and per-section requirements. The lint
 is a hard gate: recon output that fails lint blocks downstream planning. The orchestrator
 runs the linter after every recon dispatch and re-dispatches with findings as feedback
