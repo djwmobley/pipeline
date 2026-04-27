@@ -116,7 +116,8 @@ Task tool (general-purpose, model: {{MODEL}}):
     | Field | `[Field: name]` | Struct/object field or DB column |
     | Pattern | `[Pattern: name]` | Named pattern from the allowlist (see below) |
     | Library | `[Library: name]` | Dependency from a manifest file |
-    | Version | `[Version: x.y.z]` | Pinned version found in a manifest |
+
+    Versions appear inline as prose next to a `[Library: name]` anchor (see Output Format examples) — the lint gate does not validate version strings, only library names.
 
     **Pattern allowlist** (only these values are accepted for `[Pattern: name]`):
     named-export, default-export, function-component, arrow-component, kebab-case, camelCase,
@@ -129,7 +130,6 @@ Task tool (general-purpose, model: {{MODEL}}):
     - `[Function: runSelfTests]` — function found via Grep/Read
     - `[Field: user_id]` — column or field confirmed in schema
     - `[Pattern: named-export]` — from the allowlist above
-    - `[Version: 18.3.1]` — version string from a manifest
 
     ## Output Format
 
@@ -138,8 +138,8 @@ Task tool (general-purpose, model: {{MODEL}}):
 
     ### Existing Stack
     Each entry MUST cite [Library: name] and at least one [File: manifest] reference.
-    - [Library: react]: [Version: 18.3.1] — see [File: package.json:25]
-    - [Library: pg]: [Version: 8.11.0] — see [File: scripts/package.json:8]
+    - [Library: react] 18.3.1 — see [File: package.json:25]
+    - [Library: pg] 8.11.0 — see [File: scripts/package.json:8]
     - (repeat for ORM/DB, state, styling, testing, auth, deployment)
 
     ### Established Patterns
