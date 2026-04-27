@@ -109,20 +109,24 @@ Task tool (general-purpose, model: {{MODEL}}):
     Every factual claim in the Constraints Block MUST be anchored with one of the following
     recognized anchor types. Claims without anchors will be rejected by the lint gate.
 
+    <!-- BEGIN GENERATED: anchor-table -->
     | Anchor | Syntax | Use for |
     |--------|--------|---------|
-    | File | `[File: path/to/file.ext]` or `[File: path:lineN]` | Any claim backed by a file on disk |
+    | File | `[File: path/to/file.ext]` (or `[File: path:lineN]`) | Any claim backed by a file on disk |
     | Function | `[Function: name]` | Named function/method found in source |
     | Field | `[Field: name]` | Struct/object field or DB column |
     | Pattern | `[Pattern: name]` | Named pattern from the allowlist (see below) |
     | Library | `[Library: name]` | Dependency from a manifest file |
+    <!-- END GENERATED: anchor-table -->
 
     Versions appear inline as prose next to a `[Library: name]` anchor (see Output Format examples) — the lint gate does not validate version strings, only library names.
 
     **Pattern allowlist** (only these values are accepted for `[Pattern: name]`):
-    named-export, default-export, function-component, arrow-component, kebab-case, camelCase,
-    PascalCase, use-client, use-server, feature-based, layer-based, hybrid, raw-sql, orm,
-    query-builder, middleware, repository, factory, singleton.
+    <!-- BEGIN GENERATED: pattern-allowlist -->
+    arrow-component, camelCase, default-export, factory, feature-based,
+    function-component, hybrid, kebab-case, layer-based, middleware, named-export, orm,
+    PascalCase, query-builder, raw-sql, repository, singleton, use-client, use-server.
+    <!-- END GENERATED: pattern-allowlist -->
 
     **One example per anchor type:**
     - `[Library: react]` — library named in package.json
