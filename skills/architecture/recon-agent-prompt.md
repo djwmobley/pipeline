@@ -104,41 +104,74 @@ Task tool (general-purpose, model: {{MODEL}}):
     A domain is relevant if the codebase has existing patterns in that area OR the spec
     requires new work in that area.
 
+    ## Anchor Format
+
+    Every factual claim in the Constraints Block MUST be anchored with one of the following
+    recognized anchor types. Claims without anchors will be rejected by the lint gate.
+
+    | Anchor | Syntax | Use for |
+    |--------|--------|---------|
+    | File | `[File: path/to/file.ext]` or `[File: path:lineN]` | Any claim backed by a file on disk |
+    | Function | `[Function: name]` | Named function/method found in source |
+    | Field | `[Field: name]` | Struct/object field or DB column |
+    | Pattern | `[Pattern: name]` | Named pattern from the allowlist (see below) |
+    | Library | `[Library: name]` | Dependency from a manifest file |
+    | Version | `[Version: x.y.z]` | Pinned version found in a manifest |
+
+    **Pattern allowlist** (only these values are accepted for `[Pattern: name]`):
+    named-export, default-export, function-component, arrow-component, kebab-case, camelCase,
+    PascalCase, use-client, use-server, feature-based, layer-based, hybrid, raw-sql, orm,
+    query-builder, middleware, repository, factory, singleton.
+
+    **One example per anchor type:**
+    - `[Library: react]` — library named in package.json
+    - `[File: src/lib/auth.ts:14]` — specific line in a source file
+    - `[Function: runSelfTests]` — function found via Grep/Read
+    - `[Field: user_id]` — column or field confirmed in schema
+    - `[Pattern: named-export]` — from the allowlist above
+    - `[Version: 18.3.1]` — version string from a manifest
+
     ## Output Format
 
     ```
     ## Constraints Block
 
     ### Existing Stack
-    [Framework]: [version]
-    [ORM/DB]: [version]
-    [State]: [library + version]
-    [Styling]: [approach]
-    [Testing]: [framework + version]
-    [Auth]: [library or "none"]
-    [Deployment]: [target or "unknown"]
+    Each entry MUST cite [Library: name] and at least one [File: manifest] reference.
+    - [Library: react]: [Version: 18.3.1] — see [File: package.json:25]
+    - [Library: pg]: [Version: 8.11.0] — see [File: scripts/package.json:8]
+    - (repeat for ORM/DB, state, styling, testing, auth, deployment)
 
     ### Established Patterns
-    - [Pattern 1]: [description — e.g., "Components use named exports with Props type suffix"]
-    - [Pattern 2]: [description — e.g., "API routes validate with Zod schemas in shared /schemas dir"]
-    - [Pattern 3]: [description]
-    - ... (list all significant patterns found)
+    Each bullet MUST cite either [File: path] co-cite OR a [Pattern: name] from the allowlist.
+    - Named exports for utilities: [Pattern: named-export] in [File: src/lib/utils.ts]
+    - API validation with Zod: [Pattern: middleware] in [File: src/api/routes/example.ts:10]
+    - (list all significant patterns found — no unanchored assertions)
 
     ### Relevant Domains
-    [DOMAIN_ID]: [reason — e.g., "DATA: Prisma schema exists, spec adds new models"]
-    [DOMAIN_ID]: [reason]
-    ... (only list domains that are actually relevant)
+    Each entry MUST cite at least one [File: path] or [Library: name].
+    - DATA: existing schema in [File: prisma/schema.prisma], queries via [Library: prisma]
+    - UI: components in [File: src/components/], uses [Pattern: function-component]
+    - (only list domains that are actually relevant)
 
     ### Existing Test Coverage
-    - Test framework: [name + config location]
-    - Test organization: [pattern]
+    - Test framework: [Library: vitest] — config at [File: vitest.config.ts]
+    - Test organization: [Pattern: feature-based] — sample: [File: src/__tests__/example.test.ts]
     - Approximate test count: [N files, M test cases]
     - Coverage: [% if configured, "unknown" otherwise]
-    - Fixture pattern: [description or "none"]
+    - Fixture pattern: [description anchored with [File: path] or "none"]
 
     ### Environment Requirements
-    [List env vars needed for the feature, from .env.example analysis]
+    Each env var MUST cite [File: .env.example] or equivalent manifest.
+    - DATABASE_URL — see [File: .env.example:3]
+    - (list all env vars required for the feature)
     ```
+
+    After producing the Constraints Block, the orchestrator will run
+    `node scripts/pipeline-lint-recon.js --recon <path>` against your output.
+    If the lint reports findings, you will be re-dispatched with the findings as
+    feedback for up to 3 iterations. Failure on iteration 3 escalates to the user.
+    Anchor every claim — fabrication is structurally rejected.
 
     <ANTI-RATIONALIZATION>
     These thoughts mean STOP and reconsider:

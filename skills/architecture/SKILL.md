@@ -22,6 +22,16 @@ Analyze the codebase and spec to produce architectural decision records that con
 - Produces decision records artifact, persists to knowledge tier
 - Only relevant domains dispatched (recon determines which).
 
+## Recon Anchor Contract
+
+Every claim in a recon Constraints Block must cite an anchor recognized by
+`scripts/pipeline-lint-recon.js` — `[File: path]`, `[Function: name]`, `[Field: name]`,
+`[Pattern: name]`, `[Library: name]`, or `[Version: x.y.z]`. See `recon-agent-prompt.md`
+in this skill directory for the full anchor format and per-section requirements. The lint
+is a hard gate: recon output that fails lint blocks downstream planning. The orchestrator
+runs the linter after every recon dispatch and re-dispatches with findings as feedback
+(up to 3 iterations) before escalating to the user.
+
 ## Process Flow
 
 ```dot
@@ -74,6 +84,20 @@ Substitutions:
 
 The recon agent returns a **Constraints Block** with: existing stack, established patterns, relevant domains, test coverage, environment requirements.
 
+### Step 1b — Lint recon output
+
+Save the recon agent's output to a temp file, then run the structural linter against it:
+
+```bash
+RECON_FILE="${TMPDIR:-/tmp}/recon-output-${SESSION_ID:-$$}.md"
+# (write recon agent output to $RECON_FILE)
+node scripts/pipeline-lint-recon.js --recon "$RECON_FILE"
+```
+
+If the linter exits non-zero, re-dispatch the recon agent with the lint findings appended
+as a `## Lint Feedback` section in the prompt. Repeat up to **3 iterations total**.
+After iteration 3, halt and escalate to the user — do not proceed to Step 2.
+
 ### Step 2 — Single Architect Pass
 
 Do NOT dispatch a subagent for silent mode. The orchestrator (plan command) reads the recon output and uses it directly as context when generating the implementation plan.
@@ -108,6 +132,12 @@ No separate artifact. Constraints are embedded in the implementation plan as:
 ### Step 1 — Recon
 
 Same as silent mode. Dispatch recon agent, get Constraints Block.
+
+### Step 1b — Lint recon output
+
+Same as silent mode Step 1b. Save output to temp file, run
+`node scripts/pipeline-lint-recon.js --recon <path>`, re-dispatch with findings on
+failure. Maximum **3 iterations**. Escalate to user on iteration 3 failure.
 
 ### Step 2 — Select Relevant Domains
 
@@ -301,6 +331,8 @@ This is NOT a monolithic roadmap. Each decision stands alone with its own invali
 | "This decision is obvious" | Document it anyway. What's obvious to you is context for the build agent. |
 | "The conflicts don't matter" | Cross-domain conflicts become implementation bugs. Resolve them now. |
 | "Silent mode is fine for this LARGE change" | If recon found 3+ relevant domains, use full mode. |
+| "I'll add anchors later" | No. Recon output is gated by `pipeline-lint-recon.js`. Unanchored claims cannot pass the gate. |
+| "The pattern is obviously named-export" | Cite `[File: path]` showing it. The lint allowlist is intentionally narrow — assertion without evidence is rejected. |
 
 ## Issue Tracker Contract
 
