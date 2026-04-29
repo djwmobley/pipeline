@@ -99,6 +99,20 @@ const TABLES = [
     ftsCol: 'fts_vec',
   },
   {
+    name: 'memory_entry_chunks',
+    idCol: 'id',
+    // Embed with parent-name context to match the loader's inline embedPending
+    // path (pipeline-memory-loader.js:295, "Memory: ${name}\n\n${content}").
+    // Without the parent name, backfilled chunks have weaker embeddings than
+    // chunks embedded during the load pass.
+    textFn: (r) => `Memory: ${r.entry_name || ''}\n\n${r.content || ''}`,
+    selectCols: 'id, entry_id, chunk_idx, content, (SELECT name FROM memory_entries WHERE id = entry_id) AS entry_name',
+    updateSql: 'UPDATE memory_entry_chunks SET embedding = $1 WHERE id = $2',
+    label: (r) => `memory entry #${r.entry_id} chunk ${r.chunk_idx}`,
+    snippet: (r) => (r.content || '').substring(0, 120),
+    ftsCol: 'fts_vec',
+  },
+  {
     name: 'gotchas',
     idCol: 'id',
     textFn: (r) => `${r.issue || ''} ${r.rule || ''}`,
@@ -167,8 +181,12 @@ const MAX_EMBED_BYTES = 2000;
 
 // ─── CHUNK-COVERED TABLES ────────────────────────────────────────────────────
 // Derived from information_schema at first use; cached for the process lifetime.
-// Tables covered by v_memory_hits view — embedded as chunks, not as parent rows.
-// cmdIndex skips these to avoid Ollama context-overrun on long parent-row bodies.
+// Tables covered by v_memory_hits view (the *_chunks tables).
+// Used by cmdSearch / cmdHybrid to skip per-table iteration for chunk tables —
+// their hits are surfaced via v_memory_hits and would otherwise double-count.
+// cmdIndex no longer skips chunk tables: they have small per-row content and
+// embed cleanly, and the loader's inline embed path is not always exercised
+// (e.g., when consumers populate chunks via their own ingest layers).
 let _chunkTablesCached = null;
 
 async function getChunkTables(client) {
@@ -295,7 +313,6 @@ async function cmdIndex(forceAll) {
   try {
     let totalDone = 0;
 
-    const chunkTables = await getChunkTables(client);
     for (const tbl of TABLES) {
       if (!(await tableExists(client, tbl.name))) {
         console.log(c.dim(`Skipping ${tbl.name} — table does not exist.`));
@@ -303,10 +320,6 @@ async function cmdIndex(forceAll) {
       }
       if (!(await columnExists(client, tbl.name, 'embedding'))) {
         console.log(c.dim(`Skipping ${tbl.name} — no embedding column. Run setup to add it.`));
-        continue;
-      }
-      if (chunkTables.has(tbl.name)) {
-        console.log(c.dim(`Skipping ${tbl.name} — covered by v_memory_hits chunks.`));
         continue;
       }
 
