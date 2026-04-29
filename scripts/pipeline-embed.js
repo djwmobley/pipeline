@@ -101,8 +101,12 @@ const TABLES = [
   {
     name: 'memory_entry_chunks',
     idCol: 'id',
-    textFn: (r) => r.content || '',
-    selectCols: 'id, entry_id, chunk_idx, content',
+    // Embed with parent-name context to match the loader's inline embedPending
+    // path (pipeline-memory-loader.js:295, "Memory: ${name}\n\n${content}").
+    // Without the parent name, backfilled chunks have weaker embeddings than
+    // chunks embedded during the load pass.
+    textFn: (r) => `Memory: ${r.entry_name || ''}\n\n${r.content || ''}`,
+    selectCols: 'id, entry_id, chunk_idx, content, (SELECT name FROM memory_entries WHERE id = entry_id) AS entry_name',
     updateSql: 'UPDATE memory_entry_chunks SET embedding = $1 WHERE id = $2',
     label: (r) => `memory entry #${r.entry_id} chunk ${r.chunk_idx}`,
     snippet: (r) => (r.content || '').substring(0, 120),
